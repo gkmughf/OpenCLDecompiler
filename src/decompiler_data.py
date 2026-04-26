@@ -754,7 +754,7 @@ class DecompilerData(metaclass=Singleton):
             usesetup=False,
             size_of_work_groups=kernel.work_group_size,
             local_size=0,
-            arguments=kernel.arguments, # TODO
+            arguments=[arg for arg in kernel.get_arguments() if arg.hidden == False],
         )
         self.init_exec()
 

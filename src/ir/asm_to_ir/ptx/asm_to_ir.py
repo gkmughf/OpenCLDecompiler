@@ -1,70 +1,182 @@
 from src.ir.kernel import Kernel
 
+from src.ir.instructions.control_flow import Branch, Label
 from src.ir.instructions.special.memory import MemoryAllocation
 from src.ir.instructions.special.InitReg import InitReg
 from src.ir.registers.reg import Val, RegOrVal_ty, Reg64
 
+from src.ir.asm_to_ir.lowering import InstructionContext
 from src.ir.asm_to_ir.ptx.register_factory import RegFactory
 
 from src.ir.instructions.special.memory import Store
-from src.ir.asm_to_ir.ptx.instruction_dict import instruction_dict
+from src.ir.asm_to_ir.ptx.instruction_rules import get_instruction_rule
 
 from src.ir.asm_to_ir.ptx.ptx_kernel import PTXKernel, PTXArgument
-from src.ir.instructions.special.local_memory import LocalAdd
 
 
-def _create_instruction_from_opcode(kernel: Kernel, opcode: str, operands: list[RegOrVal_ty], args_offset):
-    if  instruction_dict.get(opcode):
-        instr_class = instruction_dict[opcode]
-    else:
-        raise NotImplementedError
-    
-    if "param" in opcode:
-        kernel.create_instruction(
-            instr_class, 
-            operands[0],
-            Reg64("argptr"),
-            args_offset[operands[1].name],
-            is_scalar=False
+def _strip_array_suffix(name: str) -> str:
+    return name.split("[", 1)[0]
+
+
+def _extract_array_size(name: str) -> int | None:
+    if "[" not in name or not name.endswith("]"):
+        return None
+
+    size_text = name[name.index("[") + 1:-1]
+    if not size_text.isdigit():
+        return None
+
+    return int(size_text)
+
+def _align_to_eight(size: int) -> int:
+    return ((size + 7) // 8) * 8
+
+
+def _argument_storage_size(arg: PTXArgument) -> int:
+    if arg.is_pointer:
+        return 8
+
+    element_count = _extract_array_size(arg.name) or 1
+    element_size = max(1, arg.size // 8)
+    return _align_to_eight(element_size * element_count)
+
+
+def _parse_setp_opcode(opcode: str) -> tuple[str, str]:
+    parts = opcode.split(".")
+    if len(parts) != 3:
+        raise NotImplementedError(opcode)
+
+    _, comparison, data_type = parts
+    normalized_type = {
+        "s8": "i8",
+        "s16": "i16",
+        "s32": "i32",
+        "s64": "i64",
+    }.get(data_type, data_type)
+
+    return comparison, normalized_type
+
+
+def _split_operands(text: str) -> list[str]:
+    operands: list[str] = []
+    current: list[str] = []
+    brace_depth = 0
+    bracket_depth = 0
+
+    for char in text:
+        if char == "{":
+            brace_depth += 1
+        elif char == "}":
+            brace_depth -= 1
+        elif char == "[":
+            bracket_depth += 1
+        elif char == "]":
+            bracket_depth -= 1
+
+        if char == "," and brace_depth == 0 and bracket_depth == 0:
+            operand = "".join(current).strip()
+            if operand:
+                operands.append(operand)
+            current = []
+            continue
+
+        current.append(char)
+
+    operand = "".join(current).strip()
+    if operand:
+        operands.append(operand)
+
+    return operands
+
+
+def _create_instruction_from_opcode(
+    kernel: Kernel,
+    opcode: str,
+    operands: list[RegOrVal_ty],
+    args_offset,
+    predicate: str | None = None,
+):
+    # if opcode == "bra":
+    #     kernel.create_instruction(Branch, Val(operands[0].name), is_scalar=True, predicate=predicate)
+    #     return
+
+    # if opcode.startswith("setp."):
+    #     comparison, data_type = _parse_setp_opcode(opcode)
+    #     kernel.create_instruction(
+    #         Compare,
+    #         *operands,
+    #         comparison,
+    #         data_type,
+    #         is_scalar=False,
+    #         predicate=predicate,
+    #     )
+    #     return
+
+    rule = get_instruction_rule(opcode, args_offset)
+    if rule is None:
+        raise NotImplementedError(opcode)
+
+    rule.emit(
+        InstructionContext(
+            kernel=kernel,
+            operands=operands,
+            is_scalar=False,
+            predicate=predicate,
+            extras={"args_offset": args_offset},
         )
-        return
-
-    if instr_class == LocalAdd:
-        kernel.create_instruction(
-                    instr_class, 
-                    operands[1], 
-                    operands[2],
-                    is_scalar=False
-        )
-        return
-
-    kernel.create_instruction(
-        instr_class, 
-        *operands,
-        is_scalar=False
     )
 
 #TODO(GFV) наду унифицировать типы в двух asm_to_text
 def _normalize_arg_type(arg: PTXArgument) -> str:
+    vector_size = _extract_array_size(arg.name)
     alignment_to_type = {
         1: "char",
         2: "short",
         4: "int",
         8: "long",
+        16: "int4",
+    }
+    vector_type_map = {
+        ("b8", 2): "char2",
+        ("u8", 2): "char2",
+        ("s8", 2): "char2",
+        ("b8", 4): "char4",
+        ("u8", 4): "char4",
+        ("s8", 4): "char4",
     }
     type_to_type = {
+        "b8": "char",
+        "u8": "char",
+        "s8": "char",
+        "b16": "short",
+        "u16": "short",
+        "s16": "short",
+        "b32": "uint",
         "u32": "uint",
+        "s32": "int",
+        "b64": "ulong",
         "u64": "ulong",
+        "s64": "long",
+        "f32": "float",
+        "f64": "double",
     }
 
-    if arg.is_pointer:
-        return f'__{arg.address_space} {alignment_to_type[arg.alignment]}'
-    return type_to_type[arg.type_name]
+    if vector_size is not None:
+        vector_type = vector_type_map.get((arg.type_name, vector_size))
+        if vector_type is not None:
+            return vector_type
 
-def _normalize_arg_name(arg: PTXArgument) -> str:
     if arg.is_pointer:
-        return "*" + arg.name
-    return arg.name
+        address_space = arg.address_space or "global"
+        fallback_type = alignment_to_type.get(arg.alignment, "long")
+        return f'__{address_space} {fallback_type}'
+    return type_to_type.get(arg.type_name, arg.type_name)
+
+def _normalize_arg_name(arg: PTXArgument, arg_idx: int) -> str:
+    normalized_name = "arg" + str(arg_idx)
+    if arg.is_pointer:
+        return "*" + normalized_name
+    return normalized_name
 
 def _init_special_registers(kernel: Kernel, rf: RegFactory, special_registers: list[str]):
     for reg_name in special_registers:
@@ -104,6 +216,14 @@ def _init_special_registers(kernel: Kernel, rf: RegFactory, special_registers: l
         if value is not None:
             kernel.create_instruction(InitReg, rf.get_or_create_auto(reg_name), Val(value))
 
+
+def _split_predicate(line: str) -> tuple[str | None, str]:
+    if not line.startswith("@"):
+        return None, line
+
+    predicate_token, _, body = line.partition(" ")
+    return predicate_token[1:], body.strip()
+
 def textToIR(kernel_info: PTXKernel) -> Kernel:
     rf = RegFactory()
 
@@ -115,42 +235,43 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
 
     args_offset = {}
     offset = 0
-    for arg in kernel_info.arguments:
-        kernel.add_argument(_normalize_arg_name(arg), _normalize_arg_type(arg), arg.is_const)
-        args_offset[arg.name] = Val(str(offset))
-        offset += 8
+    for arg_idx, arg in enumerate(kernel_info.arguments):
+        kernel.add_argument(_normalize_arg_name(arg, arg_idx), _normalize_arg_type(arg), arg.is_const, offset=offset)
+        args_offset[_strip_array_suffix(arg.name)] = Val(hex(offset,))
+        offset += _argument_storage_size(arg)
     
     arg_reg_name = "argptr"
     agr_reg = Reg64(arg_reg_name)
-    kernel.create_instruction(MemoryAllocation, agr_reg)
-
-    for arg in kernel_info.arguments:
-        kernel.create_instruction(Store, 
-                                  agr_reg, 
-                                  Val(_normalize_arg_name(arg)), 
-                                  Val(_normalize_arg_type(arg)), 
-                                  args_offset[arg.name]
-                                  )
+    kernel.set_arg_ptr(agr_reg)
 
     _init_special_registers(kernel, rf, kernel_info.special_registers)
-
 
     for line in kernel_info.instructions:
         line = line.strip()
         if not line:
             continue
+
+        if line.endswith(":"):
+            kernel.create_instruction(Label, Val(line[:-1]), is_scalar=True)
+            continue
+
+        predicate, line = _split_predicate(line)
+        if not line:
+            continue
         
-        parts = line.split()
+        parts = line.split(None, 1)
         if not parts:
             continue
         
         opcode = parts[0]
         operands = []
-        
-        for operand in parts[1:]:
-            parsed_operand = rf.get_or_create_auto(operand.rstrip(','))
+
+        operand_tokens = _split_operands(parts[1]) if len(parts) > 1 else []
+
+        for operand in operand_tokens:
+            parsed_operand = rf.get_or_create_auto(operand)
             operands.append(parsed_operand)
         
-        _create_instruction_from_opcode(kernel, opcode, operands, args_offset)
+        _create_instruction_from_opcode(kernel, opcode, operands, args_offset, predicate=predicate)
     kernel.close()
     return kernel

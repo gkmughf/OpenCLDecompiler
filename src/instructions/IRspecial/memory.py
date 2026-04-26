@@ -24,7 +24,7 @@ class StoreInMem(BaseInstruction):
         from_registers, _ = check_and_split_regs(self.node.instruction[1])
         arg_name = self.node.instruction[3]
         type_name = self.node.instruction[2]
-        # TODO тут надо определять что мы загружаем, но так как у нас есть только загрузка аргументов то пофиг 
+        
         self.decompiler_data.type_params[arg_name] = type_name
         arguments = self.decompiler_data.config_data.arguments
         found_arg = next((arg for arg in arguments if arg.name == arg_name), None)
@@ -34,7 +34,7 @@ class StoreInMem(BaseInstruction):
             int(self.node.instruction[4]),
             8 if arg_name.startswith("*") else evaluate_size(make_asm_type(type_name))[0],
             False,
-            found_arg.const if found_arg else False #TODO(GFV) тут по факту надо определять конст не конст
+            found_arg.const if found_arg else False 
             )
             
 

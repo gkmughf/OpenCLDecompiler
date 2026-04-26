@@ -16,8 +16,8 @@ class Sub(GenericInstruction):
     def _get_normalize_opcode(self, is_subb: bool = False) -> str:
         is_scalar = self.is_scalar()
         if is_subb:
-            return "s_subb_u32" if is_scalar else "v_subb_u32"
-        return "s_sub_u32" if is_scalar else "v_sub_u32"
+            return "v_subb_u32"
+        return "v_sub_u32"
 
     def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
         result = []
@@ -27,11 +27,8 @@ class Sub(GenericInstruction):
             dest_str = manager.map(self.destination)
             op1_str = manager.map(self.operand1)
             op2_str = manager.map(self.operand2)
-            
-            if self.is_scalar():
-                result.append([opcode, dest_str, op1_str, op2_str])
-            else:
-                result.append([opcode, dest_str, "vcc", op1_str, op2_str])
+
+            result.append([opcode, dest_str, "vcc", op1_str, op2_str])
         else:
             dest_lo, dest_hi = split_range(manager.map(self.destination))
             op1_lo, op1_hi = split_range(manager.map(self.operand1))
@@ -40,12 +37,8 @@ class Sub(GenericInstruction):
             sub_opcode = self._get_normalize_opcode(is_subb=False)
             subb_opcode = self._get_normalize_opcode(is_subb=True)
 
-            if self.is_scalar():
-                line1 = [sub_opcode, dest_lo, op1_lo, op2_lo]
-                line2 = [subb_opcode, dest_hi, op1_hi, op2_hi]
-            else:
-                line1 = [sub_opcode, dest_lo, "vcc", op1_lo, op2_lo]
-                line2 = [subb_opcode, dest_hi, "vcc", op1_hi, op2_hi, "vcc"]
+            line1 = [sub_opcode, dest_lo, "vcc", op1_lo, op2_lo]
+            line2 = [subb_opcode, dest_hi, "vcc", op1_hi, op2_hi, "vcc"]
             result.extend([line1, line2])
 
         return result

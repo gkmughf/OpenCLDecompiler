@@ -13,6 +13,7 @@ from src.utils import get_context
 
 from src.ir.asm_to_ir.amd.asm_to_ir import textToIR as textToIR_amd
 from src.ir.asm_to_ir.ptx.asm_to_ir import textToIR as textToIR_ptx
+from src.ir.passes.pipelines import AMD_PIPELINE, PTX_PIPELINE
 
 
 CONTEXT = get_context()
@@ -47,6 +48,7 @@ def main(input_par, output_par, flag_for_decompilation, cfg_path, unrolling_limi
             ptxKernel = parse_kernel_ptx(body_of_file.splitlines())
             for func in ptxKernel:
                 kernel = textToIR_ptx(func)
+                PTX_PIPELINE.run(kernel)
                 # print(kernel.to_text())
                 if flag_newline:
                     output_file.write("\n")
@@ -60,6 +62,7 @@ def main(input_par, output_par, flag_for_decompilation, cfg_path, unrolling_limi
                 # function_data[2] = instructions
                 function_data[1].kernel_name = function_data[0]
                 kernel = textToIR_amd(function_data[2], function_data[1])
+                AMD_PIPELINE.run(kernel)
                 # print(kernel.to_text())
                 if flag_newline:
                     output_file.write("\n")

@@ -13,9 +13,10 @@ from src.ir.instructions.common.add import Add, AddC
 from src.ir.instructions.common.cvt import Cvt64_32
 
 from src.ir.instructions.common.sub import Sub, SubRev
-from src.ir.asm_to_ir.amd.instruction_dict import instruction_dict
 from src.ir.instructions.special.local_memory import LocalAdd, LocalStore, LocalLoad
 from src.ir.instructions.common.mov import Mov
+from src.ir.asm_to_ir.amd.instruction_rules import instruction_rules
+from src.ir.asm_to_ir.lowering import InstructionContext
 
 
 def init_dispatch_reg(dispatch_reg: Reg_ty, kernel: Kernel):
@@ -32,103 +33,20 @@ def create_instruction_from_opcode(kernel: Kernel, opcode: str, operands: list[R
     def is_scalar(opcode: str):
         return opcode[0] == 's'
     
-    if  instruction_dict.get(opcode):
-        instr_class = instruction_dict[opcode]
-    else:
-        raise NotImplementedError
+    normalized_opcode = opcode.removesuffix("_e32").removesuffix("_e64")
 
-    if instr_class == Add or instr_class == AddC:
-            if len(operands) >= 4 and operands[1].name == 'vcc':
-                kernel.create_instruction(
-                    instr_class, 
-                    operands[0], 
-                    operands[2], 
-                    operands[3],
-                    is_scalar=is_scalar(opcode)
-                )
-                return
-    if instr_class == Sub or instr_class == SubRev:
-            if len(operands) >= 4 and operands[1].name == 'vcc':
-                kernel.create_instruction(
-                    instr_class, 
-                    operands[0], 
-                    operands[2], 
-                    operands[3],
-                    is_scalar=is_scalar(opcode)
-                )
-                return
-      
-    if instr_class == LocalAdd or instr_class == LocalStore:
-            local_tmp_reg = Reg64("lm")
-            local_tmp_it = Reg64("it64")
-            local_tmp_offset_reg = Reg64("lm_offset")
-            #ds_write_b32    v4, v5 offset:256
-            #ds_add_u32      v4, v5 offset:256
-            kernel.create_instruction(
-                Mov, 
-                local_tmp_reg,
-                operands[2], 
-                is_scalar=is_scalar(opcode)
-            )
-            kernel.create_instruction(
-                Cvt64_32, 
-                local_tmp_it,
-                operands[0],
-                is_scalar=is_scalar(opcode)
-            )
-            kernel.create_instruction(
-                Add, 
-                local_tmp_offset_reg,
-                local_tmp_reg,
-                local_tmp_it, 
-                is_scalar=is_scalar(opcode)
-            )
-            kernel.create_instruction(
-                instr_class, 
-                local_tmp_offset_reg, 
-                operands[1],
-                is_scalar=is_scalar(opcode)
-            )
-            return
-    
-    if instr_class == LocalLoad:
-            local_tmp_reg = Reg64("lm")
-            local_tmp_it = Reg64("it64")
-            local_tmp_offset_reg = Reg64("lm_offset")
-            #ds_read_b32     v3, v4 offset:256
-            kernel.create_instruction(
-                Mov, 
-                local_tmp_reg,
-                operands[2], 
-                is_scalar=is_scalar(opcode)
-            )
-            kernel.create_instruction(
-                Cvt64_32, 
-                local_tmp_it,
-                operands[1],
-                is_scalar=is_scalar(opcode)
-            )
-            kernel.create_instruction(
-                Add, 
-                local_tmp_offset_reg,
-                local_tmp_reg,
-                local_tmp_it, 
-                is_scalar=is_scalar(opcode)
-            )
-            kernel.create_instruction(
-                instr_class, 
-                operands[0],
-                local_tmp_offset_reg, 
-                is_scalar=is_scalar(opcode)
-            )
-            return
-    
+    rule = instruction_rules.get(normalized_opcode)
+    if rule is None:
+        raise NotImplementedError(normalized_opcode)
 
-    kernel.create_instruction(
-        instr_class, 
-        *operands,
-        is_scalar=is_scalar(opcode)
+    rule.emit(
+        InstructionContext(
+            kernel=kernel,
+            operands=operands,
+            is_scalar=is_scalar(normalized_opcode),
+        )
     )
+    return
 
 
 # TODO(GFV) на данный момент работает только с .amdcl2
@@ -137,24 +55,20 @@ def textToIR(text: list[str], cf: ConfigData) -> Kernel:
 
     kernel = Kernel(cf.kernel_name, cf.size_of_work_groups)
     
-    # Добавляем видимые аргументы ядра
     for arg in cf.arguments:
-        if not arg.hidden:
-            kernel.add_argument(arg.name, arg.type_name, arg.const)
+        name_to_check = arg.name
+        if name_to_check.startswith('*'):
+            name_to_check = name_to_check[1:]
+        if not name_to_check.startswith('_'):  
+            kernel.add_argument(arg.name, arg.type_name, arg.const, offset=arg.offset, hidden=arg.hidden)
     
     if cf.usesetup:
         arg_reg_name = "s[6:7]"
     else:
         arg_reg_name = "s[4:5]"
     agr_reg = rf.parse_operand(arg_reg_name)
-    kernel.create_instruction(MemoryAllocation, agr_reg)
-    for arg in cf.arguments:
-        name_to_check = arg.name
-        if name_to_check.startswith('*'):
-            name_to_check = name_to_check[1:]
-        if not name_to_check.startswith('_'):    
-            kernel.create_instruction(Store, agr_reg, Val(arg.name), Val(arg.type_name), Val(str(arg.offset)))
-    
+    kernel.set_arg_ptr(agr_reg)
+
     if cf.usesetup:
         init_dispatch_reg(rf.parse_operand("s[4:5]"), kernel)
 

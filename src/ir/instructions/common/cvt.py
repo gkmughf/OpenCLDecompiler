@@ -42,7 +42,7 @@ class Cvt64_32_s(Cvt64_32):
 class Cvt32_16(GenericInstruction):
     def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, 
                  signed: bool = False, is_scalar: bool = False):
-        super().__init__("cvt32to16", destination, operand1, is_scalar=is_scalar)
+        super().__init__("cvt16to32", destination, operand1, is_scalar=is_scalar)
         self.destination = destination
         self.operand1 = operand1
         self.signed = signed
@@ -62,3 +62,15 @@ class Cvt32_16(GenericInstruction):
         result.append([opcode_str, dest_str, "0xffff", src_str])
         
         return result
+    
+class Cvt_i32_f32(GenericInstruction):
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, is_scalar: bool = False):
+        super().__init__("cvt_f32_to_i32", destination, operand1, is_scalar=is_scalar)
+        self.destination = destination
+        self.operand1 = operand1
+        
+    def _is_64bit(self) -> bool:
+        return False
+    
+    def _get_normalize_opcode(self) -> str:
+        return "s_cvt_i32_f32" if self.is_scalar() else "v_cvt_i32_f32"

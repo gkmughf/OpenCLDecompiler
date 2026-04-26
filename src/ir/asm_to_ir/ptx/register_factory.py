@@ -1,4 +1,4 @@
-from src.ir.registers.reg import Reg64, Reg32, Val, Reg_ty, RegOrVal_ty
+from src.ir.registers.reg import Reg64, Reg32, Val, Reg_ty, RegOrVal_ty, CompositeReg
 
 class RegFactory:
     def __init__(self):
@@ -6,13 +6,26 @@ class RegFactory:
 
 
     def _create_register(self, reg_name: str) -> RegOrVal_ty:
+        
+        if reg_name[0] == "{" and reg_name[-1] == "}":
+            normalized_name = "{" + ", ".join(part.strip() for part in reg_name[1:-1].split(",")) + "}"
+            sub_registers = [
+                self.get_or_create_auto(part.strip())
+                for part in reg_name[1:-1].split(",")
+                if part.strip()
+            ]
+            return CompositeReg(normalized_name, sub_registers)
+        
         if reg_name[0] == "[" and reg_name[-1] == "]":
             reg_name = reg_name[1:-1]
         
         if reg_name.startswith("%rd"):
             return Reg64(reg_name)
+        
+        if reg_name.startswith("%fd"):
+            return Reg64(reg_name)
 
-        if reg_name.startswith("%r") or reg_name.startswith("%rs"):
+        if reg_name.startswith("%r") or reg_name.startswith("%rs") or reg_name.startswith("%f"):
             return Reg32(reg_name)
 
         special_prefixes = ("%tid", "%ctaid", "%ntid", "%envreg")

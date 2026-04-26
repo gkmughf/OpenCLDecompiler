@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
 
 
 class BaseReg(ABC):
@@ -82,7 +81,7 @@ class PredReg(BaseReg):
 
 
 class CompositeReg(BaseReg):
-    def __init__(self, name: str, regs: List[Reg32]):
+    def __init__(self, name: str, regs: list[Reg32]):
         self._regs: Tuple[Reg32, ...] = tuple(regs)
         self._name: str = name
 
@@ -95,7 +94,7 @@ class CompositeReg(BaseReg):
         return f"b{self.bit_width}"
 
     @property
-    def regs(self) -> Tuple[Reg32, ...]:
+    def regs(self) -> tuple[Reg32, ...]:
         return self._regs
 
     @property
@@ -133,3 +132,9 @@ class Val:
 
 Reg_ty = Reg32 | Reg64 | PredReg | CompositeReg
 RegOrVal_ty = Reg_ty | Val
+
+
+def expand_register_names(reg: Reg_ty) -> tuple[str, ...]:
+    if isinstance(reg, CompositeReg):
+        return tuple(sub_reg.name for sub_reg in reg.regs)
+    return (reg.name,)

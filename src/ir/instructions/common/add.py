@@ -28,10 +28,9 @@ class Add(GenericInstruction):
         return self.destination.bit_width == 64
     
     def _get_normalize_opcode(self, is_addc: bool = False) -> str:
-        is_scalar = self.is_scalar()
         if is_addc:
-            return "s_addc_u32" if is_scalar else "v_addc_u32"
-        return "s_add_u32" if is_scalar else "v_add_u32"
+            return "v_addc_u32"
+        return "v_add_u32"
 
     def get_operands(self):
         if self.operand2_tmp_reg is not None:
@@ -41,17 +40,17 @@ class Add(GenericInstruction):
     def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
         result = []
         operand2 = self.operand2
-        if self.operand2_val is not None:
-            tmp_reg_str = manager.map(self.operand2_tmp_reg)
-            val_str = manager.map(self.operand2_val)
-            if self.operand2_tmp_reg.bit_width == 32:
-                result.append(["v_mov_b32", tmp_reg_str, val_str])
-            else:
-                tmp_lo, tmp_hi = split_range(tmp_reg_str)
-                result.append(["v_mov_b32", tmp_lo, val_str])
-                result.append(["s_mov_b32", tmp_hi, '0'])
+        # if self.operand2_val is not None:
+        #     tmp_reg_str = manager.map(self.operand2_tmp_reg)
+        #     val_str = manager.map(self.operand2_val)
+        #     if self.operand2_tmp_reg.bit_width == 32:
+        #         result.append(["v_mov_b32", tmp_reg_str, val_str])
+        #     else:
+        #         tmp_lo, tmp_hi = split_range(tmp_reg_str)
+        #         result.append(["v_mov_b32", tmp_lo, val_str])
+        #         result.append(["s_mov_b32", tmp_hi, '0'])
 
-            operand2 = self.operand2_tmp_reg
+        #     operand2 = self.operand2_tmp_reg
 
         if not self._is_64bit():
             opcode = self._get_normalize_opcode()
@@ -59,10 +58,7 @@ class Add(GenericInstruction):
             op1_str = manager.map(self.operand1)
             op2_str = manager.map(operand2)
             
-            if self.is_scalar():
-                result.append([opcode, dest_str, op1_str, op2_str])
-            else:
-                result.append([opcode, dest_str, "vcc", op1_str, op2_str])
+            result.append([opcode, dest_str, "vcc", op1_str, op2_str])
         else:
             dest_lo, dest_hi = split_range(manager.map(self.destination))
             op1_lo, op1_hi = split_range(manager.map(self.operand1))
@@ -71,12 +67,8 @@ class Add(GenericInstruction):
             add_opcode = self._get_normalize_opcode()
             addc_opcode =  self._get_normalize_opcode(is_addc=True)
 
-            if self.is_scalar():
-                line1 = [add_opcode, dest_lo, op1_lo, op2_lo]
-                line2 = [addc_opcode, dest_hi, op1_hi, op2_hi]
-            else:
-                line1 = [add_opcode, dest_lo, "vcc", op1_lo, op2_lo]
-                line2 = [addc_opcode, dest_hi, "vcc", op1_hi, op2_hi, "vcc"]
+            line1 = [add_opcode, dest_lo, "vcc", op1_lo, op2_lo]
+            line2 = [addc_opcode, dest_hi, "vcc", op1_hi, op2_hi, "vcc"]
 
             result.extend([line1, line2])
 
@@ -94,7 +86,7 @@ class AddC(GenericInstruction):
         
 
     def _get_normalize_opcode(self) -> str:
-        return "s_addc_u32" if self.is_scalar() else "v_addc_u32"
+        return "v_addc_u32"
 
     def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
         opcode = self._get_normalize_opcode()
@@ -102,8 +94,5 @@ class AddC(GenericInstruction):
         op1_str = manager.map(self.operand1)
         op2_str = manager.map(self.operand2)
         
-        if self.is_scalar():
-            return [[opcode, dest_str, op1_str, op2_str]]
-        else:
-            return [[opcode, dest_str, "vcc", op1_str, op2_str, "vcc"]]
+        return [[opcode, dest_str, "vcc", op1_str, op2_str, "vcc"]]
        

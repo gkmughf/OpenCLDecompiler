@@ -29,6 +29,9 @@ class RegisterManager:
                 start = numbering[reg._regs[0].name]
                 end = numbering[reg._regs[-1].name]
                 self._mapping[reg.name] = f"s[{start}:{end}]"
+                for i, ri in enumerate(range(start, end + 1)):
+                    self._mapping[reg.name[i]] = f"s{ri}" 
+
             elif isinstance(reg, Reg64):
                 start = numbering[f"0{reg.name}"]
                 end = numbering[f"1{reg.name}"]
