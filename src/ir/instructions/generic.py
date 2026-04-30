@@ -1,4 +1,3 @@
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
 from src.ir.registers.reg import PredReg, Reg_ty, BaseReg, CompositeReg, expand_register_names
 
 class GenericInstruction:
@@ -20,12 +19,12 @@ class GenericInstruction:
             return f"{self.opcode} {', '.join(operand_strings)}"
         return self.opcode
     
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
-        normalized = [manager.map(op) for op in self.operands]
-        return [[self._get_normalize_opcode()] + normalized]
     
     def get_operands(self):
         return self.operands
+    
+    def update_operands(self, *operands):
+        self.operands = tuple(operands)
     
     def is_scalar(self):
         return self._is_scalar
@@ -83,6 +82,17 @@ class GenericInstruction:
 
     def get_read_register_names(self) -> set[str]:
         return self._expand_registers(self.get_read_registers())
+    
+    def get_written_predicate_names(self) -> set[str]:
+        return {
+            register.name
+            for register in self.get_written_registers()
+            if isinstance(register, PredReg)
+        }
+
+    def to_fill_node(self):
+        raise NotImplementedError()
+
     
     @staticmethod
     def _expand_registers(registers: tuple[Reg_ty, ...]) -> set[str]:

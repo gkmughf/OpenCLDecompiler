@@ -15,7 +15,7 @@ from src.ir.instructions.common.cvt import Cvt64_32
 from src.ir.instructions.common.sub import Sub, SubRev
 from src.ir.instructions.special.local_memory import LocalAdd, LocalStore, LocalLoad
 from src.ir.instructions.common.mov import Mov
-from src.ir.asm_to_ir.amd.instruction_rules import instruction_rules
+from src.ir.asm_to_ir.amd.instruction_rules import get_instruction_rule
 from src.ir.asm_to_ir.lowering import InstructionContext
 
 
@@ -35,7 +35,7 @@ def create_instruction_from_opcode(kernel: Kernel, opcode: str, operands: list[R
     
     normalized_opcode = opcode.removesuffix("_e32").removesuffix("_e64")
 
-    rule = instruction_rules.get(normalized_opcode)
+    rule = get_instruction_rule(normalized_opcode)
     if rule is None:
         raise NotImplementedError(normalized_opcode)
 
@@ -55,19 +55,23 @@ def textToIR(text: list[str], cf: ConfigData) -> Kernel:
 
     kernel = Kernel(cf.kernel_name, cf.size_of_work_groups)
     
+    kernel.predicates.add(rf.parse_operand("exec"))
+    kernel.predicates.add(rf.parse_operand("vcc"))
+    kernel.predicates.add(rf.parse_operand("scc"))
+
     for arg in cf.arguments:
         name_to_check = arg.name
         if name_to_check.startswith('*'):
             name_to_check = name_to_check[1:]
         if not name_to_check.startswith('_'):  
-            kernel.add_argument(arg.name, arg.type_name, arg.const, offset=arg.offset, hidden=arg.hidden)
+            kernel.arguments.add(arg.name, arg.type_name, arg.const, offset=arg.offset, hidden=arg.hidden)
     
     if cf.usesetup:
         arg_reg_name = "s[6:7]"
     else:
         arg_reg_name = "s[4:5]"
     agr_reg = rf.parse_operand(arg_reg_name)
-    kernel.set_arg_ptr(agr_reg)
+    kernel.arguments.set_arg_ptr(agr_reg)
 
     if cf.usesetup:
         init_dispatch_reg(rf.parse_operand("s[4:5]"), kernel)
@@ -118,6 +122,6 @@ def textToIR(text: list[str], cf: ConfigData) -> Kernel:
     for key in range(len(offsets) - 1):
         lc_name = offset_map[offsets[key]]
         lc_size = int((offsets[key + 1] - offsets[key]))
-        kernel.set_local_memory(lc_name, lc_size)
+        kernel.local_memory.set(lc_name, lc_size)
 
-    return kernel.close()
+    return kernel

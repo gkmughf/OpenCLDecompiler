@@ -14,6 +14,9 @@ from src.ir.instructions.common.sub import Sub, SubRev
 from src.ir.instructions.common.cvt import Cvt64_32, Cvt_i32_f32
 from src.ir.instructions.special.local_memory import LocalAdd, LocalLoad, LocalStore
 from src.ir.instructions.common.permute import Permute32
+from src.ir.registers.reg import PredReg, Val
+from src.ir.instructions.common.compare import get_compare_class
+from src.ir.instructions.control_flow import Branch, BranchNot, Label
 
 
 def _ignore_explicit_vcc(instruction_class: type) -> Rule:
@@ -26,6 +29,109 @@ def _ignore_explicit_vcc(instruction_class: type) -> Rule:
 
     return Rule.dynamic(emit)
 
+
+
+def get_instruction_rule(opcode: str) -> Rule | None:
+    if opcode.startswith("."):
+        return _label(opcode)
+    
+    if opcode.startswith("s_cmp_"):
+        return _compare_rule(opcode, PredReg("scc"), is_scalar=True)
+
+    if opcode.startswith("v_cmpx_"):
+        return _compare_rule(opcode, PredReg("exec"), is_scalar=False)
+
+    if opcode.startswith("v_cmp_"):
+        return _vector_compare_rule(opcode)
+
+    return instruction_rules.get(opcode)
+
+
+def _parse_compare_opcode(opcode: str) -> str:
+    comparison = opcode.split("_")[2]
+    if not comparison:
+        raise NotImplementedError(opcode)
+    return comparison
+
+
+def _label(opcode: str) -> Rule:
+    def emit(ctx: InstructionContext) -> None:
+        ctx.emit(
+            Label,
+            opcode,
+            is_scalar=True,
+        )
+
+    return Rule.dynamic(emit)
+
+def _compare_rule(opcode: str, destination: PredReg, is_scalar: bool) -> Rule:
+    comparison = _parse_compare_opcode(opcode)
+    compare_class = get_compare_class(comparison)
+
+    def emit(ctx: InstructionContext) -> None:
+        ctx.emit(
+            compare_class,
+            destination,
+            ctx.operand(0),
+            ctx.operand(1),
+            is_scalar=is_scalar,
+        )
+
+    return Rule.dynamic(emit)
+
+
+def _coerce_predicate(value) -> PredReg:
+    if isinstance(value, PredReg):
+        return value
+    return PredReg(value.name)
+
+def _vector_compare_rule(opcode: str) -> Rule:
+    comparison = _parse_compare_opcode(opcode)
+    compare_class = get_compare_class(comparison)
+
+    def emit(ctx: InstructionContext) -> None:
+        ctx.emit(
+            compare_class,
+            _coerce_predicate(ctx.operand(0)),
+            ctx.operand(1),
+            ctx.operand(2),
+            is_scalar=False,
+        )
+
+    return Rule.dynamic(emit)
+
+
+def _branch(predicate: PredReg) -> Rule:
+    def emit(ctx: InstructionContext) -> None:
+        ctx.emit(
+            Branch,
+            Val(ctx.operand(0).name),
+            predicate, 
+            is_scalar=True,
+            inherit_predicate=False,
+        )
+
+    return Rule.dynamic(emit)
+
+def _branch_not(predicate: PredReg) -> Rule:
+    def emit(ctx: InstructionContext) -> None:
+        ctx.emit(
+            BranchNot,
+            Val(ctx.operand(0).name),
+            predicate, 
+            is_scalar=True,
+            inherit_predicate=False,
+        )
+
+    return Rule.dynamic(emit)
+
+def _saveexec(operation) -> Rule:
+    return Rule(
+        [
+            Emit(Mov, op(0), PredReg("exec"), is_scalar=True),
+            Emit(operation, PredReg("exec"), PredReg("exec"), op(1), is_scalar=True),
+        ]
+    )
 
 _local_store_like = Rule(
     [
@@ -55,7 +161,25 @@ _local_load = Rule(
 )
 
 
+
 instruction_rules = {
+    "s_branch": _branch(None),
+    "s_cbranch_scc0": _branch_not(PredReg("scc")),
+    "s_cbranch_scc1": _branch(PredReg("scc")),
+    "s_cbranch_execz": _branch_not(PredReg("exec")),
+    "s_cbranch_execnz": _branch(PredReg("exec")),
+    "s_cbranch_vccz": _branch_not(PredReg("vcc")),
+    "s_cbranch_vccnz": _branch(PredReg("vcc")),
+
+    "s_and_saveexec_b64": _saveexec(And),
+    # "s_or_saveexec_b64": _saveexec(Or),
+    # "s_xor_saveexec_b64": _saveexec("xor"),
+    # "s_andn2_saveexec_b64": _saveexec("andn2"),
+    # "s_orn2_saveexec_b64": _saveexec("orn2"),
+    # "s_nand_saveexec_b64": _saveexec("nand"),
+    # "s_nor_saveexec_b64": _saveexec("nor"),
+    # "s_xnor_saveexec_b64": _saveexec("xnor"),
+
     "v_add_u32": _ignore_explicit_vcc(Add),
     "s_add_u32": _ignore_explicit_vcc(Add),
     "v_addc_u32": _ignore_explicit_vcc(AddC),

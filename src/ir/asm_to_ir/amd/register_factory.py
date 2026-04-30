@@ -67,9 +67,9 @@ class RegFactory:
                 reg_type="composite",
                 sub_regs=[r.name for r in generated_regs]
             )
-
+        elif token == "exec" or token == "vcc" or token == "scc":
+            return self.get_or_create(token, "pred")
         elif is_reg(token):
             return self.get_or_create(token, "32")
-
         else:
             return Val(token)

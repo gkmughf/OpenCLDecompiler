@@ -28,6 +28,16 @@ class Branch(GenericInstruction):
     def is_control_flow(self) -> bool:
         return True
 
+class BranchNot(GenericInstruction):
+    def __init__(self, target: Val, is_scalar: bool = True, predicate: PredReg | None = None):
+        super().__init__("bra_n", target, is_scalar=is_scalar, predicate=predicate)
+        self.target = target
+
+    def writes_first_operand(self) -> bool:
+        return False
+
+    def is_control_flow(self) -> bool:
+        return True
 
 class Jump(Branch):
     pass

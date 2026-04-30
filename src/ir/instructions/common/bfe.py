@@ -1,6 +1,5 @@
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg32, CompositeReg
+from src.ir.registers.reg import RegOrVal_ty, Reg32
 from src.ir.instructions.generic import GenericInstruction
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
 
 class bfe(GenericInstruction):
     def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):

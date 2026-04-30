@@ -1,7 +1,5 @@
 from src.ir.instructions.generic import GenericInstruction
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg64, Val, Reg32
-from src.register import split_range
+from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg64, Val, Reg32, expand_register_names
 from typing import Optional
 from src.ir.TemporaryVariableAllocator import tva
 
@@ -37,32 +35,21 @@ class Add(GenericInstruction):
             return super().get_operands() + (self.operand2_tmp_reg,)
         return super().get_operands()
 
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         result = []
         operand2 = self.operand2
-        # if self.operand2_val is not None:
-        #     tmp_reg_str = manager.map(self.operand2_tmp_reg)
-        #     val_str = manager.map(self.operand2_val)
-        #     if self.operand2_tmp_reg.bit_width == 32:
-        #         result.append(["v_mov_b32", tmp_reg_str, val_str])
-        #     else:
-        #         tmp_lo, tmp_hi = split_range(tmp_reg_str)
-        #         result.append(["v_mov_b32", tmp_lo, val_str])
-        #         result.append(["s_mov_b32", tmp_hi, '0'])
-
-        #     operand2 = self.operand2_tmp_reg
 
         if not self._is_64bit():
             opcode = self._get_normalize_opcode()
-            dest_str = manager.map(self.destination)
-            op1_str = manager.map(self.operand1)
-            op2_str = manager.map(operand2)
+            dest_str = self.destination.name
+            op1_str = self.operand1.name
+            op2_str = operand2.name
             
             result.append([opcode, dest_str, "vcc", op1_str, op2_str])
         else:
-            dest_lo, dest_hi = split_range(manager.map(self.destination))
-            op1_lo, op1_hi = split_range(manager.map(self.operand1))
-            op2_lo, op2_hi = split_range(manager.map(operand2))
+            dest_lo, dest_hi = expand_register_names(self.destination)
+            op1_lo, op1_hi = expand_register_names(self.operand1)
+            op2_lo, op2_hi = expand_register_names(operand2)
 
             add_opcode = self._get_normalize_opcode()
             addc_opcode =  self._get_normalize_opcode(is_addc=True)
@@ -88,11 +75,11 @@ class AddC(GenericInstruction):
     def _get_normalize_opcode(self) -> str:
         return "v_addc_u32"
 
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         opcode = self._get_normalize_opcode()
-        dest_str = manager.map(self.destination)
-        op1_str = manager.map(self.operand1)
-        op2_str = manager.map(self.operand2)
+        dest_str = self.destination.name
+        op1_str = self.operand1.name
+        op2_str = self.operand2.name
         
         return [[opcode, dest_str, "vcc", op1_str, op2_str, "vcc"]]
        

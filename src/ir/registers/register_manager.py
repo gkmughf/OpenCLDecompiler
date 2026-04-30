@@ -1,4 +1,4 @@
-from src.ir.registers.reg import Reg32, Reg64, PredReg, CompositeReg, Val, RegOrVal_ty
+from src.ir.registers.reg import Reg32, CompositeReg, Val, RegOrVal_ty
 from src.ir.utils.RegisterGraph import RegisterGraph
 
 class RegisterManager:
@@ -12,9 +12,7 @@ class RegisterManager:
         for reg in regs:
             if isinstance(reg, CompositeReg):
                 graph.add(*[op.name for op in reg._regs])
-            elif isinstance(reg, Reg64):
-                graph.add(f"0{reg.name}", f"1{reg.name}")
-            elif isinstance(reg, (Reg32, PredReg)):
+            elif isinstance(reg, Reg32):
                 graph.add(reg.name)
         
         numbering = graph.build()
@@ -30,13 +28,8 @@ class RegisterManager:
                 end = numbering[reg._regs[-1].name]
                 self._mapping[reg.name] = f"s[{start}:{end}]"
                 for i, ri in enumerate(range(start, end + 1)):
-                    self._mapping[reg.name[i]] = f"s{ri}" 
-
-            elif isinstance(reg, Reg64):
-                start = numbering[f"0{reg.name}"]
-                end = numbering[f"1{reg.name}"]
-                self._mapping[reg.name] = f"s[{start}:{end}]"
-            elif isinstance(reg, (Reg32, PredReg)):
+                    self._mapping[reg._regs[i].name] = f"s{ri}" 
+            elif isinstance(reg, Reg32):
                 self._mapping[reg.name] = f"s{numbering[reg.name]}"
         
 

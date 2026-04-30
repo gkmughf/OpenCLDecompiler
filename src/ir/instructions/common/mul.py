@@ -1,8 +1,5 @@
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg32, CompositeReg
+from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg32, expand_register_names
 from src.ir.instructions.generic import GenericInstruction
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
-from src.register import split_range
-
 
 
 class Mul24(GenericInstruction):
@@ -14,8 +11,6 @@ class Mul24(GenericInstruction):
 
     def _get_normalize_opcode(self) -> str:
         return "v_mul_i32_i24"
-    
-
     
 
 
@@ -34,15 +29,15 @@ class MulLo(GenericInstruction):
     def _get_normalize_opcode(self) -> str:
         return "v_mul_lo_i32" if self.signed else "s_mul_i32"
     
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         result = []
 
         if not self._is_64bit():
-            return super().get_parts(manager)
+            return super().get_parts()
         
-        dest_lo, dest_hi = split_range(manager.map(self.destination))
-        op1_lo, op1_hi = split_range(manager.map(self.operand1))
-        op2_lo, op2_hi = split_range(manager.map(self.operand2))
+        dest_lo, dest_hi = expand_register_names(self.destination)
+        op1_lo, op1_hi = expand_register_names(self.operand1)
+        op2_lo, op2_hi = expand_register_names(self.operand2)
 
         result.append(["v_mul_hi_u32", dest_lo, op1_lo, op2_lo])
         result.append(["v_mul_lo_u32", dest_hi, op1_lo, op2_hi])
@@ -95,11 +90,11 @@ class MulWide(GenericInstruction):
     def _get_normalize_opcode(self) -> str:
         return "v_mad_i64_i32"  if self.signed else "v_mad_u64_u32" 
     
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         opcode = self._get_normalize_opcode()
-        dest_str = manager.map(self.destination)
-        op1_str = manager.map(self.operand1)
-        op2_str = manager.map(self.operand2)
+        dest_str = self.destination.name
+        op1_str = self.operand1.name
+        op2_str = self.operand2.name
 
         return [[opcode, dest_str, '0', op1_str, op2_str, '0']]
     

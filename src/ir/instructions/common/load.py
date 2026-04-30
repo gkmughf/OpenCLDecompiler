@@ -1,7 +1,5 @@
-from src.ir.registers.reg import Reg64, Reg_ty, Val
+from src.ir.registers.reg import Reg64, Reg_ty, Val, expand_register_names
 from src.ir.instructions.generic import GenericInstruction
-from src.register import check_and_split_regs
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
 
 class Load(GenericInstruction):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val, is_scalar, size):
@@ -21,16 +19,14 @@ class Load(GenericInstruction):
         else:
             return f"{prefix}_dwordx4"
 
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         result = []
         opcode = self._get_normalize_opcode()
-        dest_str = manager.map(self.destination)
-        addr_str = manager.map(self.address)
-        offset_str = manager.map(self.offset)
+        dest_str = self.destination.name
+        addr_str = self.address.name
+        offset_str =  self.offset.name
 
-        start, end = check_and_split_regs(dest_str)
-        start, end = int(start[1:]), int(end[1:])
-        all_parts = [f"s{i}" for i in range(start, end + 1)]
+        all_parts = expand_register_names(self.destination)
         total_parts = len(all_parts)
         
         parts_to_load = (self.size) // 32

@@ -1,7 +1,5 @@
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Val
+from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Val, expand_register_names
 from src.ir.instructions.generic import GenericInstruction
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
-from src.register import split_range
 
 class Mov(GenericInstruction):
 
@@ -16,29 +14,31 @@ class Mov(GenericInstruction):
     def _get_normalize_opcode(self) -> str:
         return "s_mov_b64" if self._is_64bit() else "v_mov_b32"
 
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         result = []
-        
+
+
         if self._is_64bit() and isinstance(self.source, Val):
-            dest_lo, dest_hi = split_range(manager.map(self.destination))
-            val_str = manager.map(self.source)
+            dest_lo, dest_hi = expand_register_names(self.destination)
+            val_str = self.source.name
             result.append(["v_mov_b32", dest_lo, val_str])
             result.append(["v_mov_b32", dest_hi, "0"])
             
             return result
         
-        elif self._is_64bit():
-            dest_lo, dest_hi = split_range(manager.map(self.destination))
-            src_lo, src_hi = split_range(manager.map(self.source))
-            result.append(["v_mov_b32", dest_lo, src_lo])
-            result.append(["v_mov_b32", dest_hi, src_hi])
+        # NOTE забавный факт, если делать так то тесты sub показывают более правильный результат(вместо "a + -1" будет "a - 1")
+        # elif self._is_64bit():
+        #     dest_lo, dest_hi = split_range(manager.map(self.destination))
+        #     src_lo, src_hi = split_range(manager.map(self.source))
+        #     result.append(["v_mov_b32", dest_lo, src_lo])
+        #     result.append(["v_mov_b32", dest_hi, src_hi])
             
-            return result
+        #     return result
         
         
         opcode = self._get_normalize_opcode()
-        dest_str = manager.map(self.destination)
-        src_str = manager.map(self.source)
+        dest_str = self.destination.name
+        src_str = self.source.name
 
         result.append([opcode, dest_str, src_str])
         return result

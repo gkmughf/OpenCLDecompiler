@@ -1,7 +1,5 @@
 from src.ir.instructions.generic import GenericInstruction
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg64, CompositeReg
-from src.register import split_range
+from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg64, CompositeReg, expand_register_names
 
 class Sub(GenericInstruction):
     def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar: bool = False):
@@ -19,20 +17,20 @@ class Sub(GenericInstruction):
             return "v_subb_u32"
         return "v_sub_u32"
 
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         result = []
     
         if not self._is_64bit():
             opcode = self._get_normalize_opcode()
-            dest_str = manager.map(self.destination)
-            op1_str = manager.map(self.operand1)
-            op2_str = manager.map(self.operand2)
+            dest_str = self.destination.name
+            op1_str = self.operand1.name
+            op2_str = self.operand2.name
 
             result.append([opcode, dest_str, "vcc", op1_str, op2_str])
         else:
-            dest_lo, dest_hi = split_range(manager.map(self.destination))
-            op1_lo, op1_hi = split_range(manager.map(self.operand1))
-            op2_lo, op2_hi = split_range(manager.map(self.operand2))
+            dest_lo, dest_hi = expand_register_names(self.destination)
+            op1_lo, op1_hi = expand_register_names(self.operand1)
+            op2_lo, op2_hi = expand_register_names(self.operand2)
 
             sub_opcode = self._get_normalize_opcode(is_subb=False)
             subb_opcode = self._get_normalize_opcode(is_subb=True)

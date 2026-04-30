@@ -1,18 +1,14 @@
-from __future__ import annotations
-
-from src.ir.blocks import DEFAULT_PREDICATE_NAME, ENTRY_BLOCK_ID, BlockType, KernelBlock
-from src.ir.instructions.control_flow import Branch, Label
+from src.ir.blocks import ENTRY_BLOCK_ID, BlockType, KernelBlock
+from src.ir.instructions.control_flow import Branch, BranchNot, Label
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.passes.base import KernelPass, PassContext
-from src.ir.registers.reg import PredReg
-
 
 class BuildKernelBlocksPass(KernelPass):
     name = "build-kernel-blocks"
 
     def run(self, kernel, context: PassContext) -> None:
-        blocks = self._build_blocks(kernel.instructions)
-        kernel.set_blocks(blocks)
+        blocks = self._build_blocks(kernel.get_instructions())
+        kernel.blocks.set(blocks)
         context.metadata["blocks"] = blocks
 
     def _build_blocks(self, instructions: list[GenericInstruction]) -> dict[int, KernelBlock]:
@@ -20,8 +16,8 @@ class BuildKernelBlocksPass(KernelPass):
             return {}
 
         blocks = self._find_blocks(instructions)
-        label_to_block_id = self._map_labels_to_blocks(instructions, blocks)
-        successors = self._build_control_flow_edges(instructions, blocks, label_to_block_id)
+        label_to_block_id = self._map_labels_to_blocks(blocks)
+        successors = self._build_control_flow_edges(blocks, label_to_block_id)
         self._fill_predecessor_blocks(blocks, successors)
         return blocks
 
@@ -35,29 +31,17 @@ class BuildKernelBlocksPass(KernelPass):
 
             if isinstance(instruction, Label):
                 blocks[block_id] = self._make_single_instruction_block(
-                    BlockType.LABEL,
-                    instruction,
-                    index,
-                )
+                    BlockType.LABEL, instruction
+                    )
                 block_id += 1
                 index += 1
                 continue
 
             if instruction.is_control_flow():
                 block_type = BlockType.BRANCH if isinstance(instruction, Branch) else BlockType.TERMINATOR
-                blocks[block_id] = self._make_single_instruction_block(block_type, instruction, index)
-                block_id += 1
-                index += 1
-                continue
-
-            modified_predicates = self._get_instruction_written_predicate_names(instruction)
-            if modified_predicates:
                 blocks[block_id] = self._make_single_instruction_block(
-                    BlockType.PREDICATE_UPDATE,
-                    instruction,
-                    index,
-                    modified_predicates=modified_predicates,
-                )
+                    block_type, instruction
+                    )
                 block_id += 1
                 index += 1
                 continue
@@ -70,42 +54,27 @@ class BuildKernelBlocksPass(KernelPass):
             end = index - 1
             blocks[block_id] = KernelBlock(
                 block_type=BlockType.LINEAR,
-                start=start,
-                end=end,
-                predicate_name=self._get_instruction_predicate_name(instructions[start]),
+                instructions=instructions[start : end + 1],
             )
             block_id += 1
 
         return blocks
 
+
     def _make_single_instruction_block(
         self,
         block_type: BlockType,
         instruction: GenericInstruction,
-        index: int,
-        modified_predicates: set[str] | None = None,
     ) -> KernelBlock:
-        if modified_predicates is None:
-            modified_predicates = self._get_instruction_written_predicate_names(instruction)
+        return KernelBlock(block_type=block_type, instructions=[instruction])
 
-        return KernelBlock(
-            block_type=block_type,
-            start=index,
-            end=index,
-            predicate_name=self._get_instruction_predicate_name(instruction),
-            modified_predicates=modified_predicates,
-        )
 
     def _starts_standalone_block(self, instruction: GenericInstruction) -> bool:
-        return (
-            isinstance(instruction, Label)
-            or instruction.is_control_flow()
-            or bool(self._get_instruction_written_predicate_names(instruction))
-        )
+        return isinstance(instruction, Label) or instruction.is_control_flow()
+
 
     def _map_labels_to_blocks(
         self,
-        instructions: list[GenericInstruction],
         blocks: dict[int, KernelBlock],
     ) -> dict[str, int]:
         label_to_block_id: dict[str, int] = {}
@@ -114,7 +83,7 @@ class BuildKernelBlocksPass(KernelPass):
             if block.block_type != BlockType.LABEL:
                 continue
 
-            label = instructions[block.start]
+            label = block.first_instruction
             if isinstance(label, Label):
                 label_to_block_id[label.name.value] = block_id
 
@@ -122,7 +91,6 @@ class BuildKernelBlocksPass(KernelPass):
 
     def _build_control_flow_edges(
         self,
-        instructions: list[GenericInstruction],
         blocks: dict[int, KernelBlock],
         label_to_block_id: dict[str, int],
     ) -> dict[int, set[int]]:
@@ -135,19 +103,16 @@ class BuildKernelBlocksPass(KernelPass):
 
         for block_id, block in blocks.items():
             block.successor_blocks.clear()
-            last_instruction = instructions[block.end]
+            last_instruction = block.last_instruction
             next_block_id = next_block_by_id.get(block_id)
 
-            if isinstance(last_instruction, Branch):
+            if self._is_branch(last_instruction):
                 target_block_id = label_to_block_id.get(last_instruction.target.value)
                 if target_block_id is not None:
                     successors[block_id].add(target_block_id)
 
                 if last_instruction.has_predicate() and next_block_id is not None:
                     successors[block_id].add(next_block_id)
-                continue
-
-            if last_instruction.is_control_flow() and not isinstance(last_instruction, Label):
                 continue
 
             if next_block_id is not None:
@@ -167,9 +132,6 @@ class BuildKernelBlocksPass(KernelPass):
             return
 
         first_block_id = next(iter(blocks))
-        for block in blocks.values():
-            block.predecessor_blocks.clear()
-
         blocks[first_block_id].predecessor_blocks.add(ENTRY_BLOCK_ID)
 
         for block_id, target_blocks in successors.items():
@@ -177,18 +139,5 @@ class BuildKernelBlocksPass(KernelPass):
                 blocks[target_block_id].predecessor_blocks.add(block_id)
 
     @staticmethod
-    def _get_instruction_predicate_name(instruction: GenericInstruction) -> str:
-        predicate = instruction.get_predicate()
-        if predicate is None:
-            return DEFAULT_PREDICATE_NAME
-        return normalize_predicate_name(predicate.name)
-
-    @staticmethod
-    def _get_instruction_written_predicate_names(instruction: GenericInstruction) -> set[str]:
-        written_predicates = set(instruction.get_written_predicate_names())
-
-        for register in instruction.get_written_registers():
-            if isinstance(register, PredReg):
-                written_predicates.add(normalize_predicate_name(register.name))
-
-        return written_predicates
+    def _is_branch(instruction: GenericInstruction) -> bool:
+        return isinstance(instruction, (Branch, BranchNot))

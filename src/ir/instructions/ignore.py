@@ -1,5 +1,4 @@
 from src.ir.instructions.generic import GenericInstruction
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
 
 class Ignore(GenericInstruction):
     def __init__(self, *operands, is_scalar):
@@ -8,7 +7,7 @@ class Ignore(GenericInstruction):
     def to_text(self) -> str:
         return ""
     
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         return []
     
     def get_operands(self):

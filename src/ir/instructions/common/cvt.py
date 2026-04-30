@@ -1,11 +1,8 @@
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty
+from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg64, expand_register_names
 from src.ir.instructions.generic import GenericInstruction
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
-from src.register import split_range
-
 
 class Cvt64_32(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty,
+    def __init__(self, destination: Reg64, operand1: RegOrVal_ty,
                  signed=False,  is_scalar=False):
         super().__init__("cvt32to64", destination, operand1, is_scalar=is_scalar)
         self.destination = destination
@@ -17,10 +14,10 @@ class Cvt64_32(GenericInstruction):
             return "s_ashr_i32" if self.signed else "s_mov_b32"
         return "s_mov_b32"
 
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         result = []
-        src_str = manager.map(self.operand1)
-        dest_lo, dest_hi = split_range(manager.map(self.destination))
+        src_str = self.operand1.name
+        dest_lo, dest_hi = expand_register_names(self.destination)
         
         mov_opcode = self._get_normalize_opcode()
         ext_opcode = self._get_normalize_opcode(is_ext=True)
@@ -53,11 +50,11 @@ class Cvt32_16(GenericInstruction):
     def _get_normalize_opcode(self) -> str:
         return "s_and_b32" if self.is_scalar() else "v_and_b32"
 
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         result = []
         opcode_str = self._get_normalize_opcode()
-        dest_str = manager.map(self.destination)
-        src_str = manager.map(self.operand1)
+        dest_str = self.destination.name
+        src_str = self.operand1.name
         
         result.append([opcode_str, dest_str, "0xffff", src_str])
         

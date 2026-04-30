@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
 
@@ -15,9 +17,6 @@ class BaseReg(ABC):
     @abstractmethod
     def to_text(self) -> str:
         pass
-
-    def __str__(self):
-        return self.to_text()
 
 
 class Reg32(BaseReg):
@@ -39,50 +38,13 @@ class Reg32(BaseReg):
     def to_text(self) -> str:
         return self._name
 
-
-class Reg64(BaseReg):
-    def __init__(self, name: str):
-        self._name: str = name
-
-    @property
-    def bit_width(self) -> int:
-        return 64
-
-    @property
-    def type_suffix(self) -> str:
-        return "b64"
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    def to_text(self) -> str:
-        return self._name
-
-
-class PredReg(BaseReg):
-    def __init__(self, name: str = "exec"):
-        self._name: str = name
-
-    @property
-    def bit_width(self) -> int:
-        return 64
-
-    @property
-    def type_suffix(self) -> str:
-        return "pred"
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    def to_text(self) -> str:
-        return self._name
-
+    @classmethod
+    def create_new(cls, name: str) -> Reg32:
+        return cls(name) 
 
 class CompositeReg(BaseReg):
     def __init__(self, name: str, regs: list[Reg32]):
-        self._regs: Tuple[Reg32, ...] = tuple(regs)
+        self._regs: tuple[Reg32, ...] = tuple(regs)
         self._name: str = name
 
     @property
@@ -108,10 +70,29 @@ class CompositeReg(BaseReg):
     def get_element(self, index: int) -> Reg32:
         return self._regs[index]
 
-    def __len__(self):
-        return len(self._regs)
+    @classmethod
+    def create_new(cls, name: str, regs: list[Reg32]) -> CompositeReg:
+        return cls(name, regs) 
 
 
+class Reg64(CompositeReg):
+    def __init__(self, name: str):
+        super().__init__(name, [Reg32(name+"|lo"), Reg32(name+"|hi")])
+
+    @classmethod
+    def create_new(cls, name: str, regs: list[Reg32]) -> CompositeReg:
+        res = cls(name) 
+        res._regs[0]._name = regs[0].name
+        res._regs[1]._name = regs[1].name
+        return res
+    
+class PredReg(Reg64):
+    def __init__(self, name: str):
+        super().__init__(name)
+
+    @property
+    def type_suffix(self) -> str:
+        return "pred"
 
 class Val:
     def __init__(self, value: str):
@@ -127,7 +108,10 @@ class Val:
     
     def to_text(self) -> str:
         return self._value
-
+    
+    @classmethod
+    def create_new(cls, name: str) -> Reg32:
+        return cls(name) 
 
 
 Reg_ty = Reg32 | Reg64 | PredReg | CompositeReg

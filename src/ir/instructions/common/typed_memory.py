@@ -6,7 +6,6 @@ from src.ir.TemporaryVariableAllocator import tva
 from src.ir.instructions.common.load import Load
 from src.ir.instructions.common.store import Store
 from src.ir.registers.reg import CompositeReg, Reg32, Reg64, RegOrVal_ty, Reg_ty, Val
-from src.ir.registers.register_manager import IDENTITY_MANAGER, RegisterManager
 
 
 @dataclass(frozen=True)
@@ -95,27 +94,27 @@ class TypedMemoryLoad(Load):
         operands = list(super().get_operands())
         return tuple(operands)
 
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         if self.packed_value is None:
             if self._needs_dword_vector_load():
-                destination = manager.map(self.destination)
-                address = manager.map(self.address)
-                offset = manager.map(self.offset)
+                destination = self.destination.name
+                address = self.address.name
+                offset = self.offset.name
                 return [[self._get_normalize_opcode(), destination, address, offset]]
                 
             
-            return super().get_parts(manager)
+            return super().get_parts()
         
         opcode = self._get_normalize_opcode()
-        packed_value_str = manager.map(self.packed_value)
-        address_str = manager.map(self.address)
-        offset_str = manager.map(self.offset)
+        packed_value_str = self.packed_value.name
+        address_str = self.address.name
+        offset_str = self.offset.name
 
         result = [[opcode, packed_value_str, address_str, offset_str]]
         
         assert isinstance(self.destination, CompositeReg)
         for index, destination in enumerate(self.destination.regs):
-            destination_str = manager.map(destination)
+            destination_str = destination.name
             if index == 0:
                 result.append(["s_and_b32", destination_str, packed_value_str, self._low_mask()])
                 continue
@@ -197,42 +196,28 @@ class TypedMemoryStore(Store):
         return tuple(operands)
 
 
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         if not isinstance(self.value, CompositeReg):
             return super().get_operands()
         
         if self._needs_small_vector_pack():
-            return self._get_small_vector_store_parts(manager)
+            return self._get_small_vector_store_parts()
         
         if self.store_value is not None:
-            return self._get_dword_vector_store_parts(manager)
+            return self._get_dword_vector_store_parts()
         
         return super().get_operands()
-        
-        opcode = self._get_normalize_opcode()
-        address = manager.map(self.address)
-        first_value = manager.map(self.value.get_element(0))
-        second_value = manager.map(self.value.get_element(1))
-        first_stor_value = manager.map(self.stor_val.get_element(0))
-        second_stor_value = manager.map(self.stor_val.get_element(1))
-        stor_val_str = manager.map(self.stor_val)
-        result = [
-            ["v_mov_b32", first_value, first_stor_value],
-            ["v_mov_b32", second_value, second_stor_value],
-            [opcode, address, stor_val_str],
-        ]
-        return result
 
 
-    def _get_small_vector_store_parts(self, manager: RegisterManager) -> list[list[str]]:
+    def _get_small_vector_store_parts(self) -> list[list[str]]:
         assert isinstance(self.value, CompositeReg)
 
         opcode = self._get_normalize_opcode()
-        address = manager.map(self.address)
-        selector = manager.map(self.selector)
-        packed_value = manager.map(self.packed_value)
-        first_value = manager.map(self.value.get_element(0))
-        second_value = manager.map(self.value.get_element(1))
+        address = self.address.name
+        selector = self.selector.name
+        packed_value = self.packed_value.name
+        first_value = self.value.get_element(0).name
+        second_value = self.value.get_element(1).name
 
         result = [
             ["v_mov_b32", selector, self.PACK_SELECTOR],
@@ -247,7 +232,7 @@ class TypedMemoryStore(Store):
             )
             return result
 
-        return super().get_parts(manager)
+        return super().get_parts()
 
     def _needs_small_vector_pack(self) -> bool:
         return (
@@ -270,21 +255,20 @@ class TypedMemoryStore(Store):
             and self.access_type.total_bits in {64, 128}
         )
     
-    def _get_dword_vector_store_parts(self, manager: RegisterManager) -> list[list[str]]:
+    def _get_dword_vector_store_parts(self) -> list[list[str]]:
         assert isinstance(self.value, CompositeReg)
         assert self.store_value is not None
 
         result = []
         for index, source in enumerate(self.value.regs):
-            destination = manager.map(self.store_value.get_element(index))
-            source_text = manager.map(source)
+            destination = self.store_value.get_element(index).name
+            source_text = source.name
             result.append(["v_mov_b32", destination, source_text])
-        address = manager.map(self.address)
         result.append(
             [
                 self._get_normalize_opcode(),
-                manager.map(self.address),
-                manager.map(self.store_value),
+                self.address.name,
+                self.store_value.name,
             ]
         )
         return result

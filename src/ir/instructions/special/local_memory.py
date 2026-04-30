@@ -2,7 +2,6 @@ from src.ir.instructions.generic import GenericInstruction
 from src.ir.registers.reg import Reg64, Reg_ty, Val, RegOrVal_ty, Reg32
 from typing import Optional
 from src.ir.TemporaryVariableAllocator import tva
-from src.ir.registers.register_manager import RegisterManager, IDENTITY_MANAGER
 
 class LocalMemory(GenericInstruction):
     def __init__(self, destination: Reg64, size, is_scalar: bool = True):
@@ -45,16 +44,16 @@ class LocalAdd(GenericInstruction):
             return super().get_operands() + (self.operand1_tmp_reg,)
         return super().get_operands()
     
-    def get_parts(self, manager: RegisterManager = IDENTITY_MANAGER) -> list[list[str]]:
+    def get_parts(self) -> list[list[str]]:
         result = []
 
         opcode = self._get_normalize_opcode()
-        dest_str = manager.map(self.destination)
-        op1_str = manager.map(self.operand1)
+        dest_str = self.destination.name
+        op1_str = self.operand1.name
 
         if self.operand1_val is not None:
-            tmp_reg_str = manager.map(self.operand1_tmp_reg)
-            val_str = manager.map(self.operand1_val)
+            tmp_reg_str = self.operand1_tmp_reg.name
+            val_str = self.operand1_val.name
             result.append(["s_mov_b32", tmp_reg_str, val_str])
             result.append([opcode, dest_str, tmp_reg_str])   
             return result

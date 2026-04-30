@@ -20,10 +20,6 @@ from src.ir.registers.reg import Reg64, Val
 
 _MEMORY_TYPE_PATTERN = re.compile(r"^[busf](8|16|32|64)$")
 
-
-
-
-
 def get_instruction_rule(opcode: str, args_offset) -> Rule | None:
     if opcode.startswith("ld.param."):
         return _param_load(opcode, args_offset)
@@ -79,13 +75,6 @@ def _parse_memory_access_type(opcode: str) -> MemoryAccessType:
         base_type=base_type,
         vector_width=vector_width,
     )
-
-# _param_load_vector2_u8 = Rule(
-#     [
-#         Emit(LoadParamVector2U8, op(0), named64("argptr"), arg_offset(1), is_scalar=True),
-#     ]
-# )
-
 
 instruction_rules = {
     "add.s32": same(Add),
