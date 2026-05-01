@@ -1,5 +1,8 @@
 from src.ir.instructions.generic import GenericInstruction
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg64, CompositeReg, expand_register_names
+from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg64, get_reg_rang, expand_register_names
+
+from src.ir.instructions.lowering import NodeLoweringContext
+from src.instructions.vop2.v_sub import VSub
 
 class Sub(GenericInstruction):
     def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar: bool = False):
@@ -41,6 +44,32 @@ class Sub(GenericInstruction):
 
         return result
     
+    def to_fill_node(self, state, parents):
+        ctx = NodeLoweringContext(state, parents)
+        if not self._is_64bit():
+            return ctx.emit_backend(
+                VSub,
+                self._get_normalize_opcode(),
+                self.operands,
+                "u32",
+            )
+
+        dest_lo, dest_hi = get_reg_rang(self.destination)
+        op1_lo, op1_hi = get_reg_rang(self.operand1)
+        op2_lo, op2_hi = get_reg_rang(self.operand2)
+
+        ctx.emit_backend(
+            VSub,
+            "v_sub_u32",
+            [dest_lo, op1_lo, op2_lo],
+            "u32",
+        )
+        return ctx.emit_backend(
+            VSub,
+            "v_subb_u32",
+            [dest_hi, op1_hi, op2_hi],
+            "u32",
+        )
 
 class SubRev(Sub):
     def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar):
