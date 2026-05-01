@@ -13,8 +13,7 @@ def check_realisation_for_node(curr_node, row):
 
 
 def decode_instruction(node, flag_of_status):
-    instruction = node.instruction
-    operation = instruction[0]
+    operation = node.instruction
     parts_of_operation = operation.split("_")
     prefix = parts_of_operation[0]
     suffix = ""

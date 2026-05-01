@@ -90,7 +90,7 @@ class GenericInstruction:
             if isinstance(register, PredReg)
         }
 
-    def to_fill_node(self):
+    def to_fill_node(self, state, parents):
         raise NotImplementedError()
 
     

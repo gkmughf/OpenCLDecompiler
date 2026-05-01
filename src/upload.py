@@ -5,6 +5,7 @@ from src.integrity import Integrity
 from src.register import Register, check_and_split_regs, get_next_reg
 from src.register_content import RegisterContent
 from src.register_type import RegisterType
+from src.ir.registers.reg import expand_register_names
 
 usesetup_dict = {
     "0x0": Register(
@@ -62,7 +63,7 @@ usesetup_dict = {
     ),
 }
 
-
+#(GFV) не используется 
 def upload_usesetup(state, to_registers, offset):
     decompiler_data = DecompilerData()
     start_to_register, end_to_register = check_and_split_regs(to_registers)
@@ -77,10 +78,10 @@ def upload_usesetup(state, to_registers, offset):
 
 def upload_kernel_param(state, offset, to_registers, base):
     decompiler_data = DecompilerData()
-    start, end = check_and_split_regs(to_registers)
-    start, end = int(start[1:]), int(end[1:])
+    dest_regs_name = expand_register_names(to_registers)
+    start, end = 0, len(dest_regs_name)-1
     while start <= end:
-        content = decompiler_data.config_data.offset_to_content[base].get(hex(offset))
+        content = decompiler_data.config_data.offset_to_content[base.name].get(hex(offset))
         if not content:
             # Motivation example:
             #   1. We have three args of size and align 4 and then arg with size and align 8
@@ -89,21 +90,21 @@ def upload_kernel_param(state, offset, to_registers, base):
             break
         if content.get_size() <= 4:  # noqa: PLR2004
             decompiler_data.set_reg_make_version(
-                state, f"s{start}", Register(integrity=Integrity.ENTIRE, register_content=content)
+                state, dest_regs_name[start], Register(integrity=Integrity.ENTIRE, register_content=content)
             )
             start += 1
             offset += 4
         elif content.get_size() == 8:  # noqa: PLR2004
             if start + 1 > end:
                 decompiler_data.set_reg_make_version(
-                    state, f"s{start}", Register(integrity=Integrity.ENTIRE, register_content=content)
+                    state, dest_regs_name[start], Register(integrity=Integrity.ENTIRE, register_content=content)
                 )
                 break
             decompiler_data.set_reg_make_version(
-                state, f"s{start}", Register(integrity=Integrity.LOW_PART, register_content=content)
+                state, dest_regs_name[start], Register(integrity=Integrity.LOW_PART, register_content=content)
             )
             decompiler_data.set_reg_make_version(
-                state, f"s{start + 1}", Register(integrity=Integrity.HIGH_PART, register_content=content)
+                state, dest_regs_name[start+1], Register(integrity=Integrity.HIGH_PART, register_content=content)
             )
             start += 2
             offset += 8
@@ -113,8 +114,10 @@ def upload_kernel_param(state, offset, to_registers, base):
 
 def upload_global_data_pointer(state, to_registers, from_registers):
     decompiler_data = DecompilerData()
-    start_to_register, _ = check_and_split_regs(to_registers)
-    start_from_register, _ = check_and_split_regs(from_registers)
+    dest_regs_name = expand_register_names(to_registers)
+    src_regs_name = expand_register_names(from_registers)
+    start_to_register, _ = dest_regs_name[0]
+    start_from_register, _ = src_regs_name[0]
     data_type = state[start_from_register].data_type
     new_val = make_elem_from_addr(state[start_from_register].val)
     decompiler_data.set_reg_make_version(
@@ -131,7 +134,7 @@ def upload_global_data_pointer(state, to_registers, from_registers):
         ),
     )
 
-
+# (GFV) не используется 
 def upload_by_offset(
     state,
     to_registers: str,

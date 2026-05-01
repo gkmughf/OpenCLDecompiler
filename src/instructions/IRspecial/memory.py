@@ -2,13 +2,14 @@ from src.base_instruction import BaseInstruction
 from src.kernel_params import process_arg
 from src.model.config_data import KernelArgument
 from src.opencl_types import evaluate_size, make_asm_type
-from src.register import check_and_split_regs
-import src.register 
+from src.ir.registers.reg import get_reg_rang, expand_register_names
+
 
 class MemoryAllocation(BaseInstruction):
     def to_fill_node(self):
-        dest = self.node.instruction[1]
-        lp, hp = src.register.split_range(dest)
+        dest = self.node.operands[0]
+        dest_regs_name = get_reg_rang(dest)
+        lp, hp = dest_regs_name[0], dest_regs_name[1]
 
         self.decompiler_data.init_ptr(self.node.state, lp, hp)
         return self.node
@@ -16,14 +17,15 @@ class MemoryAllocation(BaseInstruction):
 
 class StoreInMem(BaseInstruction):
     def to_fill_node(self):
-        # self.node.instruction[0] "store"
-        # self.node.instruction[1] destination
-        # self.node.instruction[2] arg_type
-        # self.node.instruction[3] arg_name
-        # self.node.instruction[4] offset
-        from_registers, _ = check_and_split_regs(self.node.instruction[1])
-        arg_name = self.node.instruction[3]
-        type_name = self.node.instruction[2]
+        # self.node.instruction "store"
+        # self.node.operands[0] destination
+        # self.node.operands[1] arg_type
+        # self.node.operands[2] arg_name
+        # self.node.operands[3] offset
+        from_registers = self.node.operands[0].name
+        type_name = self.node.operands[1].value
+        arg_name = self.node.operands[2].value
+        offset = self.node.operands[3].value
         
         self.decompiler_data.type_params[arg_name] = type_name
         arguments = self.decompiler_data.config_data.arguments
@@ -31,7 +33,7 @@ class StoreInMem(BaseInstruction):
         ka = KernelArgument(
             type_name,
             arg_name,
-            int(self.node.instruction[4]),
+            int(offset),
             8 if arg_name.startswith("*") else evaluate_size(make_asm_type(type_name))[0],
             False,
             found_arg.const if found_arg else False 

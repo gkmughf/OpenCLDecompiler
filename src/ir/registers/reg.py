@@ -117,8 +117,19 @@ class Val:
 Reg_ty = Reg32 | Reg64 | PredReg | CompositeReg
 RegOrVal_ty = Reg_ty | Val
 
+def get_reg_rang(reg: Reg_ty) -> tuple[Reg32, ...]:
+    if isinstance(reg, CompositeReg):
+        return tuple(reg.regs)
+    return (reg,)
 
 def expand_register_names(reg: Reg_ty) -> tuple[str, ...]:
-    if isinstance(reg, CompositeReg):
-        return tuple(sub_reg.name for sub_reg in reg.regs)
-    return (reg.name,)
+    return tuple(sub_reg.name for sub_reg in get_reg_rang(reg))
+
+def is_reg(reg) -> bool:
+    return isinstance(reg, BaseReg)
+
+def is_range(reg) -> bool:
+    return isinstance(reg, CompositeReg) and not is_predicate(reg)
+
+def is_predicate(reg) -> bool:
+    return isinstance(reg, PredReg)

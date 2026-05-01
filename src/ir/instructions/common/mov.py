@@ -1,8 +1,11 @@
 from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Val, expand_register_names
 from src.ir.instructions.generic import GenericInstruction
 
-class Mov(GenericInstruction):
+from src.ir.instructions.lowering import NodeLoweringContext
+from src.instructions.sop1.s_mov import SMov
 
+
+class Mov(GenericInstruction):
     def __init__(self, destination: Reg_ty, source: RegOrVal_ty, is_scalar):
         super().__init__("mov", destination, source, is_scalar=is_scalar)
         self.destination = destination
@@ -12,7 +15,7 @@ class Mov(GenericInstruction):
         return self.destination.bit_width == 64
 
     def _get_normalize_opcode(self) -> str:
-        return "s_mov_b64" if self._is_64bit() else "v_mov_b32"
+        return "s_mov_b64" if self._is_64bit() else "s_mov_b32"
 
     def get_parts(self) -> list[list[str]]:
         result = []
@@ -43,6 +46,18 @@ class Mov(GenericInstruction):
         result.append([opcode, dest_str, src_str])
         return result
         
+    def get_suffix(self):
+        if self._is_64bit():
+            return "b64"
+        return "b32"
+
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            SMov,
+            self._get_normalize_opcode(),
+            self.operands,
+            self.get_suffix(),
+        )
 
 class MovK(GenericInstruction):
     def __init__(self, destination: Reg_ty, source: RegOrVal_ty, is_scalar):

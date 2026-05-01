@@ -14,10 +14,27 @@ class Kernel:
         self.name = name
         self.work_group_size = work_group_size
 
-        self.blocks = KernelBlocks()
-        self.arguments = KernelArguments()
-        self.local_memory = KernelLocalMemory()
-        self.predicates = KernelPredicates()
+        self._blocks = KernelBlocks()
+        self._arguments = KernelArguments()
+        self._local_memory = KernelLocalMemory()
+        self._predicates = KernelPredicates()
+
+
+    @property
+    def blocks(self) -> KernelBlocks:
+        return self._blocks
+    
+    @property
+    def arguments(self) -> KernelArguments:
+        return self._arguments
+
+    @property
+    def local_memory(self) -> KernelLocalMemory:
+        return self._local_memory
+    
+    @property
+    def predicates(self) -> KernelPredicates:
+        return self._predicates
 
     def create_instruction(
            self,

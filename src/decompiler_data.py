@@ -21,12 +21,14 @@ from src.model.config_data import ConfigData
 from src.node import Node
 from src.opencl_types import evaluate_size, make_asm_type, make_opencl_type, vector_type_dict
 from src.operation_register_content import OperationRegisterContent, OperationType
-from src.register import Register, check_and_split_regs, is_range, is_reg, split_range
+from src.register import Register, check_and_split_regs, is_range, split_range
 from src.register_content import RegisterContent, RegisterSignType
 from src.register_type import RegisterType
 from src.state import KernelState
 from src.utils import Singleton
-
+from src.ir.registers.reg import is_reg as ir_is_reg
+from src.ir.registers.reg import is_range as ir_is_range
+from src.ir.registers.reg import expand_register_names, Val
 
 from src.ir.kernel import Kernel
 
@@ -46,6 +48,9 @@ def set_reg_value(  # noqa: PLR0913
     size: list[int] | None = None,
     expression_node: ExpressionNode = None,
 ):
+    assert isinstance(to_reg, str)
+    assert all(isinstance(item, str) for item in from_regs)
+    
     decompiler_data = DecompilerData()
     if register_content_type == RegisterContent:
         node.state[to_reg] = Register(
@@ -370,13 +375,16 @@ def check_value_needs_cast(value, from_type, to_type) -> bool:  # noqa: PLR0911
 
 
 def check_reg_for_val(node, register, suffix=""):
+    assert not isinstance(register, str)
+
     data_type = ""
-    if is_reg(register) or is_range(register):  # TODO: Выяснить зачем нужен range
-        if register in node.state:
-            new_val = node.state[register].get_value()
-            data_type = node.state[register].data_type
-        elif is_range(register):
-            start_register, end_register = check_and_split_regs(register)
+    if ir_is_reg(register) or ir_is_range(register):  # TODO: Выяснить зачем нужен range
+        if register.name in node.state:
+            new_val = node.state[register.name].get_value()
+            data_type = node.state[register.name].data_type
+        elif ir_is_range(register):
+            regs = expand_register_names(register)
+            start_register, end_register = regs[0], regs[-1] 
             flag_big_value, value = check_big_values(node, start_register, end_register)
             if flag_big_value:
                 new_val = value
@@ -386,7 +394,8 @@ def check_reg_for_val(node, register, suffix=""):
         else:
             raise NotImplementedError
     else:
-        new_val = register
+        assert isinstance(register, Val)
+        new_val = register.value
     needs_casting = check_value_needs_cast(new_val, data_type, suffix)
     return (new_val, needs_casting)
 
@@ -404,6 +413,8 @@ def try_get_reg(node, register):
 
 
 def change_vals_for_make_op(node, register, reg_type, operation, suffix):
+    assert not isinstance(register, str)
+    
     decompiler_data = DecompilerData()
     new_val, needs_cast = check_reg_for_val(node, register, suffix)
     if (operation != "+" or reg_type) and ("-" in new_val or "+" in new_val or "*" in new_val or "/" in new_val):
@@ -418,6 +429,9 @@ def change_vals_for_make_op(node, register, reg_type, operation, suffix):
 
 
 def make_op(node, register0, register1, operation, type0="", type1="", suffix=""):  # noqa: PLR0913
+    assert not isinstance(register0, str)
+    assert not isinstance(register1, str)
+
     new_val0 = change_vals_for_make_op(node, register0, type0, operation, suffix)
     new_val1 = change_vals_for_make_op(node, register1, type1, operation, suffix)
     return f"{new_val0} {operation} {new_val1}"
@@ -576,10 +590,10 @@ class DecompilerData(metaclass=Singleton):
         state[reg] = value
         self.make_version(state, reg)
 
-    def init_entry_reg(self, state, reg_name, value, reg_type: RegisterType):
+    def init_entry_reg(self, state, reg, value, reg_type: RegisterType):
         self.set_reg_make_version(
             state,
-            reg_name,
+            reg.name,
             Register(
                 integrity=Integrity.ENTIRE,
                 register_content=RegisterContent(
@@ -671,7 +685,7 @@ class DecompilerData(metaclass=Singleton):
     def init_ptr(self, state, lp, hp, pt=RegisterType.ARGUMENTS_POINTER):
         self.set_reg_make_version(
             state,
-            lp,
+            lp.name,
             Register(
                 integrity=Integrity.LOW_PART,
                 register_content=RegisterContent(
@@ -683,7 +697,7 @@ class DecompilerData(metaclass=Singleton):
         )
         self.set_reg_make_version(
             state,
-            hp,
+            hp.name,
             Register(
                 integrity=Integrity.HIGH_PART,
                 register_content=RegisterContent(
@@ -754,7 +768,7 @@ class DecompilerData(metaclass=Singleton):
             usesetup=False,
             size_of_work_groups=kernel.work_group_size,
             local_size=0,
-            arguments=[arg for arg in kernel.get_arguments() if arg.hidden == False],
+            arguments=[arg for arg in kernel.arguments.all() if arg.hidden == False],
         )
         self.init_exec()
 

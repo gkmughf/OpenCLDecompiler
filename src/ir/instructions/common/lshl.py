@@ -1,5 +1,9 @@
 from src.ir.registers.reg import Reg_ty, RegOrVal_ty
 from src.ir.instructions.generic import GenericInstruction
+from src.ir.instructions.lowering import NodeLoweringContext
+from src.instructions.vop2.v_lshlrev import VLshlrev
+from src.instructions.vop2.v_lshrrev import VLshrrev
+from src.instructions.vop2.v_ashrrev import VAshrrev
 
 
 class ShiftInstruction(GenericInstruction):
@@ -27,49 +31,79 @@ class ShiftInstruction(GenericInstruction):
         else:
             result.append([opcode, dest_str, op2_str, op1_str])
         return result
+    
+    def get_suffix(self):
+        if self._is_64bit():
+            return "b64"
+        return "b32"
 
 
-
-class LShl(ShiftInstruction):
+class LShl_Rev(ShiftInstruction):
     def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
         super().__init__("lshl", destination, operand1, operand2, is_scalar=is_scalar)
 
     def _get_normalize_opcode(self) -> str:
         if self._is_64bit():
-            return "s_lshl_b64" if self.is_scalar() else "v_lshlrev_b64"
-        return "s_lshl_b32" if self.is_scalar() else "v_lshlrev_b32"
+            return "v_lshlrev_b64"
+        return "v_lshlrev_b32"
     
+    
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            VLshlrev,
+            self._get_normalize_opcode(),
+            self.operands,
+            self.get_suffix(),
+        )
 
-class LShr(ShiftInstruction):
+
+class LShr_Rev(ShiftInstruction):
     def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
         super().__init__("rshl", destination, operand1, operand2, is_scalar=is_scalar)
 
 
     def _get_normalize_opcode(self) -> str:
         if self._is_64bit():
-            return "s_lshr_b64" if self.is_scalar() else "v_lshrrev_b64"
-        return "s_lshr_b32" if self.is_scalar() else "v_lshrrev_b32"
+            return "v_lshrrev_b64"
+        return "v_lshrrev_b32"
         
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            VLshrrev,
+            self._get_normalize_opcode(),
+            self.operands,
+            self.get_suffix(),
+        )
 
-class AShr(ShiftInstruction):
+class AShr_Rev(ShiftInstruction):
     def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
         super().__init__("rshl", destination, operand1, operand2, is_scalar=is_scalar)
 
     def _get_normalize_opcode(self) -> str:
         if self._is_64bit():
-            return "s_ashr_i64" if self.is_scalar() else "v_ashrrev_i64"
-        else:
-            return "s_ashr_i32" if self.is_scalar() else "v_ashrrev_i32"
+            return "v_ashrrev_i64"
+        return "v_ashrrev_i32"
  
-
-class LShl_Rev(LShl):
+    def get_suffix(self):
+        if self._is_64bit():
+            return "i64"
+        return "i32"
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            VAshrrev,
+            self._get_normalize_opcode(),
+            self.operands,
+            self.get_suffix(),
+        )
+    
+class LShl(LShl_Rev):
     def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
         super().__init__(destination, operand2, operand1, is_scalar=is_scalar)
 
-class LShr_Rev(LShr):
+class LShr(LShr_Rev):
     def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
         super().__init__(destination, operand2, operand1, is_scalar=is_scalar)
 
-class AShr_Rev(AShr):
+class AShr(AShr_Rev):
     def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
         super().__init__(destination, operand2, operand1, is_scalar=is_scalar)

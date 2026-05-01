@@ -1,5 +1,7 @@
 from src.ir.registers.reg import Reg64, RegOrVal_ty
 from src.ir.instructions.generic import GenericInstruction
+from src.ir.instructions.lowering import NodeLoweringContext
+from src.instructions.flat.flat_store import FlatStore
 
 class Store(GenericInstruction):
     def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar, size):
@@ -9,7 +11,7 @@ class Store(GenericInstruction):
         self.size = size
 
     def _get_normalize_opcode(self) -> str:
-        prefix = "s_store" if self.is_scalar() else "flat_store"
+        prefix = "flat_store"
         if self.size == 8:
             return f"{prefix}_byte"
         if self.size == 16:
@@ -23,6 +25,27 @@ class Store(GenericInstruction):
         
     def writes_first_operand(self) -> bool:
         return False  
+
+    def get_suffix(self):
+        if self.size == 8:
+            return "byte"
+        if self.size == 16:
+            return "hort"
+        elif self.size == 32:
+            return "dword"
+        elif self.size == 64:
+            return "dwordx2"
+        else:
+            return "dwordx4"
+        
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            FlatStore,
+            self._get_normalize_opcode(),
+            self.operands,
+            self.get_suffix(),
+        )
+    
 
 class Store8(Store):
     def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):

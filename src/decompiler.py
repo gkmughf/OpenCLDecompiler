@@ -71,8 +71,8 @@ def process_src(  # noqa: C901, PLR0912, PLR0915
     expression_manager.reset(kernel.name)
 
     expression_manager.set_size_of_workgroups(kernel.work_group_size)
-    set_of_instructions = kernel.get_instructions_parts()
-
+    # set_of_instructions = kernel.get_instructions_parts()
+    blocks = kernel.blocks.iter()
 
     #process_global_data(set_of_global_data_instruction, set_of_global_data_bytes) TODO
 
@@ -80,12 +80,12 @@ def process_src(  # noqa: C901, PLR0912, PLR0915
     # decompiler_data.set_config_data(config_data)
     # if not decompiler_data.is_rdna3:
     #     process_kernel_params()
-    # -----------------------
+    # -----------------------   
     # decompiler_data.set_config_data(config_data)
     # process_kernel_params()
     decompiler_data.set_config_data(kernel)
     
-    last_node = Node([""], decompiler_data.initial_state)
+    last_node = Node([""], [], decompiler_data.initial_state)
     decompiler_data.set_cfg(last_node)
 
     if_and_last_in_if_body_nodes = []
@@ -96,56 +96,55 @@ def process_src(  # noqa: C901, PLR0912, PLR0915
     # if decompiler_data.flag_for_decompilation == FlagType.ONLY_CLRX:
     #     process_src_with_unresolved_instruction(initial_set_of_instructions)
     #     return
-    
-    while num < len(set_of_instructions):
-        instruction = set_of_instructions[num]
-        state = last_node.state
-        parents = [last_node]
+    for bb in blocks:
+        for i in bb.instructions:
+            state = last_node.state
+            parents = [last_node]
 
 
-        # обработка ветвления
-        if "s_or_saveexec" in instruction[0]: ## выходим из if-else базового блока 
-            common_if_else_part_start_index[-1] = num + 1 # запомнили конец if-else
-        if ("s_andn2" in instruction[0] or "s_xor" in instruction[0]) and "exec" in instruction[1]:
-            if_node = if_and_last_in_if_body_nodes[-1][0]
-            state = if_node.state
-            parents = [if_node]
-            if common_if_else_part_start_index[-1] is not None:
-                common_part = set_of_instructions[common_if_else_part_start_index[-1] : num]
-                set_of_instructions = set_of_instructions[: num + 1] + common_part + set_of_instructions[num + 1 :]
-            if_and_last_in_if_body_nodes[-1].append(last_node)
-        if last_node.instruction[0] == "s_branch":
-            parents = []
+            # обработка ветвления
+            # if "s_or_saveexec" in instruction[0]: ## выходим из if-else базового блока 
+            #     common_if_else_part_start_index[-1] = num + 1 # запомнили конец if-else
+            # if ("s_andn2" in instruction[0] or "s_xor" in instruction[0]) and "exec" in instruction[1]:
+            #     if_node = if_and_last_in_if_body_nodes[-1][0]
+            #     state = if_node.state
+            #     parents = [if_node]
+            #     if common_if_else_part_start_index[-1] is not None:
+            #         common_part = set_of_instructions[common_if_else_part_start_index[-1] : num]
+            #         set_of_instructions = set_of_instructions[: num + 1] + common_part + set_of_instructions[num + 1 :]
+            #     if_and_last_in_if_body_nodes[-1].append(last_node)
+            # if last_node.instruction[0] == "s_branch":
+            #     parents = []
 
-        last_node = process_single_instruction(instruction, state, parents)
+            last_node = i.to_fill_node(state, parents)
 
-        # TODO
-        # if last_node is None:
-        #     if decompiler_data.flag_for_decompilation == FlagType.ONLY_OPENCL:
-        #         break
-        #     decompiler_data.flag_for_decompilation = FlagType.ONLY_CLRX
-        #     process_src_with_unresolved_instruction(initial_set_of_instructions)
-        #     return
+            # TODO
+            # if last_node is None:
+            #     if decompiler_data.flag_for_decompilation == FlagType.ONLY_OPENCL:
+            #         break
+            #     decompiler_data.flag_for_decompilation = FlagType.ONLY_CLRX
+            #     process_src_with_unresolved_instruction(initial_set_of_instructions)
+            #     return
 
-        if "s_and_saveexec" in instruction[0] or ("s_and_b" in instruction[0] and "exec" in instruction[1]):
-            if_and_last_in_if_body_nodes.append([last_node]) ## запоминаем последнюю ноду в (по факту) базовом блоке
-            common_if_else_part_start_index.append(None)## открываем базовый блок
-        if (
-            ("s_or" in instruction[0] or "s_mov" in instruction[0]) and "exec" in instruction[1]
-        ) or "s_endpgm" in instruction[0]:
-            end_exec_condition = last_node.state["exec"].exec_condition
-            while if_and_last_in_if_body_nodes and ExecCondition.is_closing_for(
-                end_exec_condition, if_and_last_in_if_body_nodes[-1][0].state["exec"].exec_condition
-            ):
-                if_and_last_in_if_nodes = if_and_last_in_if_body_nodes[-1]
-                parent = if_and_last_in_if_nodes[0] if len(if_and_last_in_if_nodes) == 1 else if_and_last_in_if_nodes[1]
-                parent.add_child(last_node)
-                last_node.add_parent(parent)
-                if_and_last_in_if_body_nodes.pop()
-                common_if_else_part_start_index.pop()
-        if len(last_node.parent) > 1:
-            find_max_and_prev_versions(last_node)
-        num += 1
+            # if "s_and_saveexec" in instruction[0] or ("s_and_b" in instruction[0] and "exec" in instruction[1]):
+            #     if_and_last_in_if_body_nodes.append([last_node]) ## запоминаем последнюю ноду в (по факту) базовом блоке
+            #     common_if_else_part_start_index.append(None)## открываем базовый блок
+            # if (
+            #     ("s_or" in instruction[0] or "s_mov" in instruction[0]) and "exec" in instruction[1]
+            # ) or "s_endpgm" in instruction[0]:
+            #     end_exec_condition = last_node.state["exec"].exec_condition
+            #     while if_and_last_in_if_body_nodes and ExecCondition.is_closing_for(
+            #         end_exec_condition, if_and_last_in_if_body_nodes[-1][0].state["exec"].exec_condition
+            #     ):
+            #         if_and_last_in_if_nodes = if_and_last_in_if_body_nodes[-1]
+            #         parent = if_and_last_in_if_nodes[0] if len(if_and_last_in_if_nodes) == 1 else if_and_last_in_if_nodes[1]
+            #         parent.add_child(last_node)
+            #         last_node.add_parent(parent)
+            #         if_and_last_in_if_body_nodes.pop()
+            #         common_if_else_part_start_index.pop()
+            if len(last_node.parent) > 1:
+                find_max_and_prev_versions(last_node)
+            num += 1
 
     optimize_names_of_vars()
     if decompiler_data.global_data:

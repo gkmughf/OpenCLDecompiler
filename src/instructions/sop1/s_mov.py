@@ -8,30 +8,31 @@ from src.expression_manager.expression_node import (
 from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.global_data import get_gdata_offset
 from src.register_type import RegisterType
-
+from src.ir.registers.reg import is_reg, Val, get_reg_rang, is_predicate
 
 class SMov(BaseInstruction):
     def __init__(self, node, suffix):
         super().__init__(node, suffix)
-        self.sdst = self.instruction[1]
-        self.ssrc0 = self.instruction[2]
+        self.sdst = self.operand[0]
+        self.ssrc0 = self.operand[1]
 
-    def to_print_unresolved(self):
-        if self.suffix in {"b32", "b64"}:
-            self.decompiler_data.write(f"{self.sdst} = {self.ssrc0} // {self.name}\n")
-            return self.node
-        return super().to_print_unresolved()
+    # def to_print_unresolved(self):
+    #     if self.suffix in {"b32", "b64"}:
+    #         self.decompiler_data.write(f"{self.sdst} = {self.ssrc0} // {self.name}\n")
+    #         return self.node
+    #     return super().to_print_unresolved()
 
     def to_fill_node(self):
-        if self.suffix in {"b32", "b64"}:
+        if self.suffix in {"b32", "b64", "i32"}:
             expr_node = None
 
-            if self.sdst == "exec":
+            #if self.sdst == "exec":
+            if is_predicate(self.sdst):
                 new_exec_condition = (
-                    self.decompiler_data.exec_registers["exec"] | self.decompiler_data.exec_registers[self.ssrc0]
+                    self.decompiler_data.exec_registers[self.sdst.name] | self.decompiler_data.exec_registers[self.ssrc0.name]
                 )
 
-                exec_node = self.get_expression_node("exec")
+                exec_node = self.get_expression_node(self.sdst)
                 src0_node = self.get_expression_node(self.ssrc0)
                 expr_node = self.expression_manager.add_operation(
                     exec_node, src0_node, ExpressionOperationType.OR, OpenCLTypes.from_string(self.suffix)
@@ -40,19 +41,20 @@ class SMov(BaseInstruction):
                 return set_reg_value(
                     self.node,
                     new_exec_condition.top(),
-                    self.sdst,
-                    [self.ssrc0],
+                    self.sdst.name,
+                    [self.ssrc0.name],
                     None,
                     exec_condition=new_exec_condition,
                     expression_node=expr_node,
                 )
-            if self.ssrc0 in self.node.state:
-                new_value = self.node.state[self.ssrc0].val
-                reg_type = self.node.state[self.ssrc0].type
-                data_type = self.node.state[self.ssrc0].data_type
+            if self.ssrc0.name in self.node.state:
+                new_value = self.node.get_from_state(self.ssrc0).val
+                reg_type = self.node.get_from_state(self.ssrc0).type
+                data_type = self.node.get_from_state(self.ssrc0).data_type
             else:
-                if ".gdata" in self.ssrc0:
-                    new_value = f"gdata{get_gdata_offset(self.ssrc0)}"
+                assert isinstance(self.ssrc0, Val)
+                if ".gdata" in self.ssrc0.value:
+                    new_value = f"gdata{get_gdata_offset(self.ssrc0.value)}"
                     reg_type = RegisterType.GLOBAL_DATA_POINTER
                     expr_node = self.expression_manager.add_variable_node(
                         new_value,
@@ -61,7 +63,7 @@ class SMov(BaseInstruction):
                         ),
                     )
                 else:
-                    new_value = self.ssrc0
+                    new_value = self.ssrc0.value
                     reg_type = RegisterType.INT32
                     expr_node = self.expression_manager.add_register_node(reg_type, new_value)
                 data_type = self.suffix
@@ -70,6 +72,6 @@ class SMov(BaseInstruction):
                 expr_node = self.get_expression_node(self.ssrc0)
 
             return set_reg_value(
-                self.node, new_value, self.sdst, [], data_type, reg_type=reg_type, expression_node=expr_node
+                self.node, new_value, self.sdst.name, [], data_type, reg_type=reg_type, expression_node=expr_node
             )
         return super().to_fill_node()

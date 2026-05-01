@@ -5,8 +5,8 @@ import re
 
 class InitReg(BaseInstruction):
     def to_fill_node(self):
-        dest  = self.node.instruction[1]
-        value = self.node.instruction[2]
+        dest  = self.node.operands[0]
+        value = self.node.operands[1].value
 
         if value.isdigit():
             reg_type = RegisterType.INT32

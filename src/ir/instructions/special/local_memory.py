@@ -3,23 +3,40 @@ from src.ir.registers.reg import Reg64, Reg_ty, Val, RegOrVal_ty, Reg32
 from typing import Optional
 from src.ir.TemporaryVariableAllocator import tva
 
+
+from src.ir.instructions.lowering import NodeLoweringContext
+from src.instructions.IRspecial.LocalMem import LocalMemory as DecLocalMemory
+
+
 class LocalMemory(GenericInstruction):
     def __init__(self, destination: Reg64, size, is_scalar: bool = True):
         super().__init__("local", destination, size, is_scalar=is_scalar)
     def _get_normalize_opcode(self) -> str:
         return "s_local"
+    
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            DecLocalMemory,
+            self._get_normalize_opcode(),
+            self.operands,
+        )
+    
 
 class LocalStore(GenericInstruction):
     def __init__(self, destination: Reg_ty, val: Reg_ty, is_scalar: bool = True):
         super().__init__("local_store", destination, val, is_scalar=is_scalar)
     def _get_normalize_opcode(self) -> str:
         return "ds_write_b32"
-    
+
+
+
 class LocalLoad(GenericInstruction):
     def __init__(self, destination: Reg64, from_mem: Reg_ty, is_scalar: bool = True):
         super().__init__("local_load", destination, from_mem, is_scalar=is_scalar)
     def _get_normalize_opcode(self) -> str:
         return "ds_read_b32"
+
+
 
 class LocalAdd(GenericInstruction):
     def __init__(self, destination: Reg64, val: RegOrVal_ty, is_scalar: bool = True):

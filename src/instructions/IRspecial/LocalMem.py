@@ -6,8 +6,8 @@ from src.integrity import Integrity
 
 class LocalMemory(BaseInstruction):
     def to_fill_node(self):
-        dest = self.node.instruction[1]
-        size = self.node.instruction[2]
+        dest = self.node.operands[0]
+        size = self.node.operands[1].value
 
         offset = self.decompiler_data.config_data.local_size
         self.decompiler_data.config_data.local_size += int(size)
