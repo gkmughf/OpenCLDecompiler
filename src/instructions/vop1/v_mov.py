@@ -11,7 +11,7 @@ class VMov(BaseInstruction):
     def __init__(self, node, suffix):
         super().__init__(node, suffix)
         self.vdst = self.operand[0]
-        self.src0 = self.instruction[2]
+        self.src0 = self.operand[2]
 
     def to_print_unresolved(self):
         if self.suffix == "b32":

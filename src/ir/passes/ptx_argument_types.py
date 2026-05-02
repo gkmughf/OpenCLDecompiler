@@ -11,7 +11,7 @@ class InferPTXArgumentTypesPass(KernelPass):
         inferred_types = context.metadata.setdefault("ptx_inferred_argument_types", {})
         inferred_count = 0
 
-        for instruction in kernel.instructions:
+        for instruction in kernel.get_instructions():
             if not isinstance(instruction, TypedMemoryLoad):
                 continue
 
@@ -25,7 +25,7 @@ class InferPTXArgumentTypesPass(KernelPass):
             if offset is None:
                 continue
 
-            argument = kernel.get_argument_by_offset(offset)
+            argument = kernel.arguments.get_by_offset(offset)
             if argument is None or argument.name.startswith("*"):
                 continue
 
@@ -34,7 +34,7 @@ class InferPTXArgumentTypesPass(KernelPass):
             if inferred_type is not None:
                 continue
 
-            if not kernel.update_argument_type_by_offset(offset, type_name):
+            if not kernel.arguments.update_type_by_offset(offset, type_name):
                 continue
 
             inferred_types[offset] = type_name

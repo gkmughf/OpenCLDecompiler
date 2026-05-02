@@ -230,19 +230,19 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
     kernel = Kernel(kernel_info.name, kernel_info.work_group_size)
     
     for name, size in kernel_info.locals.items():
-        kernel.set_local_memory(name, size)
+        kernel.local_memory.set(name, size)
         parsed_operand = rf.get_or_create(name, "64")
 
     args_offset = {}
     offset = 0
     for arg_idx, arg in enumerate(kernel_info.arguments):
-        kernel.add_argument(_normalize_arg_name(arg, arg_idx), _normalize_arg_type(arg), arg.is_const, offset=offset)
+        kernel.arguments.add(_normalize_arg_name(arg, arg_idx), _normalize_arg_type(arg), arg.is_const, offset=offset)
         args_offset[_strip_array_suffix(arg.name)] = Val(hex(offset,))
         offset += _argument_storage_size(arg)
     
     arg_reg_name = "argptr"
     agr_reg = Reg64(arg_reg_name)
-    kernel.set_arg_ptr(agr_reg)
+    kernel.arguments.set_arg_ptr(agr_reg)
 
     _init_special_registers(kernel, rf, kernel_info.special_registers)
 
@@ -273,5 +273,5 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
             operands.append(parsed_operand)
         
         _create_instruction_from_opcode(kernel, opcode, operands, args_offset, predicate=predicate)
-    kernel.close()
+
     return kernel

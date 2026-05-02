@@ -73,7 +73,10 @@ class CompositeReg(BaseReg):
     @classmethod
     def create_new(cls, name: str, regs: list[Reg32]) -> CompositeReg:
         return cls(name, regs) 
-
+    
+    def __len__(self):
+        return len(self._regs)
+    
 
 class Reg64(CompositeReg):
     def __init__(self, name: str):
@@ -126,7 +129,7 @@ def expand_register_names(reg: Reg_ty) -> tuple[str, ...]:
     return tuple(sub_reg.name for sub_reg in get_reg_rang(reg))
 
 def is_reg(reg) -> bool:
-    return isinstance(reg, Reg64) or isinstance(reg, Reg32)
+    return isinstance(reg, Reg32)
 
 def is_range(reg) -> bool:
     return isinstance(reg, CompositeReg) and not is_predicate(reg)

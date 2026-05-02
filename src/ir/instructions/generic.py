@@ -1,4 +1,4 @@
-from src.ir.registers.reg import PredReg, Reg_ty, BaseReg, CompositeReg, expand_register_names
+from src.ir.registers.reg import PredReg, Reg_ty, BaseReg, CompositeReg, expand_register_names, is_range, Reg64
 
 class GenericInstruction:
     def __init__(
@@ -57,7 +57,7 @@ class GenericInstruction:
 
         destination = self.operands[0]
         if isinstance(destination, BaseReg):
-            if isinstance(destination, CompositeReg):
+            if is_range(destination) and not isinstance(destination, Reg64):
                 return destination.regs
             return (destination,)
         return ()

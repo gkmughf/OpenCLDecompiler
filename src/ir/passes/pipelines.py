@@ -18,7 +18,7 @@ PTX_PIPELINE = PassPipeline(
         MaterializeLocalMemoryPass(),
         #BuildKernelBlocksPass(),
         #BuildRegisterFlowPass(),
-        NormalizeRegistersPass(),
+        #NormalizeRegistersPass(),
     ]
 )
 AMD_PIPELINE = PassPipeline(

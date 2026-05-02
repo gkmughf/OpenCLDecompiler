@@ -3,7 +3,7 @@ from src.decompiler_data import DecompilerData
 from src.register import Register, check_and_split_regs
 from src.register_type import RegisterType
 from src.upload import upload_by_offset, upload_global_data_pointer, upload_kernel_param, upload_usesetup
-from src.ir.registers.reg import expand_register_names
+from src.ir.registers.reg import expand_register_names, get_reg_rang
 
 
 class SLoad(BaseInstruction):
@@ -13,7 +13,7 @@ class SLoad(BaseInstruction):
         self.sbase = self.operand[1]
         self.offset = self.operand[2].value
 
-        self.from_registers_name, _ = expand_register_names(self.sbase)
+        self.from_registers_name = get_reg_rang(self.sbase)[0]
 
     # def to_print_unresolved(self):
     #     if self.suffix == "dword":
@@ -30,7 +30,7 @@ class SLoad(BaseInstruction):
     #     return super().to_print_unresolved()
 
     def to_fill_node(self):
-        sbase: Register | None = self.node.state.get(self.from_registers_name)
+        sbase: Register | None = self.node.get_from_state(self.from_registers_name)
 
         if sbase is not None and self.suffix in {"dword", "dwordx2", "dwordx4", "dwordx8", "b32", "b64", "b128"}:
             if sbase.val.isdigit():

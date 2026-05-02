@@ -8,10 +8,8 @@ from src.ir.registers.reg import get_reg_rang, expand_register_names
 class MemoryAllocation(BaseInstruction):
     def to_fill_node(self):
         dest = self.node.operands[0]
-        dest_regs_name = get_reg_rang(dest)
-        lp, hp = dest_regs_name[0], dest_regs_name[1]
 
-        self.decompiler_data.init_ptr(self.node.state, lp, hp)
+        self.decompiler_data.init_ptr(self.node.state, dest)
         return self.node
     
 

@@ -22,7 +22,10 @@ class Load(GenericInstruction):
             return f"{prefix}_dwordx2"
         else:
             return f"{prefix}_dwordx4"
-
+        
+    def _get_opcode(self):
+        return SLoad if self.is_scalar() else FlatLoad
+        
     def get_parts(self) -> list[list[str]]:
         result = []
         opcode = self._get_normalize_opcode()

@@ -4,7 +4,7 @@ from src.ir.instructions.common.load import Load
 from src.ir.instructions.common.typed_memory import TypedMemoryLoad, TypedMemoryStore
 from src.ir.passes.base import KernelPass, PassContext
 from src.ir.passes.register_flow import BuildRegisterFlowPass, RegisterFlowGraph
-from src.ir.registers.reg import BaseReg
+from src.ir.registers.reg import BaseReg, get_reg_rang
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -21,12 +21,12 @@ class InferPTXPointerTypesPass(KernelPass):
 
         inferred_types = context.metadata.setdefault("ptx_inferred_pointer_arg_types", {})
         inferred_count = 0
-        for index, instruction in enumerate(kernel.instructions):
+        for index, instruction in enumerate(kernel.get_instructions()):
             if isinstance(instruction, TypedMemoryLoad):
                 if self._propagate_pointer_type(
                     kernel,
                     flow,
-                    instruction.address,
+                    instruction.address.get_element(0),
                     instruction.access_type.to_opencl_type(),
                     index,
                     inferred_types,
@@ -39,7 +39,7 @@ class InferPTXPointerTypesPass(KernelPass):
                 if self._propagate_pointer_type(
                     kernel,
                     flow,
-                    instruction.address,
+                    instruction.address.get_element(0),
                     instruction.access_type.to_opencl_type(),
                     index,
                     inferred_types,
@@ -68,7 +68,8 @@ class InferPTXPointerTypesPass(KernelPass):
         if writer_index is None:
             return False
 
-        writer = kernel.instructions[writer_index]
+        #TODO(GFV) тут как-то расточительно 
+        writer = kernel.get_instructions()[writer_index]
         if self._try_update_argument_from_load(kernel, writer, type_name, inferred_types):
             return True
 
@@ -78,7 +79,7 @@ class InferPTXPointerTypesPass(KernelPass):
                 self._propagate_pointer_type(
                     kernel,
                     flow,
-                    source,
+                    get_reg_rang(source)[0],
                     type_name,
                     writer_index,
                     inferred_types,
@@ -99,7 +100,7 @@ class InferPTXPointerTypesPass(KernelPass):
         if not isinstance(instruction, Load):
             return False
 
-        if instruction.address.name != kernel.get_arg_ptr().name:
+        if instruction.address.name != kernel.arguments.arg_ptr().name:
             return False
 
         if instruction.size != 64:
@@ -109,7 +110,7 @@ class InferPTXPointerTypesPass(KernelPass):
         if offset is None:
             return False
 
-        argument = kernel.get_argument_by_offset(offset)
+        argument = kernel.arguments.get_by_offset(offset)
         if argument is None or not argument.name.startswith("*"):
             return False
 
@@ -117,7 +118,7 @@ class InferPTXPointerTypesPass(KernelPass):
         if inferred_type is not None:
             return inferred_type == type_name
 
-        if not kernel.update_argument_type_by_offset(offset, type_name):
+        if not kernel.arguments.update_type_by_offset(offset, type_name):
             return False
 
         inferred_types[offset] = type_name

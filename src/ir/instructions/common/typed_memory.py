@@ -130,10 +130,13 @@ class TypedMemoryLoad(Load):
 
     def to_fill_node(self, state, parents):
         if self.packed_value is None:              
+            if self._needs_dword_vector_load():
+                return NodeLoweringContext(state, parents).emit_backend(self._get_opcode(), self._get_normalize_opcode(), [self.destination, self.address, self.offset], self.get_suffix())
             return super().to_fill_node(state, parents)
         
-        node = super().to_fill_node(state, parents)
-        ctx = NodeLoweringContext(node.state, [node])
+        ctx = NodeLoweringContext(state, parents)
+        ctx.emit_backend(self._get_opcode(), self._get_normalize_opcode(), [self.packed_value, self.address, self.offset], self.get_suffix())
+
 
         assert isinstance(self.destination, CompositeReg)
         for index, destination in enumerate(self.destination.regs):
@@ -307,16 +310,14 @@ class TypedMemoryStore(Store):
         assert self.store_value is not None
 
         ctx = NodeLoweringContext(state, parents)
-        result = []
         for index, source in enumerate(self.value.regs):
-            ctx.emit_backend(SMov, "v_mov_b32", [self.store_value.get_element(index), source], "b32")
+            ctx.emit_backend(SMov, "s_mov_b32", [self.store_value.get_element(index), source], "b32")
+            
         return ctx.emit_backend(
-            [
                 self._get_opcode(),
                 self._get_normalize_opcode(),
                 [self.address, self.store_value],
                 self.get_suffix()
-            ]
         )
     
     def _get_dword_vector_store_parts(self) -> list[list[str]]:
