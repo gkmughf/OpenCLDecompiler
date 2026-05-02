@@ -6,6 +6,10 @@ from src.ir.TemporaryVariableAllocator import tva
 
 from src.ir.instructions.lowering import NodeLoweringContext
 from src.instructions.IRspecial.LocalMem import LocalMemory as DecLocalMemory
+from src.instructions.ds.ds_write import DsWrite
+from src.instructions.ds.ds_read import DsRead
+from src.instructions.ds.ds_add import DsAdd
+from src.instructions.sop1.s_mov import SMov
 
 
 class LocalMemory(GenericInstruction):
@@ -27,7 +31,14 @@ class LocalStore(GenericInstruction):
         super().__init__("local_store", destination, val, is_scalar=is_scalar)
     def _get_normalize_opcode(self) -> str:
         return "ds_write_b32"
-
+    
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            DsWrite,
+            "ds_write_b32",
+            self.operands,
+            "b32"
+        )
 
 
 class LocalLoad(GenericInstruction):
@@ -36,7 +47,13 @@ class LocalLoad(GenericInstruction):
     def _get_normalize_opcode(self) -> str:
         return "ds_read_b32"
 
-
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            DsRead,
+            self._get_normalize_opcode(),
+            self.operands,
+            "b32"
+        )
 
 class LocalAdd(GenericInstruction):
     def __init__(self, destination: Reg64, val: RegOrVal_ty, is_scalar: bool = True):
@@ -77,3 +94,11 @@ class LocalAdd(GenericInstruction):
 
         result.append([opcode, dest_str, op1_str])   
         return result
+    
+    def to_fill_node(self, state, parents):
+        ctx = NodeLoweringContext(state, parents)
+        if self.operand1_val is not None:
+            ctx.emit_backend(SMov, "s_mov_b32", [self.operand1_tmp_reg, self.operand1_val], "b32")
+            return ctx.emit_backend(DsAdd, "ds_add_u32", [self.destination, self.operand1_tmp_reg], "u32")
+        
+        return ctx.emit_backend(DsAdd, "ds_add_u32", [self.destination, self.operand1], "u32")

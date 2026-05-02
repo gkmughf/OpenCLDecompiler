@@ -57,13 +57,13 @@ class VAshrrev(BaseInstruction):
             start_from_register_node = self.get_expression_node(start_from_register)
             if str(start_from_register_node.value) == "0":
                 start_from_register_node = self.get_expression_node(end_from_register)
-            power_node = self.expression_manager.add_const_node(pow(2, 32 - int(self.src0)), OpenCLTypes.LONG)
+            power_node = self.expression_manager.add_const_node(pow(2, 32 - int(self.src0.value)), OpenCLTypes.LONG)
             expr_node = self.expression_manager.add_operation(
                 start_from_register_node, power_node, ExpressionOperationType.MUL, OpenCLTypes.LONG
             )
 
             new_value = make_op(
-                self.node, start_from_register, Val(str(pow(2, 32 - int(self.src0)))), "*", "", "(long)", suffix=self.suffix
+                self.node, start_from_register, Val(str(pow(2, 32 - int(self.src0.value)))), "*", "", "(long)", suffix=self.suffix
             )
             reg_type = self.node.get_from_state(start_from_register).type
             node = set_reg_value(

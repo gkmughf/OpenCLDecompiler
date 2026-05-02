@@ -12,7 +12,7 @@ from src.register import (
     is_vector_type
 )
 from src.register_type import RegisterType
-from src.ir.registers.reg import expand_register_names, get_reg_rang, is_reg
+from src.ir.registers.reg import expand_register_names, get_reg_rang, is_reg, is_range
 
 
 def get_vector_name(vector_element):
@@ -56,10 +56,7 @@ class FlatStore(BaseInstruction):
         self.inst_offset = "0"  # noqa: PLR2004
 
         self.to_registers, _ = get_reg_rang(self.vaddr)
-        if self.vdata.bit_width >= 64:
-            self.from_registers, self.from_registers_1 = get_reg_rang(self.vdata)
-        else:
-            self.from_registers, self.from_registers_1 = self.vdata, self.vdata
+        self.from_registers, self.from_registers_1 = get_reg_rang(self.vdata)[0], get_reg_rang(self.vdata)[-1]
     # def to_print_unresolved(self):
     #     if self.suffix in {"dword", "byte"}:
     #         self.decompiler_data.write(f"*(uint32*)({self.vaddr} + {self.inst_offset}) = {self.vdata} // {self.name}\n")
@@ -93,7 +90,7 @@ class FlatStore(BaseInstruction):
                         .cast_to(OpenCLTypes.from_string(self.suffix))
                     )
                 # TODO: Сделать присвоение в пары
-                elif self.node.get_from_state(from_reg).data_type is not None and "bytes" in self.node.get_from_state[from_reg].data_type:
+                elif self.node.get_from_state(from_reg).data_type is not None and "bytes" in self.node.get_from_state(from_reg).data_type:
                     self.node.get_from_state(from_reg).cast_to(self.node.get_from_state(self.to_registers).data_type)
                     var_name = self.node.get_from_state(from_reg).val
                     self.decompiler_data.names_of_vars[var_name] = self.node.get_from_state(self.to_registers).data_type

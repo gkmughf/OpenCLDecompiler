@@ -8,22 +8,22 @@ from src.register_type import RegisterType
 class DsRead(BaseInstruction):
     def __init__(self, node, suffix):
         super().__init__(node, suffix)
-        self.vdst = self.instruction[1]
-        self.addr = self.instruction[2]
-        self.offset = int(self.instruction[3][7:]) if len(self.instruction) == 4 else 0  # noqa: PLR2004
+        self.vdst = self.operand[0]
+        self.addr = self.operand[1]
+        self.offset = 0  # noqa: PLR2004
 
-    def to_print_unresolved(self):
-        if self.suffix == "b32":
-            self.decompiler_data.write(
-                f"{self.vdst} = *(uint*)(DS + (({self.addr} + {self.offset})&~3)) // {self.name}\n"
-            )
-            return self.node
-        if self.suffix == "b64":
-            self.decompiler_data.write(
-                f"{self.vdst} = *(ulong*)(DS + (({self.addr} + {self.offset})&~7)) // {self.name}\n"
-            )
-            return self.node
-        return super().to_print_unresolved()
+    # def to_print_unresolved(self):
+    #     if self.suffix == "b32":
+    #         self.decompiler_data.write(
+    #             f"{self.vdst} = *(uint*)(DS + (({self.addr} + {self.offset})&~3)) // {self.name}\n"
+    #         )
+    #         return self.node
+    #     if self.suffix == "b64":
+    #         self.decompiler_data.write(
+    #             f"{self.vdst} = *(ulong*)(DS + (({self.addr} + {self.offset})&~7)) // {self.name}\n"
+    #         )
+    #         return self.node
+    #     return super().to_print_unresolved()
 
     def get_lds_var_node_with_offset(self) -> ExpressionNode:
         return self.expression_manager.add_offset_div_data_size_node(
@@ -41,7 +41,7 @@ class DsRead(BaseInstruction):
             return set_reg_value(
                 self.node,
                 name,
-                self.vdst,
+                self.vdst.name,
                 [],
                 f"u{self.suffix[1:]}",
                 reg_type=reg_type,
@@ -54,7 +54,7 @@ class DsRead(BaseInstruction):
             return set_reg_value(
                 self.node,
                 name,
-                self.vdst,
+                self.vdst.name,
                 [],
                 f"u{self.suffix[1:]}",
                 reg_type=reg_type,

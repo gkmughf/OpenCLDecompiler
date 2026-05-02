@@ -7,10 +7,10 @@ from src.ir.instructions.generic import GenericInstruction
 
 class Load(GenericInstruction):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val, is_scalar, size):
-        super().__init__("load", destination, address, offset, is_scalar=is_scalar)
         self.destination = destination
         self.address = address
         self.offset = offset if offset != None else Val("0")
+        super().__init__("load", self.destination, self.address, self.offset, is_scalar=is_scalar)
         self.size = size
 
     def _get_normalize_opcode(self) -> str:

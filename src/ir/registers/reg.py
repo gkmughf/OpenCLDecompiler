@@ -126,7 +126,7 @@ def expand_register_names(reg: Reg_ty) -> tuple[str, ...]:
     return tuple(sub_reg.name for sub_reg in get_reg_rang(reg))
 
 def is_reg(reg) -> bool:
-    return isinstance(reg, BaseReg)
+    return isinstance(reg, Reg64) or isinstance(reg, Reg32)
 
 def is_range(reg) -> bool:
     return isinstance(reg, CompositeReg) and not is_predicate(reg)

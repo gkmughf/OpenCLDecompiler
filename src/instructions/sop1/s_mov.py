@@ -9,6 +9,7 @@ from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.global_data import get_gdata_offset
 from src.register_type import RegisterType
 from src.ir.registers.reg import is_reg, Val, get_reg_rang, is_predicate
+from src.integrity import Integrity
 
 class SMov(BaseInstruction):
     def __init__(self, node, suffix):
@@ -70,7 +71,13 @@ class SMov(BaseInstruction):
 
             if expr_node is None:
                 expr_node = self.get_expression_node(self.ssrc0)
-
+            if self.suffix == "b64":
+                set_reg_value(
+                    self.node, new_value, self.sdst.get_element(0).name, [], data_type, integrity=Integrity.LOW_PART, reg_type=reg_type, expression_node=expr_node
+                )
+                set_reg_value(
+                    self.node, new_value, self.sdst.get_element(1).name, [], data_type, integrity=Integrity.HIGH_PART, reg_type=reg_type, expression_node=expr_node
+                )
             return set_reg_value(
                 self.node, new_value, self.sdst.name, [], data_type, reg_type=reg_type, expression_node=expr_node
             )

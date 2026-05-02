@@ -177,10 +177,10 @@ def make_elem_from_addr(var):
 
 # TODO: Проанализировать, может ли не быть "g" (или другого модификатора)
 def make_new_type_without_modifier(node, register):
-    if "g" in node.state[register].data_type:
-        new_from_reg_type = node.state[register].data_type[1:]
+    if "g" in node.get_from_state(register).data_type:
+        new_from_reg_type = node.get_from_state(register).data_type[1:]
     else:
-        new_from_reg_type = node.state[register].data_type
+        new_from_reg_type = node.get_from_state(register).data_type
     return new_from_reg_type
 
 

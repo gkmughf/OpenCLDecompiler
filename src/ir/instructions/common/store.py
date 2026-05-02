@@ -23,6 +23,9 @@ class Store(GenericInstruction):
         else:
             return f"{prefix}_dwordx4"
         
+    def _get_opcode(self):
+        return FlatStore
+            
     def writes_first_operand(self) -> bool:
         return False  
 
@@ -30,7 +33,7 @@ class Store(GenericInstruction):
         if self.size == 8:
             return "byte"
         if self.size == 16:
-            return "hort"
+            return "short"
         elif self.size == 32:
             return "dword"
         elif self.size == 64:

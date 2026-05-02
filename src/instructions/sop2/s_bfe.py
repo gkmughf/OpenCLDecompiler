@@ -73,7 +73,7 @@ class SBfe(BaseInstruction):
             )
         if self.suffix == "i32":
             if self.decompiler_data.bfe_offsets.get((self.node.get_from_state(self.ssrc0).val, self.ssrc1.value)):
-                new_value = self.decompiler_data.bfe_offsets[self.node.state(self.ssrc0).val, self.ssrc1.value]
+                new_value = self.decompiler_data.bfe_offsets[self.node.get_from_state(self.ssrc0).val, self.ssrc1.value]
                 reg_type = RegisterType.KERNEL_ARGUMENT_VALUE
                 set_reg_value(
                     self.node,

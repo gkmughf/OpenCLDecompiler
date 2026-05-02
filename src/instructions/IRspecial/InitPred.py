@@ -5,7 +5,7 @@ import re
 
 class InitPred(BaseInstruction):
     def to_fill_node(self):
-        dest  = self.node.instruction[1]
+        dest  = self.node.operands[0]
         exec_condition = self.decompiler_data.exec_registers["exec"]
 
         prev_exec_cond_node = self.get_expression_node("exec")
