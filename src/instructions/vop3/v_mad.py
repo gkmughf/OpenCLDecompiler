@@ -3,31 +3,31 @@ import copy
 from src.base_instruction import BaseInstruction
 from src.decompiler_data import set_reg
 from src.integrity import Integrity
-from src.register import check_and_split_regs, is_range, is_reg
+from src.ir.registers.reg import is_reg, Val, get_reg_rang, is_range
 
 
 class VMad(BaseInstruction):
     def __init__(self, node, suffix):
         super().__init__(node, suffix)
-        self.vdst = self.instruction[1]
-        self.sdst = self.instruction[2]
-        self.src0 = self.instruction[3]
-        self.src1 = self.instruction[4]
-        self.src2 = self.instruction[5]
+        self.vdst = self.operand[0]
+        self.sdst = self.operand[1]
+        self.src0 = self.operand[2]
+        self.src1 = self.operand[3]
+        self.src2 = self.operand[4]
 
         if is_range(self.src0):
-            _, self.src0 = check_and_split_regs(self.src0)
+            _, self.src0 = get_reg_rang(self.src0)
         if is_range(self.src1):
-            _, self.src1 = check_and_split_regs(self.src1)
+            _, self.src1 = get_reg_rang(self.src1)
         if is_range(self.src2):
-            _, self.src2 = check_and_split_regs(self.src2)
+            _, self.src2 = get_reg_rang(self.src2)
 
-        self.vdst_from, self.vdst_to = check_and_split_regs(self.vdst)
+        self.vdst_from, self.vdst_to = get_reg_rang(self.vdst)
 
     def to_fill_node(self):
-        src0 = self.node.state[self.src0] if is_reg(self.src0) else int(self.src0)
-        src1 = self.node.state[self.src1] if is_reg(self.src1) else int(self.src1)
-        src2 = self.node.state[self.src2] if is_reg(self.src2) else int(self.src2)
+        src0 = self.node.get_from_state(self.src0) if is_reg(self.src0) else int(self.src0.value)
+        src1 = self.node.get_from_state(self.src1) if is_reg(self.src1) else int(self.src1.value)
+        src2 = self.node.get_from_state(self.src2) if is_reg(self.src2) else int(self.src2.value)
 
         new_reg = src0 * src1
         if src2 != 0:
@@ -43,14 +43,14 @@ class VMad(BaseInstruction):
 
         set_reg(
             node=self.node,
-            to_reg=self.vdst_from,
-            from_regs=[self.src0, self.src1, self.src2],
+            to_reg=self.vdst_from.name,
+            from_regs=[self.src0.name, self.src1.name, self.src2.name],
             reg=low_part_reg,
         )
         set_reg(
             node=self.node,
-            to_reg=self.vdst_to,
-            from_regs=[self.src0, self.src1, self.src2],
+            to_reg=self.vdst_to.name,
+            from_regs=[self.src0.name, self.src1.name, self.src2.name],
             reg=high_part_reg,
         )
 

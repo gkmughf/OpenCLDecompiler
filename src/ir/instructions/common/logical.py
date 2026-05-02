@@ -1,5 +1,7 @@
 from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Val
 from src.ir.instructions.generic import GenericInstruction
+from src.instructions.sop2.s_and import SAnd
+from src.ir.instructions.lowering import NodeLoweringContext
 
 class And(GenericInstruction):
     operation = "and"
@@ -19,8 +21,8 @@ class And(GenericInstruction):
 
     def _get_normalize_opcode(self) -> str:
         if self._is_64bit():
-            return f's_{self.operation}_b64' if self.is_scalar() else f'v_{self.operation}_b64'
-        return f's_{self.operation}_b32' if self.is_scalar() else f'v_{self.operation}_b32'
+            return f's_{self.operation}_b64'
+        return f's_{self.operation}_b32'
         
     def _is_numeric_val(self, val: Val) -> bool:
         if not isinstance(val, Val):
@@ -72,3 +74,15 @@ class And(GenericInstruction):
             result.append([opcode, dest_lo, op1_str, op2_lo])
         
         return result
+    
+    def get_suffix(self):
+        return "b64" if self._is_64bit() else "b32"
+
+    def to_fill_node(self, state, parents):
+        ctx = NodeLoweringContext(state, parents)
+        return ctx.emit_backend(
+            SAnd,
+            self._get_normalize_opcode(),
+            self.operands,
+            self.get_suffix(),
+        )
