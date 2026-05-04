@@ -28,7 +28,7 @@ from src.state import KernelState
 from src.utils import Singleton
 from src.ir.registers.reg import is_reg as ir_is_reg
 from src.ir.registers.reg import is_range as ir_is_range
-from src.ir.registers.reg import expand_register_names, Val
+from src.ir.registers.reg import expand_register_names, Val, is_predicate, get_reg_rang
 
 from src.ir.kernel import Kernel
 
@@ -188,7 +188,7 @@ def compare_values(node: Node, to_reg: str, from_reg0: str, from_reg1: str, oper
     datatype = make_opencl_type(suffix)
     datatype = f"({datatype})" if datatype != "unknown type" else ""
     new_value = make_op(node, from_reg0, from_reg1, operation, datatype, datatype, suffix=suffix)
-    from_regs = [from_reg0, from_reg1]
+    from_regs = [from_reg0.name, from_reg1.name]
 
     opencl_type = OpenCLTypes.from_string(suffix)
     src0_node = node.get_or_add_expression_node(from_reg0, opencl_type)
@@ -197,14 +197,13 @@ def compare_values(node: Node, to_reg: str, from_reg0: str, from_reg1: str, oper
         src0_node, src1_node, ExpressionOperationType.from_string(operation), opencl_type
     )
 
-    if is_range(to_reg):
-        low, high = split_range(to_reg)
-        set_reg_value(node, new_value, low, from_regs, suffix, integrity=Integrity.LOW_PART, expression_node=expr_node)
+    if ir_is_range(to_reg):
+        low, high = get_reg_rang(to_reg)
+        set_reg_value(node, new_value, low.name, from_regs, suffix, integrity=Integrity.LOW_PART, expression_node=expr_node)
         set_reg_value(
-            node, new_value, high, from_regs, suffix, integrity=Integrity.HIGH_PART, expression_node=expr_node
+            node, new_value, high.name, from_regs, suffix, integrity=Integrity.HIGH_PART, expression_node=expr_node
         )
-    else:
-        set_reg_value(node, new_value, to_reg, from_regs, suffix, expression_node=expr_node)
+    set_reg_value(node, new_value, to_reg.name, from_regs, suffix, expression_node=expr_node)
     return node
 
 
@@ -378,7 +377,7 @@ def check_reg_for_val(node, register, suffix=""):
     assert not isinstance(register, str)
 
     data_type = ""
-    if ir_is_reg(register) or ir_is_range(register):  # TODO: Выяснить зачем нужен range
+    if ir_is_reg(register) or ir_is_range(register) or is_predicate(register):  # TODO: Выяснить зачем нужен range
         if register.name in node.state:
             new_val = node.state[register.name].get_value()
             data_type = node.state[register.name].data_type
@@ -656,19 +655,22 @@ class DecompilerData(metaclass=Singleton):
             self.initial_state, v_dim, Register(integrity=Integrity.ENTIRE, register_content=register_content)
         )
 
-    def init_exec(self):
+    def init_predicate(self, state, name: str):
         self.set_reg_make_version(
-            self.initial_state,
-            "exec",
+            state,
+            name,
             Register(
                 integrity=Integrity.ENTIRE,
                 exec_condition=ExecCondition.default(),
                 register_content=RegisterContent(
-                    value=None,
+                    value='',
                     type_=RegisterType.UNKNOWN,
                 ),
             ),
         )
+
+    def init_exec(self):
+        self.init_predicate(self.initial_state, "exec")
 
     def init_state(self):
         if self.is_rdna3:

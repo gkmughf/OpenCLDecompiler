@@ -28,24 +28,18 @@ class SMov(BaseInstruction):
             expr_node = None
 
             #if self.sdst == "exec":
-            if is_predicate(self.sdst):
-                new_exec_condition = (
-                    self.decompiler_data.exec_registers[self.sdst.name] | self.decompiler_data.exec_registers[self.ssrc0.name]
-                )
+            if is_predicate(self.ssrc0):
+                self.decompiler_data.exec_registers[self.sdst.name] = self.decompiler_data.exec_registers[self.ssrc0.name]
 
-                exec_node = self.get_expression_node(self.sdst)
-                src0_node = self.get_expression_node(self.ssrc0)
-                expr_node = self.expression_manager.add_operation(
-                    exec_node, src0_node, ExpressionOperationType.OR, OpenCLTypes.from_string(self.suffix)
-                )
-
+                expr_node = self.get_expression_node(self.ssrc0)
+                new_value = self.node.get_from_state(self.ssrc0).val
                 return set_reg_value(
                     self.node,
-                    new_exec_condition.top(),
+                    new_value,
                     self.sdst.name,
-                    [self.ssrc0.name],
+                    [],
                     None,
-                    exec_condition=new_exec_condition,
+                    #exec_condition=new_exec_condition,
                     expression_node=expr_node,
                 )
             if self.ssrc0.name in self.node.state:

@@ -106,6 +106,7 @@ from src.instructions.IRspecial.InitReg import InitReg
 from src.instructions.IRspecial.InitPred import InitPred
 from src.instructions.IRspecial.memory import MemoryAllocation, StoreInMem
 from src.instructions.IRspecial.LocalMem import LocalMemory
+from src.instructions.IRspecial.ChangeMask import UseMask
 
 instruction_dict = {
     #IRspecial
@@ -120,6 +121,7 @@ instruction_dict = {
     "ds_write": DsWrite,
     "ds_write2": DsWrite2,
     's_local': LocalMemory,
+    'change_mask': UseMask,
     
     "flat_atomic_add": FlatAtomicAdd,
     "flat_load": FlatLoad,

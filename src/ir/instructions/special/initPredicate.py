@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.registers.reg import PredReg
+from src.ir.instructions.lowering import NodeLoweringContext
+from src.instructions.IRspecial.InitPred import InitPred
 
 
 class InitPredicate(GenericInstruction):
@@ -21,3 +23,9 @@ class InitPredicate(GenericInstruction):
     def has_side_effects(self) -> bool:
         return True
 
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            InitPred,
+            self._get_normalize_opcode(),
+            self.operands,
+        )

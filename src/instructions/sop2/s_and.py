@@ -26,7 +26,13 @@ class SAnd(BaseInstruction):
 
     def to_fill_node(self):
         if self.suffix in {"b32", "b64"}:
+            src0_node = self.get_expression_node(self.src0)
+            src1_node = self.get_expression_node(self.src1)
+            expr_node = self.expression_manager.add_operation(
+                src0_node, src1_node, ExpressionOperationType.AND, OpenCLTypes.from_string(self.suffix)
+            )
             # TODO(GFV) тут надо думать над ветвлением 
+
             if any(is_predicate(item) for item in {self.vdst, self.src0, self.src1}):
                 if is_predicate(self.src1):
                     self.src1, self.src0 = self.src0, self.src1
@@ -34,26 +40,19 @@ class SAnd(BaseInstruction):
                 new_cond = self.node.get_from_state(self.src1).val
 
                 new_exec_condition = old_exec_condition & new_cond
-                self.decompiler_data.exec_registers[self.src0.name] = new_exec_condition
+                self.decompiler_data.exec_registers[self.vdst.name] = new_exec_condition
 
-                new_condition_node = self.get_expression_node(self.src1)
                 return set_reg_value(
                     self.node,
                     new_exec_condition.top(),
                     self.vdst.name,
                     [self.src0.name, self.src1.name],
                     None,
-                    exec_condition=new_exec_condition,
-                    expression_node=new_condition_node,
+                    #exec_condition=new_exec_condition,
+                    expression_node=expr_node,
                 )
             if self.src0.name in self.node.state and self.src1.name in self.node.state:
                 ssrc0 = self.node.get_from_state(self.src0)
-
-                src0_node = self.get_expression_node(self.src0)
-                src1_node = self.get_expression_node(self.src1)
-                expr_node = self.expression_manager.add_operation(
-                    src0_node, src1_node, ExpressionOperationType.AND, OpenCLTypes.from_string(self.suffix)
-                )
 
                 return set_reg_value(
                     node=self.node,
@@ -165,6 +164,6 @@ class SAnd(BaseInstruction):
         return super().to_fill_node()
 
     def to_print(self):
-        if self.vdst.name == "exec":
-            self.output_string = ExpressionManager().expression_to_string(self.get_expression_node("exec"))
+        if is_predicate(self.vdst):
+            self.output_string = ExpressionManager().expression_to_string(self.get_expression_node(self.vdst))
         return self.output_string

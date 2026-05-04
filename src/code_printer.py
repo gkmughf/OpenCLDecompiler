@@ -109,11 +109,11 @@ def make_output_for_linear_region(region, indent):
             elif new_output:
                 decompiler_data.write(indent + new_output + ";\n")
             if (
-                len(curr_node.instruction) > 1
-                and is_reg(curr_node.instruction[1])
+                len(curr_node.operands) > 0
+                and is_reg(curr_node.instruction[0])
                 and not decompiler_data.loops_nodes_for_variables.get(curr_node)
             ):
-                reg = curr_node.instruction[1]
+                reg = curr_node.operands[0]
 
                 version = curr_node.state[reg].version
                 var = decompiler_data.variables.get(version)
@@ -122,7 +122,7 @@ def make_output_for_linear_region(region, indent):
                     and var != curr_node.state[reg].val
                     and curr_node.state[reg].val.strip()
                     and (
-                        "cmp" not in curr_node.instruction[0]
+                        "cmp" not in curr_node.instruction
                         or (decompiler_data.gpu and decompiler_data.gpu.startswith("gfx"))
                     )
                 ):  # версия поменялась по сравнению с предком

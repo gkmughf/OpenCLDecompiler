@@ -4,7 +4,7 @@ from src.ir.instructions.common.barrier import Barrier
 from src.ir.instructions.common.bfe import bfe, bfe_s
 from src.ir.instructions.common.endpgm import EndPgm
 from src.ir.instructions.common.load import Load32, Load64, Load128, FLoad32, FLoad64, FLoad128
-from src.ir.instructions.common.logical import And
+from src.ir.instructions.common.logical import And, Or, Xor
 from src.ir.instructions.common.lshl import AShr, AShr_Rev, LShl, LShl_Rev, LShr, LShr_Rev
 from src.ir.instructions.common.mad import Mad
 from src.ir.instructions.common.mov import Mov
@@ -17,7 +17,13 @@ from src.ir.instructions.common.permute import Permute32
 from src.ir.registers.reg import PredReg, Val
 from src.ir.instructions.common.compare import get_compare_class
 from src.ir.instructions.control_flow import Branch, BranchNot, Label
+from src.ir.instructions.special.mask import ChangeMask
 
+LOGICAL_INSTRUCTIONS = {
+    "and": And,
+    "or": Or,
+    "xor": Xor,
+}
 
 def _ignore_explicit_vcc(instruction_class: type) -> Rule:
     def emit(ctx: InstructionContext) -> None:
@@ -29,6 +35,16 @@ def _ignore_explicit_vcc(instruction_class: type) -> Rule:
 
     return Rule.dynamic(emit)
 
+def _writes_exec(ctx: InstructionContext) -> bool:
+    return bool(ctx.operands) and ctx.operand(0).name == "exec"
+
+def _same_with_exec_mask(instruction_class: type) -> Rule:
+    def emit(ctx: InstructionContext) -> None:
+        ctx.emit(instruction_class, *ctx.operands)
+        if _writes_exec(ctx):
+            ctx.emit(ChangeMask, PredReg("exec"), is_scalar=True)
+
+    return Rule.dynamic(emit)
 
 
 def get_instruction_rule(opcode: str) -> Rule | None:
@@ -76,14 +92,11 @@ def _compare_rule(opcode: str, destination: PredReg, is_scalar: bool) -> Rule:
             ctx.operand(1),
             is_scalar=is_scalar,
         )
+        if destination.name == "exec":
+            ctx.emit(ChangeMask, PredReg("exec"), is_scalar=True)
 
     return Rule.dynamic(emit)
 
-
-def _coerce_predicate(value) -> PredReg:
-    if isinstance(value, PredReg):
-        return value
-    return PredReg(value.name)
 
 def _vector_compare_rule(opcode: str) -> Rule:
     comparison = _parse_compare_opcode(opcode)
@@ -92,7 +105,7 @@ def _vector_compare_rule(opcode: str) -> Rule:
     def emit(ctx: InstructionContext) -> None:
         ctx.emit(
             compare_class,
-            _coerce_predicate(ctx.operand(0)),
+            ctx.operand(0),
             ctx.operand(1),
             ctx.operand(2),
             is_scalar=False,
@@ -130,6 +143,7 @@ def _saveexec(operation) -> Rule:
         [
             Emit(Mov, op(0), PredReg("exec"), is_scalar=True),
             Emit(operation, PredReg("exec"), PredReg("exec"), op(1), is_scalar=True),
+            Emit(ChangeMask, PredReg("exec"), is_scalar=True),
         ]
     )
 
@@ -172,13 +186,9 @@ instruction_rules = {
     "s_cbranch_vccnz": _branch(PredReg("vcc")),
 
     "s_and_saveexec_b64": _saveexec(And),
-    # "s_or_saveexec_b64": _saveexec(Or),
-    # "s_xor_saveexec_b64": _saveexec("xor"),
-    # "s_andn2_saveexec_b64": _saveexec("andn2"),
-    # "s_orn2_saveexec_b64": _saveexec("orn2"),
-    # "s_nand_saveexec_b64": _saveexec("nand"),
-    # "s_nor_saveexec_b64": _saveexec("nor"),
-    # "s_xnor_saveexec_b64": _saveexec("xnor"),
+    "s_or_saveexec_b64": _saveexec(Or),
+    "s_xor_saveexec_b64": _saveexec(Xor),
+    "s_andn2_saveexec_b64": _saveexec(Xor),
 
     "v_add_u32": _ignore_explicit_vcc(Add),
     "s_add_u32": _ignore_explicit_vcc(Add),
@@ -220,13 +230,20 @@ instruction_rules = {
     "s_ashr_i32": same(AShr),
     "v_ashrrev_i64": same(AShr_Rev),
 
-    "s_and_b32": same(And),
-    "v_and_b32": same(And),
+    "s_and_b32": _same_with_exec_mask(And),
+    "s_and_b64": _same_with_exec_mask(And),
+    "v_and_b32": _same_with_exec_mask(And),
+    "s_xor_b32": _same_with_exec_mask(Xor),
+    "s_xor_b64": _same_with_exec_mask(Xor),
+    "v_xor_b32": _same_with_exec_mask(Xor),
+    "s_or_b32": _same_with_exec_mask(Or),
+    "s_or_b64": _same_with_exec_mask(Or),
+    "v_or_b32": _same_with_exec_mask(Or),
 
-    "v_mov_b32": same(Mov),
-    "s_mov_b32": same(Mov),
-    "s_mov_b64": same(Mov),
-    "s_movk_i32": same(Mov),
+    "v_mov_b32": _same_with_exec_mask(Mov),
+    "s_mov_b32": _same_with_exec_mask(Mov),
+    "s_mov_b64": _same_with_exec_mask(Mov),
+    "s_movk_i32": _same_with_exec_mask(Mov),
 
     "s_load_dword": same(Load32),
     "s_load_dwordx2": same(Load64),

@@ -25,7 +25,7 @@ AMD_PIPELINE = PassPipeline(
     [
         MaterializeArgumentStoresPass(),
         MaterializeLocalMemoryPass(),
-        #MaterializePredicatePass(),
+        MaterializePredicatePass(),
         BuildKernelBlocksPass(),
         #InsertAMDExecMaskPass(),
         #NormalizeRegistersPass(),

@@ -1,9 +1,17 @@
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.registers.reg import PredReg, RegOrVal_ty
 
+from src.instructions.vopc.v_cmp_eq import VCmpEq
+from src.instructions.vopc.v_cmp_ge import VCmpGe
+from src.instructions.vopc.v_cmp_gt import VCmpGt
+from src.instructions.vopc.v_cmp_le import VCmpLe
+from src.instructions.vopc.v_cmp_lt import VCmpLt
+from src.instructions.vopc.v_cmp_ne import VCmpNe
+from src.ir.instructions.lowering import NodeLoweringContext
 
 class BaseCompare(GenericInstruction):
-    comparison = ""
+    operation: str
+    backend_instruction: type
 
     def __init__(
         self,
@@ -12,13 +20,13 @@ class BaseCompare(GenericInstruction):
         operand2: RegOrVal_ty,
         is_scalar: bool = False,
     ):
-        super().__init__(f"cmp.{self.comparison}", destination, operand1, operand2, is_scalar=is_scalar)
+        super().__init__(f"cmp.{self.operation}", destination, operand1, operand2, is_scalar=is_scalar)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
 
     def _get_normalize_opcode(self) -> str:
-        return f'v_cmp_{self.comparison}_i32'
+        return f'v_cmp_{self.operation}_i32'
 
     def get_parts(self) -> list[list[str]]:
         opcode = self._get_normalize_opcode()
@@ -31,30 +39,37 @@ class BaseCompare(GenericInstruction):
         destination = self.destination.name
         return [[opcode, destination, operand1, operand2]]
 
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            self.backend_instruction,
+            self._get_normalize_opcode(),
+            self.operands,
+            "i32"
+        )
 
 class CompareEq(BaseCompare):
-    comparison = "eq"
-
+    operation = "eq"
+    backend_instruction = VCmpEq
 
 class CompareNe(BaseCompare):
-    comparison = "ne"
-
+    operation = "ne"
+    backend_instruction = VCmpNe
 
 class CompareLt(BaseCompare):
-    comparison = "lt"
-
+    operation = "lt"
+    backend_instruction = VCmpLt
 
 class CompareLe(BaseCompare):
-    comparison = "le"
-
+    operation = "le"
+    backend_instruction = VCmpLe
 
 class CompareGt(BaseCompare):
-    comparison = "gt"
-
+    operation = "gt"
+    backend_instruction = VCmpGt
 
 class CompareGe(BaseCompare):
-    comparison = "ge"
-
+    operation = "ge"
+    backend_instruction = VCmpGe
 
 _COMPARE_CLASSES = {
     "eq": CompareEq,
@@ -68,7 +83,4 @@ _COMPARE_CLASSES = {
 
 
 def get_compare_class(comparison: str) -> type[BaseCompare]:
-    try:
-        return _COMPARE_CLASSES[comparison]
-    except KeyError as exc:
-        raise NotImplementedError(f"Unknown compare operation: {comparison}") from exc
+    return _COMPARE_CLASSES[comparison]
