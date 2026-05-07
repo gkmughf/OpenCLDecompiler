@@ -6,12 +6,10 @@ class GenericInstruction:
         opcode: str,
         *operands,
         is_scalar: bool = False,
-        predicate: PredReg | None = None,
     ):
         self.opcode = opcode
         self.operands = tuple(operands)
         self._is_scalar = is_scalar
-        self._predicate = predicate
 
     def to_text(self) -> str:
         if self.operands:

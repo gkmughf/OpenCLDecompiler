@@ -110,7 +110,7 @@ class VAdd(BaseInstruction):
                     expr_node = self.expression_manager.add_register_node(reg_type, new_value)
 
                 elif self.node.get_from_state(self.src0).type == RegisterType.ADDRESS_KERNEL_ARGUMENT:
-                    reg_type = RegisterType.ADDRESS_KERNEL_ARGUMENT_ELEMENT
+                    reg_type = RegisterType.ADDRESS_KERNEL_ARGUMENT
                     argument = self.node.get_from_state(self.src0).val
                     if self.decompiler_data.type_params.get(f"*{argument}"):
                         data_type = make_asm_type(self.decompiler_data.type_params[f"*{argument}"])
@@ -228,8 +228,8 @@ class VAdd(BaseInstruction):
                 reg_type = RegisterType.INT32
                 if src0_reg:
                     reg_type = self.node.get_from_state(self.src0).type
-                    if self.node.get_from_state(self.src0).type == RegisterType.ADDRESS_KERNEL_ARGUMENT_ELEMENT:
-                        reg_type = RegisterType.ADDRESS_KERNEL_ARGUMENT_ELEMENT
+                    if self.node.get_from_state(self.src0).type == RegisterType.ADDRESS_KERNEL_ARGUMENT:
+                        reg_type = RegisterType.ADDRESS_KERNEL_ARGUMENT
                         data_type = self.node.get_from_state(self.src0).data_type
                         data_size, _ = evaluate_size(data_type, only_size=True)
                         new_value = make_op(self.node, self.src1, Val(str(data_size)), "/", suffix=self.suffix)
@@ -240,7 +240,7 @@ class VAdd(BaseInstruction):
                         expr_node = self.expression_manager.add_offset_div_data_size_node(
                             src0_node, src1_node, data_size, OpenCLTypes.from_string(self.suffix)
                         )
-                        expr_node.value_type_hint.is_address = True
+                        # expr_node.value_type_hint.is_address = True
                 if src1_reg:
                     reg_type = self.node.get_from_state(self.src1).type
             return set_reg_value(

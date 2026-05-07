@@ -115,7 +115,6 @@ def process_src(  # noqa: C901, PLR0912, PLR0915
             #     if_and_last_in_if_body_nodes[-1].append(last_node)
             # if last_node.instruction[0] == "s_branch":
             #     parents = []
-
             last_node = i.to_fill_node(state, parents)
 
             # TODO

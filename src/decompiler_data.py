@@ -852,8 +852,8 @@ class DecompilerData(metaclass=Singleton):
     def set_to_node(self, label, node):
         self.to_node[label] = node
 
-    def to_fill_branch_node(self, node, instruction):
-        label = instruction[1]
+    def to_fill_branch_node(self, node, operands):
+        label = operands[1].name
         to_node = self.to_node.get(label)
         if to_node is not None:
             node.add_child(to_node)

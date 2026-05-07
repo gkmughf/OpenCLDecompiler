@@ -74,7 +74,7 @@ def _label(opcode: str) -> Rule:
     def emit(ctx: InstructionContext) -> None:
         ctx.emit(
             Label,
-            opcode,
+            opcode[:-1],
             is_scalar=True,
         )
 
@@ -118,10 +118,9 @@ def _branch(predicate: PredReg) -> Rule:
     def emit(ctx: InstructionContext) -> None:
         ctx.emit(
             Branch,
-            Val(ctx.operand(0).name),
             predicate, 
+            Val(ctx.operand(0).name),
             is_scalar=True,
-            inherit_predicate=False,
         )
 
     return Rule.dynamic(emit)
@@ -130,10 +129,9 @@ def _branch_not(predicate: PredReg) -> Rule:
     def emit(ctx: InstructionContext) -> None:
         ctx.emit(
             BranchNot,
-            Val(ctx.operand(0).name),
             predicate, 
+            Val(ctx.operand(0).name),
             is_scalar=True,
-            inherit_predicate=False,
         )
 
     return Rule.dynamic(emit)

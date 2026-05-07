@@ -132,7 +132,7 @@ def is_reg(reg) -> bool:
     return isinstance(reg, Reg32)
 
 def is_range(reg) -> bool:
-    return isinstance(reg, CompositeReg) and not is_predicate(reg)
+    return isinstance(reg, CompositeReg)
 
 def is_predicate(reg) -> bool:
     return isinstance(reg, PredReg)

@@ -9,7 +9,7 @@ from src.node_processor import to_opencl
 from src.operation_status import OperationStatus
 from src.region_type import RegionType
 from src.regions.region import Region
-from src.register import is_reg
+from src.ir.registers.reg import is_reg
 
 
 def create_opencl_body():
@@ -110,17 +110,17 @@ def make_output_for_linear_region(region, indent):
                 decompiler_data.write(indent + new_output + ";\n")
             if (
                 len(curr_node.operands) > 0
-                and is_reg(curr_node.instruction[0])
+                and is_reg(curr_node.operands[0])
                 and not decompiler_data.loops_nodes_for_variables.get(curr_node)
             ):
                 reg = curr_node.operands[0]
 
-                version = curr_node.state[reg].version
+                version = curr_node.get_from_state(reg).version
                 var = decompiler_data.variables.get(version)
                 if (
                     var is not None
-                    and var != curr_node.state[reg].val
-                    and curr_node.state[reg].val.strip()
+                    and var != curr_node.get_from_state(reg).val
+                    and curr_node.get_from_state(reg).val.strip()
                     and (
                         "cmp" not in curr_node.instruction
                         or (decompiler_data.gpu and decompiler_data.gpu.startswith("gfx"))
@@ -133,7 +133,7 @@ def make_output_for_linear_region(region, indent):
                         + var
                         + " = "
                         + expression_manager.expression_to_string(
-                            curr_node.state[reg].get_expression_node(), value_type_hint
+                            curr_node.get_from_state(reg).get_expression_node(), value_type_hint
                         )
                         + ";\n"
                     )
