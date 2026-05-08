@@ -507,7 +507,8 @@ class DecompilerData(metaclass=Singleton):
         self.flag_for_decompilation = None
         self.address_params = set()
         self.bfe_offsets = {}
-        self.exec_registers = {"exec": ExecCondition.default()}
+        self.exec_registers = {"$MASK": ExecCondition.default()}
+        self.predicates: list[str] = [] 
         self.is_rdna3: bool = False
         self.gpu: str | None = None
         self.unrolling_limit = 16
@@ -568,7 +569,8 @@ class DecompilerData(metaclass=Singleton):
         self.loops_nodes_for_variables = {}
         self.address_params = set()
         self.bfe_offsets = {}
-        self.exec_registers = {"exec": ExecCondition.default()}
+        self.exec_registers = {"$MASK": ExecCondition.default()}
+        self.predicates: list[str] = [] 
         self.is_rdna3 = False
 
     def write(self, output):
@@ -668,9 +670,10 @@ class DecompilerData(metaclass=Singleton):
                 ),
             ),
         )
+        self.predicates.append(name)
 
-    def init_exec(self):
-        self.init_predicate(self.initial_state, "exec")
+    def init_mask(self):
+        self.init_predicate(self.initial_state, "$MASK")
 
     def init_state(self):
         if self.is_rdna3:
@@ -784,7 +787,7 @@ class DecompilerData(metaclass=Singleton):
             local_size=0,
             arguments=[arg for arg in kernel.arguments.all() if arg.hidden == False],
         )
-        self.init_exec()
+        self.init_mask()
 
         #self.init_state()
         # self.process_initial_state()

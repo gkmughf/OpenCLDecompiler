@@ -11,8 +11,9 @@ from src.ir.registers.reg import get_reg_rang, BaseReg, PredReg, is_predicate
 
 
 def find_max_and_prev_versions(curr_node):
+    decompiler_data = DecompilerData()
     for reg in curr_node.state:
-        if reg in {"$MASK", "vcc", "scc", "scc|lo", "scc|hi", "exec"}:
+        if reg in decompiler_data.predicates:
             continue
         prev_versions_of_reg = set()
         max_version = 0
