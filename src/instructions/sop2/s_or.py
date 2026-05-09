@@ -44,7 +44,7 @@ class SOr(BaseInstruction):
                     exec_condition=new_exec_condition,
                     expression_node=expr_node,
                 )
-            new_value = make_op(self.node, self.ssrc0.name, self.ssrc1.name, "||", suffix=self.suffix)
+            new_value = make_op(self.node, self.ssrc0, self.ssrc1, "||", suffix=self.suffix)
 
             if self.ssrc1.name not in self.node.state:
                 return set_reg_value(

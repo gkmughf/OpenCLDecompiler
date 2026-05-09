@@ -4,66 +4,78 @@ from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.expression_node import ExpressionType
 from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.register_type import RegisterType
+from src.ir.registers.reg import is_reg
 
 
 class VCndmask(BaseInstruction):
     def __init__(self, node, suffix):
         super().__init__(node, suffix)
-        self.vdst = self.instruction[1]
-        self.src0 = self.instruction[2]
-        self.src1 = self.instruction[3]
-        self.ssrc2 = self.instruction[4]
+        self.vdst = self.operand[0]
+        self.src0 = self.operand[1]
+        self.src1 = self.operand[2]
+        self.ssrc2 = self.operand[3]
 
-    def to_print_unresolved(self):
-        if self.suffix == "b32":
-            self.decompiler_data.write(
-                f"{self.vdst} = {self.ssrc2}&(1ULL<<LANEID) ? {self.src1} : {self.src0} // {self.name}\n"
-            )
-            return self.node
-        return super().to_print_unresolved()
+    # def to_print_unresolved(self):
+    #     if self.suffix == "b32":
+    #         self.decompiler_data.write(
+    #             f"{self.vdst} = {self.ssrc2}&(1ULL<<LANEID) ? {self.src1} : {self.src0} // {self.name}\n"
+    #         )
+    #         return self.node
+    #     return super().to_print_unresolved()
 
     def to_fill_node(self):
         if self.suffix == "b32":
-            if self.src1 in self.node.state and self.node.state[self.src1].type == RegisterType.DIVISION_PT8:
-                new_value = self.node.state[self.src1].val
+            if self.src1.name in self.node.state and self.node.get_from_state(self.src1).type == RegisterType.DIVISION_PT8:
+                new_value = self.node.get_from_state(self.src1).val
                 return set_reg_value(
                     self.node,
                     new_value,
-                    self.vdst,
-                    [self.src0, self.src1],
+                    self.vdst.name,
+                    [self.src0.name, self.src1.name],
                     self.suffix,
                     reg_type=RegisterType.DIVISION_PT9,
                     expression_node=self.get_expression_node(self.src1),
                 )
-            if self.src1 in self.node.state and self.node.state[self.src1].type == RegisterType.DIVISION_PT10:
-                new_value = self.node.state[self.src1].val
+            if self.src1.name in self.node.state and self.node.get_from_state(self.src1).type == RegisterType.DIVISION_PT10:
+                new_value = self.node.get_from_state(self.src1).val
                 return set_reg_value(
                     self.node,
                     new_value,
-                    self.vdst,
-                    [self.src0, self.src1],
+                    self.vdst.name,
+                    [self.src0.name, self.src1.name],
                     self.suffix,
                     reg_type=RegisterType.UNKNOWN,
                     expression_node=self.get_expression_node(self.src1),
                 )
-            if self.ssrc2 in self.node.state and self.node.state[self.ssrc2].type == RegisterType.DIVISION_PASS:
+            if self.ssrc2.name in self.node.state and self.node.get_from_state(self.ssrc2).type == RegisterType.DIVISION_PASS:
                 return set_reg_value(
                     self.node, "", self.vdst, [self.src0, self.src1], self.suffix, reg_type=RegisterType.DIVISION_PASS
                 )
-            if self.ssrc2 in self.node.state and self.node.state[self.ssrc2].val == "0":
+            if self.ssrc2.name in self.node.state and self.node.get_from_state(self.ssrc2).val == "0":
                 return set_reg_value(
                     self.node,
-                    self.src0,
-                    self.vdst,
-                    [self.src0, self.src1],
+                    self.src0.name,
+                    self.vdst.name,
+                    [self.src0.name, self.src1.name],
                     self.suffix,
                     expression_node=self.get_expression_node(self.src0),
                 )
+            
+            # new_value = f"{self.node.get_from_state(self.ssrc2).val} ? {self.src0.name} : {self.src1.name}"
+
+            # cond_node = self.get_expression_node(self.ssrc2)
+            # src0_node = self.get_expression_node(self.src0)
+            # src1_node = self.get_expression_node(self.src1)
+            # expr_node = self.expression_manager.add_if_ternary_node(cond_node, src0_node, src1_node)
+
+            # return set_reg_value(
+            #     self.node, new_value, self.vdst.name, [self.src0.name, self.src1.name], self.suffix, expression_node=expr_node
+            # )
             variable = f"var{self.decompiler_data.num_of_var}"
             if (
-                self.vdst in self.node.state
-                and self.node.state[self.vdst] is not None
-                and self.node.state[self.vdst].type == RegisterType.KERNEL_ARGUMENT_ELEMENT
+                self.vdst.name in self.node.state
+                and self.node.get_from_state(self.vdst) is not None
+                and self.node.get_from_state(self.vdst).type == RegisterType.KERNEL_ARGUMENT_ELEMENT
             ):
                 variable = f"*{variable}"
             reg_type = RegisterType.PROGRAM_PARAM
@@ -74,13 +86,13 @@ class VCndmask(BaseInstruction):
             node = set_reg_value(
                 self.node,
                 variable,
-                self.vdst,
-                [self.src0, self.src1],
+                self.vdst.name,
+                [self.src0.name, self.src1.name],
                 self.suffix,
                 reg_type=reg_type,
                 expression_node=var_node,
             )
-            self.decompiler_data.make_var(node.state[self.vdst].version, variable, self.suffix)
+            self.decompiler_data.make_var(node.get_from_state(self.vdst).version, variable, self.suffix)
             return node
         return super().to_fill_node()
 
@@ -101,20 +113,20 @@ class VCndmask(BaseInstruction):
             if ssrc2_node.type == ExpressionType.IF_TERNARY:
                 ssrc2_val = f"({ssrc2_val})"
 
-            if "s" in self.src1 or "v" in self.src1:
-                src1_parent_val = self.node.parent[0].state[self.src1].val
+            if is_reg(self.src1):
+                src1_parent_val = self.node.parent[0].get_from_state(self.src1).val
                 src1_parent_val = ExpressionManager().expression_to_string(
                     self.node.parent[0].get_or_add_expression_node(self.src1, OpenCLTypes.from_string(self.suffix))
                 )
             else:
-                src1_parent_val = self.src1
-            if "s" in self.src0 or "v" in self.src0:
-                src0_parent_val = self.node.parent[0].state[self.src0].val
+                src1_parent_val = self.src1.name
+            if is_reg(self.src0):
+                src0_parent_val = self.node.parent[0].get_from_state(self.src0).val
                 src0_parent_val = ExpressionManager().expression_to_string(
                     self.node.parent[0].get_or_add_expression_node(self.src0, OpenCLTypes.from_string(self.suffix))
                 )
             else:
-                src0_parent_val = self.src0
+                src0_parent_val = self.src0.name
             self.output_string = (
                 f"{vdst.get_expression_node().value} = {ssrc2_val} ? {src1_parent_val} : {src0_parent_val}"
             )

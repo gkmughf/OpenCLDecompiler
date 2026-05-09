@@ -28,7 +28,7 @@ from src.state import KernelState
 from src.utils import Singleton
 from src.ir.registers.reg import is_reg as ir_is_reg
 from src.ir.registers.reg import is_range as ir_is_range
-from src.ir.registers.reg import expand_register_names, Val, is_predicate, get_reg_rang
+from src.ir.registers.reg import expand_register_names, Val, is_predicate, get_reg_rang, BaseReg
 
 from src.ir.kernel import Kernel
 
@@ -400,14 +400,16 @@ def check_reg_for_val(node, register, suffix=""):
 
 
 def try_get_reg(node, register):
-    if register in node.state:
-        return node.state[register]
-    if is_range(register):
-        start_register, end_register = check_and_split_regs(register)
-        if start_register in node.state:
-            return node.state[start_register]
-        if end_register in node.state:
-            return node.state[end_register]
+    assert isinstance(register, BaseReg)
+
+    if register.name in node.state:
+        return node.get_from_state(register)
+    if ir_is_range(register):
+        start_register, end_register = get_reg_rang(register)
+        if start_register.name in node.state:
+            return node.get_from_state(start_register)
+        if end_register.name in node.state:
+            return node.get_from_state(end_register)
     raise NotImplementedError
 
 

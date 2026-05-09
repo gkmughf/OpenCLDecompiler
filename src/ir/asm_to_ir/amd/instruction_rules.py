@@ -14,6 +14,8 @@ from src.ir.instructions.common.sub import Sub, SubRev
 from src.ir.instructions.common.cvt import Cvt64_32, Cvt_i32_f32
 from src.ir.instructions.special.local_memory import LocalAdd, LocalLoad, LocalStore
 from src.ir.instructions.common.permute import Permute32
+from src.ir.instructions.common.cselect import CSelect
+from src.ir.instructions.common.min import IRMin
 from src.ir.registers.reg import PredReg, Val
 from src.ir.instructions.common.compare import get_compare_class
 from src.ir.instructions.control_flow import Branch, BranchNot, Label
@@ -146,6 +148,21 @@ def _saveexec(operation) -> Rule:
         ]
     )
 
+def _scalar_cselect_b64() -> Rule:
+    def replace_exec(operand):
+        return Val("1") if operand.name == "exec" else operand
+
+    def emit(ctx: InstructionContext) -> None:
+        ctx.emit(
+            CSelect,
+            ctx.operand(0),
+            replace_exec(ctx.operand(1)),
+            replace_exec(ctx.operand(2)),
+            PredReg("scc"),
+        )
+
+    return Rule.dynamic(emit)
+
 _local_store_like = Rule(
     [
         Emit(Mov, tmp64("base"), op(2)),
@@ -228,6 +245,7 @@ instruction_rules = {
     "v_lshrrev_b64": same(LShr_Rev),
     "s_ashr_i32": same(AShr),
     "v_ashrrev_i64": same(AShr_Rev),
+    "v_ashrrev_i32": same(AShr_Rev),
 
     "s_and_b32": _same_with_exec_mask(And),
     "s_and_b64": _same_with_exec_mask(And),
@@ -238,6 +256,7 @@ instruction_rules = {
     "s_or_b32": _same_with_exec_mask(Or),
     "s_or_b64": _same_with_exec_mask(Or),
     "v_or_b32": _same_with_exec_mask(Or),
+    "s_andn2_b64": _same_with_exec_mask(Xor),
 
     "v_mov_b32": _same_with_exec_mask(Mov),
     "s_mov_b32": _same_with_exec_mask(Mov),
@@ -277,5 +296,7 @@ instruction_rules = {
     "s_waitcnt": Rule([Emit(Barrier)]),
 
     "s_nop": Rule([Emit(Ignore, is_scalar=True)]),
-
+    "v_cndmask_b32": same(CSelect),
+    "s_min_i32": same(IRMin),
+    "s_cselect_b64": _scalar_cselect_b64(),
 }

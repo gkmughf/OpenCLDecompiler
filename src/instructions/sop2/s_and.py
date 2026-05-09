@@ -34,14 +34,14 @@ class SAnd(BaseInstruction):
             # TODO(GFV) тут надо думать над ветвлением 
 
             if any(is_predicate(item) for item in {self.vdst, self.src0, self.src1}):
-                if is_predicate(self.src1):
+                if not is_predicate(self.src0):
                     self.src1, self.src0 = self.src0, self.src1
                 old_exec_condition = self.decompiler_data.exec_registers[self.src0.name]
                 new_cond = self.node.get_from_state(self.src1).val
 
                 new_exec_condition = old_exec_condition & new_cond
                 self.decompiler_data.exec_registers[self.vdst.name] = new_exec_condition
-                new_exec_cond_node = self.get_expression_node(self.src0)
+                new_exec_cond_node = self.get_expression_node(self.src1)
 
                 return set_reg_value(
                     self.node,

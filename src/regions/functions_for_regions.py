@@ -213,25 +213,25 @@ def process_if_else_statement_region(curr_region):
 
 
 def make_var_for_loop(curr_node, register, version, prev_version):
-    assert isinstance(register, BaseReg)
+    assert isinstance(register, str)
     
     decompiler_data = DecompilerData()
     if decompiler_data.loops_variables.get(prev_version):
         variable = decompiler_data.loops_variables[prev_version]
     else:
         variable = "var" + str(decompiler_data.num_of_var)
-        prev_value_node = curr_node.get_from_state(register).get_expression_node()
+        prev_value_node = curr_node.state[register].get_expression_node()
         variable_value_type_hint = prev_value_node.value_type_hint.set_is_const(False)
         assert variable_value_type_hint.opencl_type != OpenCLTypes.UNKNOWN
         ExpressionManager().add_variable_node(variable, variable_value_type_hint)
         decompiler_data.num_of_var += 1
-    data_type = curr_node.get_from_state(register).data_type
+    data_type = curr_node.state[register].data_type
     decompiler_data.checked_variables[prev_version] = variable
     decompiler_data.loops_variables[version] = variable
     decompiler_data.loops_nodes_for_variables[curr_node] = version
     decompiler_data.names_of_vars[variable] = data_type
     decompiler_data.variables[prev_version] = variable
-    if curr_node.get_from_state(register).type == RegisterType.ADDRESS_KERNEL_ARGUMENT:
+    if curr_node.state[register].type == RegisterType.ADDRESS_KERNEL_ARGUMENT:
         decompiler_data.address_params.add(variable)
 
 
@@ -315,7 +315,7 @@ def process_loop(region_start, region_end):  # noqa: PLR0912
                     int(first_reg_version[separation + 1 :]) - 1
                 )
                 if first_reg_prev_version in used_versions_of_registers:
-                    make_var_for_loop(curr_node, register, first_reg_version, first_reg_prev_version)
+                    make_var_for_loop(curr_node, register.name, first_reg_version, first_reg_prev_version)
         curr_node = curr_node.children[0]
 
 
