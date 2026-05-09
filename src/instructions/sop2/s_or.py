@@ -40,7 +40,7 @@ class SOr(BaseInstruction):
                     new_exec_condition.top(),
                     self.sdst.name,
                     [self.ssrc0.name, self.ssrc1.name],
-                    None,
+                    "b64",
                     exec_condition=new_exec_condition,
                     expression_node=expr_node,
                 )

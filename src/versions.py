@@ -64,16 +64,16 @@ def update_reg_version(reg, curr_node, max_version, prev_versions_of_reg):
 
 
 def check_for_use_new_version_in_one_instruction(curr_node):
-    for num_of_reg in range(1, len(curr_node.instruction)):
-        register = curr_node.instruction[num_of_reg]
+    for num_of_reg in range(0, len(curr_node.operands)):
+        register = curr_node.operands[num_of_reg]
         if (
-            (re.match(r"(flat|global)_store", curr_node.instruction[0]) or num_of_reg > 1)
-            and len(register) > 1
-            and "cnd" not in curr_node.instruction[0]
+            (re.match(r"(flat|global)_store", curr_node.instruction) or num_of_reg > 1)
+            and "cnd" not in curr_node.instruction
+            and isinstance(register, BaseReg)
         ):
-            if register[1] == "[":
-                register = register[0] + register[2 : register.find(":")]
-            parent_register = curr_node.parent[0].state.get(register)
+            register = get_reg_rang(register)[0]
+
+            parent_register = curr_node.parent[0].get_from_state(register)
             if parent_register is not None:
                 decompiler_data = DecompilerData()
                 checked_version = parent_register.version
@@ -250,13 +250,14 @@ def change_values_for_one_instruction(curr_node, changes, changes_expression_nod
             (
                 re.match(r"(flat|global)_store", curr_node.instruction)
                 or num_of_reg > 0
-                or "s_cmp" in curr_node.instruction
+                or "cmp" in curr_node.instruction
             )
             and "cnd" not in curr_node.instruction
         ):
             if (
                 "s_or" not in curr_node.instruction
                 and "s_and" not in curr_node.instruction
+                and not is_predicate(register)
             ):
                 register = get_reg_rang(register)[0]
 
@@ -265,6 +266,7 @@ def change_values_for_one_instruction(curr_node, changes, changes_expression_nod
             if (
                 "s_or" not in curr_node.instruction
                 and "s_and" not in curr_node.instruction
+                and not is_predicate(first_reg)
             ):
                 first_reg = get_reg_rang(first_reg)[0]
 
@@ -285,6 +287,14 @@ def change_values_for_one_instruction(curr_node, changes, changes_expression_nod
             update_val_from_checked_variables(
                 curr_node, register, check_version, first_reg, changes, changes_expression_nodes
             )
+    if "change_mask" in curr_node.instruction:
+        register = curr_node.operands[0]
+        first_reg = PredReg("$MASK")
+        check_version = curr_node.get_from_state(register).version
+        changes, changes_expression_nodes = update_val_from_changes(
+                curr_node, register, changes, changes_expression_nodes, check_version, 1, first_reg
+        )
+        update_val_from_checked_variables(curr_node, register, check_version, first_reg, changes, changes_expression_nodes)
     if "select" in curr_node.instruction[0]:
         first_reg = curr_node.instruction[1]
         check_version = curr_node.state["scc"].version

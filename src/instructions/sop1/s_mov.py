@@ -28,7 +28,7 @@ class SMov(BaseInstruction):
             expr_node = None
 
             #if self.sdst == "exec":
-            if is_predicate(self.ssrc0):
+            if is_predicate(self.ssrc0) or is_predicate(self.sdst):
                 self.decompiler_data.exec_registers[self.sdst.name] = self.decompiler_data.exec_registers[self.ssrc0.name]
 
                 expr_node = self.get_expression_node(self.ssrc0)
@@ -37,7 +37,7 @@ class SMov(BaseInstruction):
                     self.node,
                     new_value,
                     self.sdst.name,
-                    [],
+                    'b64',
                     None,
                     #exec_condition=new_exec_condition,
                     expression_node=expr_node,

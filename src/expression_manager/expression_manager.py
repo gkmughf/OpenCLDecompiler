@@ -331,6 +331,12 @@ class ExpressionManager(metaclass=Singleton):
             if s1.type == ExpressionType.UNKNOWN:
                 return self.add_logical_not_node(s0)
 
+        #TODO(GFV) тут надо как-то по умному делать 
+        if s0.type == ExpressionType.UNKNOWN:
+            return s1
+        if s1.type == ExpressionType.UNKNOWN:
+            return s0
+
         if ExpressionType.CONST in (s0.type, s1.type):
             const_node = s0 if s0.type == ExpressionType.CONST else s1
             other_node = s1 if s0.type == ExpressionType.CONST else s0

@@ -18,32 +18,38 @@ from src.ir.registers.reg import is_reg, Val, get_reg_rang
 patterns_get_global_id_x = {
     (RegisterType.WORK_GROUP_ID_X_LOCAL_SIZE_OFFSET, RegisterType.WORK_ITEM_ID_X),
     (RegisterType.GLOBAL_OFFSET_X, RegisterType.WORK_GROUP_ID_X_WORK_ITEM_ID),
-    (RegisterType.WORK_GROUP_ID_X_WORK_ITEM_ID, RegisterType.GLOBAL_OFFSET_X),
 }
 patterns_get_global_id_y = {
     (RegisterType.WORK_GROUP_ID_Y_LOCAL_SIZE_OFFSET, RegisterType.WORK_ITEM_ID_Y),
     (RegisterType.GLOBAL_OFFSET_Y, RegisterType.WORK_GROUP_ID_Y_WORK_ITEM_ID),
-    (RegisterType.WORK_GROUP_ID_Y_WORK_ITEM_ID, RegisterType.GLOBAL_OFFSET_Y),
 }
 patterns_get_global_id_z = {
     (RegisterType.WORK_GROUP_ID_Z_LOCAL_SIZE_OFFSET, RegisterType.WORK_ITEM_ID_Z),
     (RegisterType.GLOBAL_OFFSET_Z, RegisterType.WORK_GROUP_ID_Z_WORK_ITEM_ID),
-    (RegisterType.WORK_GROUP_ID_Z_WORK_ITEM_ID, RegisterType.GLOBAL_OFFSET_Z),
 }
 
 
 patterns_work_item_id_x = {
     (RegisterType.WORK_GROUP_ID_X_LOCAL_SIZE, RegisterType.WORK_ITEM_ID_X),
-    (RegisterType.WORK_ITEM_ID_X, RegisterType.WORK_GROUP_ID_X_LOCAL_SIZE),
 }
 patterns_work_item_id_y = {
     (RegisterType.WORK_GROUP_ID_Y_LOCAL_SIZE, RegisterType.WORK_ITEM_ID_Y),
-    (RegisterType.WORK_ITEM_ID_Y, RegisterType.WORK_GROUP_ID_Y_LOCAL_SIZE),
 }
 patterns_work_item_id_z = {
     (RegisterType.WORK_GROUP_ID_Z_LOCAL_SIZE, RegisterType.WORK_ITEM_ID_Z),
-    (RegisterType.WORK_ITEM_ID_Z, RegisterType.WORK_GROUP_ID_Z_LOCAL_SIZE),
 }
+
+
+patterns_work_group_id_x_local_size_offset = {
+    (RegisterType.WORK_GROUP_ID_X_LOCAL_SIZE, RegisterType.GLOBAL_OFFSET_X),
+}
+patterns_work_group_id_y_local_size_offset = {
+    (RegisterType.WORK_GROUP_ID_Y_LOCAL_SIZE, RegisterType.GLOBAL_OFFSET_Y),
+}
+patterns_work_group_id_z_local_size_offset = {
+    (RegisterType.WORK_GROUP_ID_Z_LOCAL_SIZE, RegisterType.GLOBAL_OFFSET_Z),
+}
+
 
 
 class VAdd(BaseInstruction):
@@ -177,6 +183,18 @@ class VAdd(BaseInstruction):
                     new_value = "get_global_id(2) - get_global_offset(2)"
                     reg_type = RegisterType.WORK_GROUP_ID_Z_WORK_ITEM_ID
                     expr_node = self._add_sub_operation(RegisterType.GLOBAL_ID_Z, RegisterType.GLOBAL_OFFSET_Z)
+                elif (self._check_type_pattern(self.src0, self.src1, patterns_work_group_id_x_local_size_offset)):
+                    reg_type = RegisterType.WORK_GROUP_ID_X_LOCAL_SIZE_OFFSET
+                    left_node = self.get_expression_node(self.src0)
+                    right_node = self.get_expression_node(self.src1)
+                elif (self._check_type_pattern(self.src0, self.src1, patterns_work_group_id_y_local_size_offset)):
+                    reg_type = RegisterType.WORK_GROUP_ID_Y_LOCAL_SIZE_OFFSET
+                    left_node = self.get_expression_node(self.src0)
+                    right_node = self.get_expression_node(self.src1)
+                elif (self._check_type_pattern(self.src0, self.src1, patterns_work_group_id_z_local_size_offset)):
+                    reg_type = RegisterType.WORK_GROUP_ID_Z_LOCAL_SIZE_OFFSET
+                    left_node = self.get_expression_node(self.src0)
+                    right_node = self.get_expression_node(self.src1)
                 else:
                     data_type = self.node.get_from_state(self.src0).data_type
                     left_node = self.get_expression_node(self.src0)
@@ -250,7 +268,7 @@ class VAdd(BaseInstruction):
         type0 = self.node.get_from_state(src0).type
         type1 = self.node.get_from_state(src1).type
 
-        return (type0, type1) in patterns
+        return (type0, type1) in patterns or (type1, type0) in patterns
     
     def _add_sub_operation(self, reg0: RegisterType, reg1: RegisterType):
         left_node = self.expression_manager.add_register_node(

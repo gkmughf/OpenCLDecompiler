@@ -40,7 +40,7 @@ class Branch(GenericInstruction):
     def to_fill_node(self, state, parents):
         return NodeLoweringContext(state, parents).emit_backend(
             SCbranchVccnz,
-            "s_cbranch_vccnz",
+            "s_br",
             self.operands,
         )
     
@@ -59,7 +59,7 @@ class BranchNot(GenericInstruction):
     def to_fill_node(self, state, parents):
         return NodeLoweringContext(state, parents).emit_backend(
             SCbranchVccz,
-            "s_cbranch_vccz",
+            "s_nbr",
             self.operands,
         )
 class Jump(Branch):

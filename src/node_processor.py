@@ -63,14 +63,14 @@ def decode_instruction(node, flag_of_status):
     return_value = None
     if instruction_dict.get(prefix_root):
         return_value = instruction_dict[prefix_root](node, suffix).execute(flag_of_status)
-    elif instruction_dict.get(node.instruction[0]):
-        return_value = instruction_dict[node.instruction[0]](node, suffix).execute(flag_of_status)
+    elif instruction_dict.get(node.instruction):
+        return_value = instruction_dict[node.instruction](node, suffix).execute(flag_of_status)
     return return_value
 
 
 def to_opencl(node, flag_of_status):
-    if node.instruction[0][0] == ".":
+    if node.instruction[0] == ".":
         return Label(node, "").execute(flag_of_status)
-    if node.instruction[0] == "s_endpgm":
+    if node.instruction == "s_endpgm":
         return SEndpgm(node, "").execute(flag_of_status)
     return decode_instruction(node, flag_of_status)

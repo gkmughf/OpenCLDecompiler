@@ -1,4 +1,5 @@
 import copy
+from dataclasses import dataclass
 
 from src.cfg import make_cfg_node, make_unresolved_node
 from src.code_printer import create_opencl_body
@@ -17,133 +18,155 @@ from src.unrolled_loops_processing import process_unrolled_loops
 from src.utils import get_context
 from src.versions import change_values, check_for_use_new_version, find_max_and_prev_versions
 
-
+from src.ir.instructions.special.mask import ChangeMask
+from src.ir.instructions.common.endpgm import EndPgm
 from src.ir.kernel import Kernel
 
 CONTEXT = get_context()
 
+def get_exec(node: Node) -> ExecCondition:
+    return node.state["$MASK"].exec_condition
 
-def process_single_instruction(instruction, state, parents):
-    curr_node = make_cfg_node(instruction, state, parents)
-    # TODO
-    # if not check_realisation_for_node(curr_node, instruction):
-    #     return None
-    return curr_node
+@dataclass
+class _OpenMask:
+    change_mask: Node
+    previous_branch_end: Node | None = None
+
+def _contains_identity(nodes: list[Node], target: Node) -> bool:
+    return any(node is target for node in nodes)
+
+def _connect(parent: Node, child: Node) -> None:
+    if parent is child:
+        return
+
+    if not _contains_identity(child.parent, parent):
+        child.add_parent(parent)
+
+    if not _contains_identity(parent.children, child):
+        parent.add_child(child)
+
+def _append_unique_node(nodes: list[Node], node: Node) -> None:
+    if not _contains_identity(nodes, node):
+        nodes.append(node)
 
 
-def process_src_with_unresolved_instruction(set_of_instructions):
-    decompiler_data = DecompilerData()
-    last_node_state = decompiler_data.initial_state
-    num = 0
-    while num < len(set_of_instructions):
-        row = set_of_instructions[num]
-        instruction = row.strip().replace(",", " ").split()
-        num += 1
-        curr_node = make_unresolved_node(instruction, last_node_state)
-        if curr_node is None:
-            decompiler_data.write(row + "\n")
+def _find_open_mask_index(
+    open_masks: list[_OpenMask],
+    exec_condition: ExecCondition,
+    end: int | None = None,
+) -> int | None:
+    if end is None:
+        end = len(open_masks)
 
+    for index in range(end - 1, -1, -1):
+        if get_exec(open_masks[index].change_mask) == exec_condition:
+            return index
+    return None
+
+
+def _add_closed_mask_parent(parents: list[Node], open_mask: _OpenMask) -> None:
+    if open_mask.previous_branch_end is not None:
+        _append_unique_node(parents, open_mask.previous_branch_end)
+        return
+
+    _append_unique_node(parents, open_mask.change_mask)
+
+
+def _close_open_masks(
+    open_masks: list[_OpenMask],
+    exec_condition: ExecCondition,
+    parents: list[Node],
+) -> Node | None:
+    while (
+        len(open_masks) > 1
+        and get_exec(open_masks[-1].change_mask).is_strict_superset_of(exec_condition)
+    ):
+        open_mask = open_masks.pop()
+        _add_closed_mask_parent(parents, open_mask)
 
 def process_src(  # noqa: C901, PLR0912, PLR0915
     kernel: Kernel
-    #name_of_program: str,
-    #config_data: ConfigData,
-    #set_of_instructions: list[str],
-    #set_of_global_data_bytes: list[str],
-    #set_of_global_data_instruction: list[str],
-    #*args, **kwargs
 ):
     decompiler_data = DecompilerData()
     expression_manager = ExpressionManager()
     decompiler_data.reset(kernel.name)
     
-    # TODO
-    # if decompiler_data.gpu.startswith("gfx11"): 
-    #     decompiler_data.is_rdna3 = True
-    # if decompiler_data.is_rdna3:
-    #     # We don't want to reset ExpressionManager between different RDNA3 programs,
-    #     # because in RDNA3 kernel arguments are parsed at the beggining.
-    #     # ExpressionManager already contains every kernel argument in _variables_for_program dict
-    #     # Only specifying name of program to obtain correct arguments here
-    #     expression_manager.set_name_of_program(name_of_program)
-    # else:
-    #     expression_manager.reset(name_of_program)
     expression_manager.reset(kernel.name)
 
     expression_manager.set_size_of_workgroups(kernel.work_group_size)
-    # set_of_instructions = kernel.get_instructions_parts()
     blocks = kernel.blocks.iter()
 
     #process_global_data(set_of_global_data_instruction, set_of_global_data_bytes) TODO
 
-    # реализация унесена в инструкции
-    # decompiler_data.set_config_data(config_data)
-    # if not decompiler_data.is_rdna3:
-    #     process_kernel_params()
-    # -----------------------   
-    # decompiler_data.set_config_data(config_data)
-    # process_kernel_params()
     decompiler_data.set_config_data(kernel)
     
     last_node = Node([""], [], decompiler_data.initial_state)
     decompiler_data.set_cfg(last_node)
+    masked_blocks = [_OpenMask(last_node)]
 
-    if_and_last_in_if_body_nodes = []
-    common_if_else_part_start_index = []
-    num = 0
-
-    # TODO
-    # if decompiler_data.flag_for_decompilation == FlagType.ONLY_CLRX:
-    #     process_src_with_unresolved_instruction(initial_set_of_instructions)
-    #     return
     for bb in blocks:
         for i in bb.instructions:
             state = last_node.state
             parents = [last_node]
+            change_mask_transition = None
+            else_branch_index = None
+            else_parent_index = None
+            previous_branch_end = None
 
+            
+            if isinstance(i, ChangeMask):
+                prev_exec_condition = get_exec(last_node)
+                next_exec_condition = decompiler_data.exec_registers[i.predicate.name]
+                else_parent_condition = prev_exec_condition.negated_sibling_parent(next_exec_condition)
 
-            # обработка ветвления
-            # if "s_or_saveexec" in instruction[0]: ## выходим из if-else базового блока 
-            #     common_if_else_part_start_index[-1] = num + 1 # запомнили конец if-else
-            # if ("s_andn2" in instruction[0] or "s_xor" in instruction[0]) and "exec" in instruction[1]:
-            #     if_node = if_and_last_in_if_body_nodes[-1][0]
-            #     state = if_node.state
-            #     parents = [if_node]
-            #     if common_if_else_part_start_index[-1] is not None:
-            #         common_part = set_of_instructions[common_if_else_part_start_index[-1] : num]
-            #         set_of_instructions = set_of_instructions[: num + 1] + common_part + set_of_instructions[num + 1 :]
-            #     if_and_last_in_if_body_nodes[-1].append(last_node)
-            # if last_node.instruction[0] == "s_branch":
-            #     parents = []
+                if next_exec_condition.is_strict_superset_of(prev_exec_condition):
+                    change_mask_transition = "enter"
+                elif next_exec_condition.is_strict_subset_of(prev_exec_condition):
+                    change_mask_transition = "close"
+                    _close_open_masks(masked_blocks, next_exec_condition, parents)
+                elif else_parent_condition is not None:
+                    change_mask_transition = "else"
+                    else_branch_index = _find_open_mask_index(masked_blocks, prev_exec_condition)
+                    if else_branch_index is not None:
+                        previous_branch = masked_blocks[else_branch_index]
+                        else_parent_index = _find_open_mask_index(
+                            masked_blocks,
+                            else_parent_condition,
+                            else_branch_index,
+                        )
+                        if else_parent_index is None:
+                            else_parent_index = max(else_branch_index - 1, 0)
+                        parents = [previous_branch.change_mask]
+                        state = previous_branch.change_mask.state
+                        previous_branch_end = last_node
+            
             last_node = i.to_fill_node(state, parents)
 
-            # TODO
-            # if last_node is None:
-            #     if decompiler_data.flag_for_decompilation == FlagType.ONLY_OPENCL:
-            #         break
-            #     decompiler_data.flag_for_decompilation = FlagType.ONLY_CLRX
-            #     process_src_with_unresolved_instruction(initial_set_of_instructions)
-            #     return
+            if isinstance(i, ChangeMask):
+                if change_mask_transition == "enter":
+                    masked_blocks.append(_OpenMask(last_node))
+                elif change_mask_transition == "else" and else_branch_index is not None:
+                    if else_parent_index is None:
+                        else_parent_index = max(else_branch_index - 1, 0)
+                    del masked_blocks[else_parent_index + 1:]
+                    masked_blocks.append(
+                        _OpenMask(
+                            last_node,
+                            previous_branch_end,
+                        )
+                    )
 
-            # if "s_and_saveexec" in instruction[0] or ("s_and_b" in instruction[0] and "exec" in instruction[1]):
-            #     if_and_last_in_if_body_nodes.append([last_node]) ## запоминаем последнюю ноду в (по факту) базовом блоке
-            #     common_if_else_part_start_index.append(None)## открываем базовый блок
-            # if (
-            #     ("s_or" in instruction[0] or "s_mov" in instruction[0]) and "exec" in instruction[1]
-            # ) or "s_endpgm" in instruction[0]:
-            #     end_exec_condition = last_node.state["exec"].exec_condition
-            #     while if_and_last_in_if_body_nodes and ExecCondition.is_closing_for(
-            #         end_exec_condition, if_and_last_in_if_body_nodes[-1][0].state["exec"].exec_condition
-            #     ):
-            #         if_and_last_in_if_nodes = if_and_last_in_if_body_nodes[-1]
-            #         parent = if_and_last_in_if_nodes[0] if len(if_and_last_in_if_nodes) == 1 else if_and_last_in_if_nodes[1]
-            #         parent.add_child(last_node)
-            #         last_node.add_parent(parent)
-            #         if_and_last_in_if_body_nodes.pop()
-            #         common_if_else_part_start_index.pop()
+
+            if isinstance(i, EndPgm):
+                for masked_block in masked_blocks[1:]:
+                    if masked_block.previous_branch_end is not None:
+                        _connect(masked_block.previous_branch_end, last_node)
+                    else:
+                        _connect(masked_block.change_mask, last_node)
+
+                
             if len(last_node.parent) > 1:
                 find_max_and_prev_versions(last_node)
-            num += 1
 
     optimize_names_of_vars()
     if decompiler_data.global_data:

@@ -4,7 +4,7 @@ from src.base_instruction import BaseInstruction
 
 
 def is_notBr(instruction: str) -> bool:
-    return "s_cbranch_vccz" == instruction
+    return "s_nbr" == instruction
 
 
 class Label(BaseInstruction):

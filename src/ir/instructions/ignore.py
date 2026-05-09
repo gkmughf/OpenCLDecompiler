@@ -1,8 +1,10 @@
 from src.ir.instructions.generic import GenericInstruction
+from src.ir.instructions.lowering import NodeLoweringContext
+from src.instructions.sopp.s_nop import SNop
 
 class Ignore(GenericInstruction):
     def __init__(self, *operands, is_scalar):
-        super().__init__("", is_scalar)
+        super().__init__("s_nop", is_scalar=is_scalar)
 
     def to_text(self) -> str:
         return ""
@@ -12,4 +14,11 @@ class Ignore(GenericInstruction):
     
     def get_operands(self):
         return []
+
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            SNop,
+            self._get_normalize_opcode(),
+            self.operands,
+        )
     

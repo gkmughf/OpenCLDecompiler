@@ -41,15 +41,16 @@ class SAnd(BaseInstruction):
 
                 new_exec_condition = old_exec_condition & new_cond
                 self.decompiler_data.exec_registers[self.vdst.name] = new_exec_condition
+                new_exec_cond_node = self.get_expression_node(self.src0)
 
                 return set_reg_value(
                     self.node,
                     new_exec_condition.top(),
                     self.vdst.name,
                     [self.src0.name, self.src1.name],
-                    None,
-                    #exec_condition=new_exec_condition,
-                    expression_node=expr_node,
+                    "b64",
+                    exec_condition=new_exec_condition,
+                    expression_node=new_exec_cond_node,
                 )
             if self.src0.name in self.node.state and self.src1.name in self.node.state:
                 ssrc0 = self.node.get_from_state(self.src0)
@@ -163,7 +164,7 @@ class SAnd(BaseInstruction):
                 )
         return super().to_fill_node()
 
-    def to_print(self):
-        if is_predicate(self.vdst):
-            self.output_string = ExpressionManager().expression_to_string(self.get_expression_node(self.vdst))
-        return self.output_string
+    # def to_print(self):
+    #     if is_predicate(self.vdst):
+    #         self.output_string = ExpressionManager().expression_to_string(self.get_expression_node(self.vdst))
+    #     return self.output_string

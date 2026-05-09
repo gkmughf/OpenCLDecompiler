@@ -18,6 +18,7 @@ from src.ir.registers.reg import PredReg, Val
 from src.ir.instructions.common.compare import get_compare_class
 from src.ir.instructions.control_flow import Branch, BranchNot, Label
 from src.ir.instructions.special.mask import ChangeMask
+from src.ir.instructions.ignore import Ignore
 
 LOGICAL_INSTRUCTIONS = {
     "and": And,
@@ -178,8 +179,8 @@ instruction_rules = {
     "s_branch": _branch(None),
     "s_cbranch_scc0": _branch_not(PredReg("scc")),
     "s_cbranch_scc1": _branch(PredReg("scc")),
-    "s_cbranch_execz": _branch_not(PredReg("exec")),
-    "s_cbranch_execnz": _branch(PredReg("exec")),
+    "s_cbranch_execz": Rule([Emit(Ignore, is_scalar=True)]),
+    "s_cbranch_execnz": Rule([Emit(Ignore, is_scalar=True)]),
     "s_cbranch_vccz": _branch_not(PredReg("vcc")),
     "s_cbranch_vccnz": _branch(PredReg("vcc")),
 
@@ -274,4 +275,7 @@ instruction_rules = {
     "s_endpgm": same(EndPgm),
 
     "s_waitcnt": Rule([Emit(Barrier)]),
+
+    "s_nop": Rule([Emit(Ignore, is_scalar=True)]),
+
 }

@@ -396,7 +396,7 @@ def find_loops():
         if curr_region not in visited:
             visited.append(curr_region)
             if curr_region.type == RegionType.BACK_EDGE:
-                if curr_region.start.instruction[1] == curr_loop.start.instruction[0][:-1]:
+                if curr_region.start.operands[1] == curr_loop.start.instruction:
                     q_loops.append(curr_region)
                 else:
                     region_end = curr_region  # вероятно это не так

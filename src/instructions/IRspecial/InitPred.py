@@ -1,9 +1,5 @@
 from src.base_instruction import BaseInstruction
-from src.decompiler_data import set_reg_value
-from src.register import Register
-from src.integrity import Integrity
-
-import re
+from src.logical_variable import ExecCondition
 
 class InitPred(BaseInstruction):
     def to_fill_node(self):
@@ -11,5 +7,6 @@ class InitPred(BaseInstruction):
         self.decompiler_data.init_predicate(self.node.state, dest.name)
         self.decompiler_data.init_predicate(self.node.state, dest.get_element(0).name)
         self.decompiler_data.init_predicate(self.node.state, dest.get_element(1).name)
+        self.decompiler_data.exec_registers[dest.name] = ExecCondition.default()
         
         return self.node

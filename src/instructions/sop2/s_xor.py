@@ -31,7 +31,7 @@ class SXor(BaseInstruction):
                 if is_predicate(self.ssrc1):
                     self.ssrc1, self.ssrc0 = self.ssrc0, self.ssrc1
                 old_exec_condition = self.decompiler_data.exec_registers[self.ssrc0.name]
-                new_cond = self.node.get_from_state(self.ssrc1).val
+                new_cond = self.decompiler_data.exec_registers[self.ssrc1.name]
                 new_exec_condition = old_exec_condition ^ new_cond
                 self.decompiler_data.exec_registers[self.sdst.name] = new_exec_condition
 
@@ -40,7 +40,7 @@ class SXor(BaseInstruction):
                     new_exec_condition.top(),
                     self.sdst.name,
                     [self.ssrc0.name, self.ssrc1.name],
-                    None,
+                    "b64",
                     exec_condition=new_exec_condition,
                     expression_node=expr_node,
                 )

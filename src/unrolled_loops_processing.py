@@ -158,7 +158,7 @@ def process_unrolled_loops():  # noqa: C901, PLR0912, PLR0915
                 diff = constants[1] - constants[0]
                 diff = f"i = i - {-diff}" if diff < 0 else f"i = i + {diff}"
 
-            dst = vertices[vertices[chosen[-1]].merged_vertices[-1]].node.instruction[1]
+            dst = vertices[vertices[chosen[-1]].merged_vertices[-1]].node.operands[0]
 
             cur = decompiler_data.improve_cfg.start
             end = decompiler_data.improve_cfg.end

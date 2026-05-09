@@ -102,6 +102,8 @@ def make_output_for_linear_region(region, indent):
     expression_manager = ExpressionManager()
     if isinstance(region.start, Node):
         curr_node = decompiler_data.cfg.children[0] if region.start == decompiler_data.cfg else region.start
+        if curr_node.instruction == "change_mask":
+            curr_node = curr_node.children[0]
         while True:
             new_output = to_opencl(curr_node, OperationStatus.TO_PRINT)
             if decompiler_data.loops_nodes_for_variables.get(curr_node):
@@ -186,7 +188,7 @@ def make_output_from_loop_region(region, indent):
     make_output_from_region(region.start.children[0], indent + "    ")
     decompiler_data.write(indent + "} while (")
     statement = to_opencl(region.end.start, OperationStatus.TO_PRINT)
-    if "scc0" in region.end.start.instruction[0]:
+    if region.end.start.instruction == "s_nbr":
         statement = "!(" + statement + ")"
     decompiler_data.write(statement)
     decompiler_data.write(");\n")
@@ -197,7 +199,7 @@ def make_output_from_break_region(region, indent):
     break_node = region.start
     decompiler_data.write(indent + "if (")
     statement = to_opencl(break_node, OperationStatus.TO_PRINT)
-    if break_node.instruction[0][-4:] in {"scc0", "vccz"}:
+    if break_node.instruction == "s_nbr":
         statement = "!(" + statement + ")"
     decompiler_data.write(statement)
     decompiler_data.write(") {\n")
