@@ -95,7 +95,7 @@ def process_src(  # noqa: C901, PLR0912, PLR0915
     expression_manager.reset(kernel.name)
 
     expression_manager.set_size_of_workgroups(kernel.work_group_size)
-    blocks = kernel.blocks.iter()
+    instructions = kernel.instructions.get()
 
     #process_global_data(set_of_global_data_instruction, set_of_global_data_bytes) TODO
 
@@ -105,71 +105,70 @@ def process_src(  # noqa: C901, PLR0912, PLR0915
     decompiler_data.set_cfg(last_node)
     masked_blocks = [_OpenMask(last_node)]
 
-    for bb in blocks:
-        for i in bb.instructions:
-            state = last_node.state
-            parents = [last_node]
-            change_mask_transition = None
-            else_branch_index = None
-            else_parent_index = None
-            previous_branch_end = None
+    for i in instructions:
+        state = last_node.state
+        parents = [last_node]
+        change_mask_transition = None
+        else_branch_index = None
+        else_parent_index = None
+        previous_branch_end = None
 
-            if last_node.instruction == "s_branch":
-                parents = []
-                
-            if isinstance(i, ChangeMask):
-                prev_exec_condition = get_exec(last_node)
-                next_exec_condition = decompiler_data.exec_registers[i.predicate.name]
-                else_parent_condition = prev_exec_condition.negated_sibling_parent(next_exec_condition)
-
-                if next_exec_condition.is_strict_superset_of(prev_exec_condition):
-                    change_mask_transition = "enter"
-                elif next_exec_condition.is_strict_subset_of(prev_exec_condition):
-                    change_mask_transition = "close"
-                    _close_open_masks(masked_blocks, next_exec_condition, parents)
-                elif else_parent_condition is not None:
-                    change_mask_transition = "else"
-                    else_branch_index = _find_open_mask_index(masked_blocks, prev_exec_condition)
-                    if else_branch_index is not None:
-                        previous_branch = masked_blocks[else_branch_index]
-                        else_parent_index = _find_open_mask_index(
-                            masked_blocks,
-                            else_parent_condition,
-                            else_branch_index,
-                        )
-                        if else_parent_index is None:
-                            else_parent_index = max(else_branch_index - 1, 0)
-                        parents = [previous_branch.change_mask]
-                        state = previous_branch.change_mask.state
-                        previous_branch_end = last_node
+        if last_node.instruction == "s_branch":
+            parents = []
             
-            last_node = i.to_fill_node(state, parents)
+        if isinstance(i, ChangeMask):
+            prev_exec_condition = get_exec(last_node)
+            next_exec_condition = decompiler_data.exec_registers[i.predicate.name]
+            else_parent_condition = prev_exec_condition.negated_sibling_parent(next_exec_condition)
 
-            if isinstance(i, ChangeMask):
-                if change_mask_transition == "enter":
-                    masked_blocks.append(_OpenMask(last_node))
-                elif change_mask_transition == "else" and else_branch_index is not None:
+            if next_exec_condition.is_strict_superset_of(prev_exec_condition):
+                change_mask_transition = "enter"
+            elif next_exec_condition.is_strict_subset_of(prev_exec_condition):
+                change_mask_transition = "close"
+                _close_open_masks(masked_blocks, next_exec_condition, parents)
+            elif else_parent_condition is not None:
+                change_mask_transition = "else"
+                else_branch_index = _find_open_mask_index(masked_blocks, prev_exec_condition)
+                if else_branch_index is not None:
+                    previous_branch = masked_blocks[else_branch_index]
+                    else_parent_index = _find_open_mask_index(
+                        masked_blocks,
+                        else_parent_condition,
+                        else_branch_index,
+                    )
                     if else_parent_index is None:
                         else_parent_index = max(else_branch_index - 1, 0)
-                    del masked_blocks[else_parent_index + 1:]
-                    masked_blocks.append(
-                        _OpenMask(
-                            last_node,
-                            previous_branch_end,
-                        )
+                    parents = [previous_branch.change_mask]
+                    state = previous_branch.change_mask.state
+                    previous_branch_end = last_node
+        
+        last_node = i.to_fill_node(state, parents)
+
+        if isinstance(i, ChangeMask):
+            if change_mask_transition == "enter":
+                masked_blocks.append(_OpenMask(last_node))
+            elif change_mask_transition == "else" and else_branch_index is not None:
+                if else_parent_index is None:
+                    else_parent_index = max(else_branch_index - 1, 0)
+                del masked_blocks[else_parent_index + 1:]
+                masked_blocks.append(
+                    _OpenMask(
+                        last_node,
+                        previous_branch_end,
                     )
+                )
 
 
-            if isinstance(i, EndPgm):
-                for masked_block in masked_blocks[1:]:
-                    if masked_block.previous_branch_end is not None:
-                        _connect(masked_block.previous_branch_end, last_node)
-                    else:
-                        _connect(masked_block.change_mask, last_node)
+        if isinstance(i, EndPgm):
+            for masked_block in masked_blocks[1:]:
+                if masked_block.previous_branch_end is not None:
+                    _connect(masked_block.previous_branch_end, last_node)
+                else:
+                    _connect(masked_block.change_mask, last_node)
 
-                
-            if len(last_node.parent) > 1:
-                find_max_and_prev_versions(last_node)
+            
+        if len(last_node.parent) > 1:
+            find_max_and_prev_versions(last_node)
 
     optimize_names_of_vars()
     if decompiler_data.global_data:

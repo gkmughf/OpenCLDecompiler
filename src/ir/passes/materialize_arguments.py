@@ -26,5 +26,5 @@ class MaterializeArgumentStoresPass(KernelPass):
         ]
         instructions = [MemoryAllocation(arg_ptr, is_scalar=True), *stores]
 
-        kernel.prepend_instructions(instructions)
+        kernel.instructions.prepend_list(instructions)
         kernel.arguments.mark_materialized()

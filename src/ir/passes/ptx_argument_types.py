@@ -11,7 +11,7 @@ class InferPTXArgumentTypesPass(KernelPass):
         inferred_types = context.metadata.setdefault("ptx_inferred_argument_types", {})
         inferred_count = 0
 
-        for instruction in kernel.get_instructions():
+        for instruction in kernel.instructions.get():
             if not isinstance(instruction, TypedMemoryLoad):
                 continue
 

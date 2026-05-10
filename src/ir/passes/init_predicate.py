@@ -14,5 +14,5 @@ class MaterializePredicatePass(KernelPass):
             for reg in kernel.predicates.all()
         ]
 
-        kernel.prepend_instructions(init_predicates)
+        kernel.instructions.prepend_list(init_predicates)
         kernel.predicates.mark_materialized()

@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
-
 from src.ir.registers.reg import PredReg, Reg64
-from src.ir.registers.register_manager import RegisterManager
 from src.model.config_data import KernelArgument
 from src.opencl_types import evaluate_size, make_asm_type
-
-if TYPE_CHECKING:
-    from src.ir.kernel import Kernel
+from src.ir.instructions.generic import GenericInstruction
 
 
 class KernelArguments:
@@ -121,3 +116,24 @@ class KernelPredicates:
 
     def mark_materialized(self) -> None:
         self._materialized = True
+
+
+class KernelInstructions:
+    def __init__(self) -> None:
+        self._instructions: list[GenericInstruction] = []
+
+
+    def append(self, instruction: GenericInstruction) -> None:
+        self._instructions.append(instruction)
+        
+    def prepend(self, instruction: GenericInstruction) -> None:
+        self._instructions.append(instruction)
+
+    def append_list(self, instructions: list[GenericInstruction]) -> None:
+        self._instructions = self._instructions + instructions
+
+    def prepend_list(self, instructions: list[GenericInstruction]) -> None:
+        self._instructions = instructions + self._instructions
+
+    def get(self) -> list[GenericInstruction]:
+        return self._instructions

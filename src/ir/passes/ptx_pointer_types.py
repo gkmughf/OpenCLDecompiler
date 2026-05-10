@@ -15,13 +15,10 @@ class InferPTXPointerTypesPass(KernelPass):
 
     def run(self, kernel, context: PassContext) -> None:
         flow = context.metadata.get("register_flow")
-        if not isinstance(flow, RegisterFlowGraph):
-            BuildRegisterFlowPass().run(kernel, context)
-            flow = context.metadata["register_flow"]
 
         inferred_types = context.metadata.setdefault("ptx_inferred_pointer_arg_types", {})
         inferred_count = 0
-        for index, instruction in enumerate(kernel.get_instructions()):
+        for index, instruction in enumerate(kernel.instructions.get()):
             if isinstance(instruction, TypedMemoryLoad):
                 if self._propagate_pointer_type(
                     kernel,
@@ -69,7 +66,7 @@ class InferPTXPointerTypesPass(KernelPass):
             return False
 
         #TODO(GFV) тут как-то расточительно 
-        writer = kernel.get_instructions()[writer_index]
+        writer = kernel.instructions.get()[writer_index]
         if self._try_update_argument_from_load(kernel, writer, type_name, inferred_types):
             return True
 

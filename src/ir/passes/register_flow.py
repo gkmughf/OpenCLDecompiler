@@ -41,7 +41,7 @@ class BuildRegisterFlowPass(KernelPass):
         graph = RegisterFlowGraph()
         last_writer: dict[str, int] = {}
 
-        for index, instruction in enumerate(kernel.get_instructions()):
+        for index, instruction in enumerate(kernel.instructions.get()):
             read_registers = instruction.get_read_register_names()
             written_registers = instruction.get_written_register_names()
 

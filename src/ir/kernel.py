@@ -1,11 +1,10 @@
 from typing import Any
-from src.ir.instructions.generic import GenericInstruction
 from src.ir.registers.reg import PredReg
-from src.ir.blocks import KernelBlocks
 from src.ir.kernel_components import (
     KernelArguments,
     KernelLocalMemory,
     KernelPredicates,
+    KernelInstructions,
 )
 
 
@@ -14,16 +13,16 @@ class Kernel:
         self.name = name
         self.work_group_size = work_group_size
 
-        self._blocks = KernelBlocks()
+        self._instructions = KernelInstructions()
         self._arguments = KernelArguments()
         self._local_memory = KernelLocalMemory()
         self._predicates = KernelPredicates()
 
 
     @property
-    def blocks(self) -> KernelBlocks:
-        return self._blocks
-    
+    def instructions(self) -> KernelInstructions:
+        return self._instructions
+
     @property
     def arguments(self) -> KernelArguments:
         return self._arguments
@@ -48,21 +47,8 @@ class Kernel:
            if predicate_reg is not None:
                instruction.set_predicate(predicate_reg)
 
-           self.blocks.append_instruction(instruction)
+           self.instructions.append(instruction)
            return self
-
-
-    def prepend_instructions(self, instructions: list[GenericInstruction]) -> None:
-        self.blocks.prepend_instructions(instructions)
-
-    def append_instructions(self, instructions: list[GenericInstruction]) -> None:
-        self.blocks.append_instructions(instructions)
-   
-    def get_instructions_parts(self) -> list[list[str]]:
-        return self.blocks.instruction_parts()
-
-    def get_instructions(self) -> list[GenericInstruction]:
-        return self.blocks.get_instructions()
 
     @staticmethod
     def _coerce_predicate(predicate: str | PredReg | None) -> PredReg | None:

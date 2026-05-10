@@ -15,5 +15,5 @@ class MaterializeLocalMemoryPass(KernelPass):
             for name, size in kernel.local_memory.all().items()
         ]
 
-        kernel.prepend_instructions(local_memories)
+        kernel.instructions.prepend_list(local_memories)
         kernel.local_memory.mark_materialized()
