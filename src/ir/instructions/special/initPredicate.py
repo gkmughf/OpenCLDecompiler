@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.registers.reg import PredReg
 from src.ir.instructions.lowering import NodeLoweringContext

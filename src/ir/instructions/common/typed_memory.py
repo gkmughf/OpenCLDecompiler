@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from src.ir.TemporaryVariableAllocator import tva
@@ -77,57 +75,6 @@ class TypedMemoryLoad(Load):
         self.access_type = access_type
         self.packed_value = self._make_internal_reg("typed_ld")
 
-    def get_operands(self):
-        if self.packed_value is not None:
-            assert isinstance(self.destination, CompositeReg)
-            return (
-                *self.destination.regs,
-                self.address,
-                self.offset,
-                self.packed_value,
-            )
-
-        if self._needs_dword_vector_load():
-            assert isinstance(self.destination, CompositeReg)
-            return (
-                self.destination,
-                *self.destination.regs,
-                self.address,
-                self.offset,
-            )
-
-        operands = list(super().get_operands())
-        return tuple(operands)
-
-    def get_parts(self) -> list[list[str]]:
-        if self.packed_value is None:
-            if self._needs_dword_vector_load():
-                destination = self.destination.name
-                address = self.address.name
-                offset = self.offset.name
-                return [[self._get_normalize_opcode(), destination, address, offset]]
-                
-            return super().get_parts()
-        
-        opcode = self._get_normalize_opcode()
-        packed_value_str = self.packed_value.name
-        address_str = self.address.name
-        offset_str = self.offset.name
-
-        result = [[opcode, packed_value_str, address_str, offset_str]]
-        
-        assert isinstance(self.destination, CompositeReg)
-        for index, destination in enumerate(self.destination.regs):
-            destination_str = destination.name
-            if index == 0:
-                result.append(["s_and_b32", destination_str, packed_value_str, self._low_mask()])
-                continue
-
-            selector = self._bfe_selector(index)
-            result.append(["s_bfe_u32", destination_str, packed_value_str, selector])
-
-        return result
-
     def to_fill_node(self, state, parents):
         if self.packed_value is None:              
             if self._needs_dword_vector_load():
@@ -202,42 +149,10 @@ class TypedMemoryStore(Store):
         self.store_value = self._make_dword_vector_store_value()
 
 
-    def get_operands(self):
-        if not self._needs_small_vector_pack():
-            if self.store_value is not None:
-                assert isinstance(self.value, CompositeReg)
-                return (
-                    self.address,
-                    *self.value.regs,
-                    self.store_value,
-                    *self.store_value.regs,
-                )
-
-            return super().get_operands()
-
-        assert isinstance(self.value, CompositeReg)
-        operands = [self.address, *self.value.regs, self.selector, self.packed_value]
-
-        return tuple(operands)
-
-
-    def get_parts(self) -> list[list[str]]:
-        if not isinstance(self.value, CompositeReg):
-            return super().get_operands()
-        
-        if self._needs_small_vector_pack():
-            return self._get_small_vector_store_parts()
-        
-        if self.store_value is not None:
-            return self._get_dword_vector_store_parts()
-        
-        return super().get_operands()
-
     def to_fill_node(self, state, parents):
         if not isinstance(self.value, CompositeReg):
             return super().to_fill_node(state, parents)
         
-
         if self._needs_small_vector_pack():
             return self._to_fill_small_vector_store_parts(state, parents)
         
@@ -259,30 +174,6 @@ class TypedMemoryStore(Store):
 
         return super().to_fill_node(ctx.state, ctx.parents)
     
-    def _get_small_vector_store_parts(self) -> list[list[str]]:
-        assert isinstance(self.value, CompositeReg)
-
-        opcode = self._get_normalize_opcode()
-        address = self.address.name
-        selector = self.selector.name
-        packed_value = self.packed_value.name
-        first_value = self.value.get_element(0).name
-        second_value = self.value.get_element(1).name
-
-        result = [
-            ["v_mov_b32", selector, self.PACK_SELECTOR],
-        ]
-
-        if self.access_type.vector_width == 2:
-            result.extend(
-                [
-                    ["v_perm_b32", packed_value, first_value, second_value, selector],
-                    [opcode, address, packed_value],
-                ]
-            )
-            return result
-
-        return super().get_parts()
 
     def _needs_small_vector_pack(self) -> bool:
         return (
@@ -320,23 +211,6 @@ class TypedMemoryStore(Store):
                 self.get_suffix()
         )
     
-    def _get_dword_vector_store_parts(self) -> list[list[str]]:
-        assert isinstance(self.value, CompositeReg)
-        assert self.store_value is not None
-
-        result = []
-        for index, source in enumerate(self.value.regs):
-            destination = self.store_value.get_element(index).name
-            source_text = source.name
-            result.append(["v_mov_b32", destination, source_text])
-        result.append(
-            [
-                self._get_normalize_opcode(),
-                self.address.name,
-                self.store_value.name,
-            ]
-        )
-        return result
     
     def _make_dword_vector_store_value(self) -> CompositeReg | None:
         if not self._needs_dword_vector_store():

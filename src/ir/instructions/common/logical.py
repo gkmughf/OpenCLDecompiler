@@ -28,57 +28,6 @@ class LogicalInstruction(GenericInstruction):
         if self._is_64bit():
             return f's_{self.operation}_b64'
         return f's_{self.operation}_b32'
-        
-    def _is_numeric_val(self, val: Val) -> bool:
-        if not isinstance(val, Val):
-            return False
-        
-        value = val.value.strip()
-        if not value:
-            return False
-        
-        if value.startswith(('0x', '0X')):
-            try:
-                int(value, 16)
-                return True
-            except ValueError:
-                return False
-            
-        try:
-            int(value, 10)
-            return True
-        except ValueError:
-            return False
-
-    def _split_val_to_64bit(self, val: Val) -> tuple[str, str]:
-        num_value = int(val.value, 0)
-
-        lo = num_value & 0xFFFFFFFF
-        hi = (num_value >> 32) & 0xFFFFFFFF
-        
-        return (f"{lo}", f"{hi}")
-
-
-    def get_parts(self) -> list[list[str]]:
-        result = []
-        opcode = self._get_normalize_opcode()
-        
-        if not self._is_64bit():
-            dest_str = self.destination.name
-            op1_str = self.operand1.name
-            op2_str = self.operand2.name
-            if self._is_numeric_val(self.operand1):
-                op1_str = self.operand1.value
-            result.append([opcode, dest_str, op1_str, op2_str])
-        else:
-            dest_lo = self.destination.name
-            op2_lo = self.operand2.name
-            
-            op1_str = self.operand1.name
-            
-            result.append([opcode, dest_lo, op1_str, op2_lo])
-        
-        return result
     
     def get_suffix(self):
         return "b64" if self._is_64bit() else "b32"

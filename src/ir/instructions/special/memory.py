@@ -8,6 +8,7 @@ from src.instructions.IRspecial.memory import MemoryAllocation as DecMA, StoreIn
 class MemoryAllocation(GenericInstruction):
     def __init__(self, destination: Reg64, is_scalar: bool = True):
         super().__init__("alloc", destination, is_scalar=is_scalar)
+        
     def _get_normalize_opcode(self) -> str:
         return "s_alloc"
 

@@ -1,4 +1,4 @@
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg32, expand_register_names, get_reg_rang, Val
+from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg32, get_reg_rang, Val
 from src.ir.instructions.generic import GenericInstruction
 
 from src.ir.instructions.lowering import NodeLoweringContext
@@ -76,24 +76,6 @@ class MulLo(GenericInstruction):
     def _get_normalize_opcode(self) -> str:
         return "v_mul_lo_i32"
     
-    def get_parts(self) -> list[list[str]]:
-        result = []
-
-        if not self._is_64bit():
-            return super().get_parts()
-        
-        dest_lo, dest_hi = expand_register_names(self.destination)
-        op1_lo, op1_hi = expand_register_names(self.operand1)
-        op2_lo, op2_hi = expand_register_names(self.operand2)
-
-        result.append(["v_mul_hi_u32", dest_lo, op1_lo, op2_lo])
-        result.append(["v_mul_lo_u32", dest_hi, op1_lo, op2_hi])
-        result.append(["v_add_u32", dest_hi, "vcc", dest_hi, dest_lo])
-        result.append(["v_mul_lo_u32", dest_lo, op1_hi, op2_lo])
-        result.append(["v_add_u32", dest_hi, "vcc", dest_hi, dest_lo])
-        result.append(["v_mul_lo_u32", dest_lo, op1_lo, op2_lo])
-
-        return result
 
     def to_fill_node(self, state, parents):
         ctx = NodeLoweringContext(state, parents)
@@ -108,42 +90,12 @@ class MulLo(GenericInstruction):
         dest_lo, dest_hi = get_reg_rang(self.destination)
         op1_lo, op1_hi = get_reg_rang(self.operand1)
         op2_lo, op2_hi = get_reg_rang(self.operand2)
-        ctx.emit_backend(
-            VMulHi,
-            "v_mul_hi_u32",
-            [dest_lo, op1_lo, op2_lo],
-            "u32",
-        )
-        ctx.emit_backend(
-            VMulLo,
-            "v_mul_lo_u32",
-            [dest_hi, op1_lo, op2_hi],
-            "u32",
-        )
-        ctx.emit_backend(
-            VAdd,
-            "v_add_u32",
-            [dest_hi, dest_hi, dest_lo],
-            "u32",
-        )
-        ctx.emit_backend(
-            VMulLo,
-            "v_mul_lo_u32",
-            [dest_lo, op1_hi, op2_lo],
-            "u32",
-        )
-        ctx.emit_backend(
-            VAdd,
-            "v_add_u32",
-            [dest_hi, dest_hi, dest_lo],
-            "u32",
-        )
-        return ctx.emit_backend(
-            VMulLo,
-            "v_mul_lo_u32",
-            [dest_lo, op1_lo, op2_lo],
-            "u32",
-        )
+        ctx.emit_backend(VMulHi, "v_mul_hi_u32", [dest_lo, op1_lo, op2_lo],   "u32")
+        ctx.emit_backend(VMulLo, "v_mul_lo_u32", [dest_hi, op1_lo, op2_hi],   "u32")
+        ctx.emit_backend(VAdd,   "v_add_u32",    [dest_hi, dest_hi, dest_lo], "u32")
+        ctx.emit_backend(VMulLo, "v_mul_lo_u32", [dest_lo, op1_hi, op2_lo],   "u32") 
+        ctx.emit_backend(VAdd,   "v_add_u32",    [dest_hi, dest_hi, dest_lo], "u32")
+        return ctx.emit_backend(VMulLo, "v_mul_lo_u32", [dest_lo, op1_lo, op2_lo], "u32")
 
 
 class MulLo_s(MulLo):
@@ -180,8 +132,6 @@ class MulHi_s(MulHi):
         super().__init__(destination, operand1, operand2, signed=True, is_scalar=is_scalar)    
 
 
-
-
 class MulWide(GenericInstruction):
     def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
         name =  "mul64_s" if signed else "mul64_u"   
@@ -197,14 +147,6 @@ class MulWide(GenericInstruction):
     def _get_normalize_opcode(self) -> str:
         return "v_mad_i64_i32"  if self.signed else "v_mad_u64_u32" 
     
-    def get_parts(self) -> list[list[str]]:
-        opcode = self._get_normalize_opcode()
-        dest_str = self.destination.name
-        op1_str = self.operand1.name
-        op2_str = self.operand2.name
-
-        return [[opcode, dest_str, '0', op1_str, op2_str, '0']]
-    
     def get_suffix(self):
         return "i64_i32" if self.signed else "u64_u32"
     
@@ -216,6 +158,7 @@ class MulWide(GenericInstruction):
             [self.destination, Val('0'), self.operand1, self.operand2, Val('0')],
             self.get_suffix(),
         )    
+    
 class MulWide_s(MulWide):
     def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar=False):
         super().__init__(destination, operand1, operand2, signed=True, is_scalar=is_scalar)    

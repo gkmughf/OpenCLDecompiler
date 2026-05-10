@@ -5,7 +5,7 @@ from src.ir.instructions.lowering import NodeLoweringContext
 
 class Barrier(GenericInstruction):
     def __init__(self, is_scalar: bool):
-        super().__init__("bar", is_scalar=is_scalar)
+        super().__init__("barrier", is_scalar=is_scalar)
    
     def _get_normalize_opcode(self) -> str:
         return "s_waitcnt"
@@ -16,7 +16,3 @@ class Barrier(GenericInstruction):
             self._get_normalize_opcode(),
             self.operands,
         )
-                
-    
-    def get_parts(self) -> list[list[str]]:
-        return [[self._get_normalize_opcode(), "lgkmcnt(0)"]]

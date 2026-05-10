@@ -28,17 +28,6 @@ class BaseCompare(GenericInstruction):
     def _get_normalize_opcode(self) -> str:
         return f'v_cmp_{self.operation}_i32'
 
-    def get_parts(self) -> list[list[str]]:
-        opcode = self._get_normalize_opcode()
-        operand1 = self.operand1.name
-        operand2 = self.operand2.name
-
-        if self.is_scalar():
-            return self._format_parts([[opcode, operand1, operand2]])
-
-        destination = self.destination.name
-        return [[opcode, destination, operand1, operand2]]
-
     def to_fill_node(self, state, parents):
         return NodeLoweringContext(state, parents).emit_backend(
             self.backend_instruction,

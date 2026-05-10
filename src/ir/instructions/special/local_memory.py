@@ -62,7 +62,7 @@ class LocalAdd(GenericInstruction):
         self.operand1_tmp_reg: Optional[Reg32] = None
         
         if isinstance(val, Val):
-            tmp_reg_name = tva.generate("mad")
+            tmp_reg_name = tva.generate("ladd")
             self.operand1_tmp_reg = Reg32(tmp_reg_name)
             self.operand1_val = val
 
@@ -72,28 +72,6 @@ class LocalAdd(GenericInstruction):
 
     def _get_normalize_opcode(self) -> str:
         return "ds_add_u32"
-    
-    def get_operands(self):
-        if self.operand1_tmp_reg is not None:
-            return super().get_operands() + (self.operand1_tmp_reg,)
-        return super().get_operands()
-    
-    def get_parts(self) -> list[list[str]]:
-        result = []
-
-        opcode = self._get_normalize_opcode()
-        dest_str = self.destination.name
-        op1_str = self.operand1.name
-
-        if self.operand1_val is not None:
-            tmp_reg_str = self.operand1_tmp_reg.name
-            val_str = self.operand1_val.name
-            result.append(["s_mov_b32", tmp_reg_str, val_str])
-            result.append([opcode, dest_str, tmp_reg_str])   
-            return result
-
-        result.append([opcode, dest_str, op1_str])   
-        return result
     
     def to_fill_node(self, state, parents):
         ctx = NodeLoweringContext(state, parents)

@@ -20,9 +20,4 @@ class Permute32(GenericInstruction):
     
     def to_fill_node(self, state, parents):
         ctx = NodeLoweringContext(state, parents)
-        return ctx.emit_backend(
-            VPerm,
-            "v_perm_b32",
-            self.operands,
-            "b32",
-        )
+        return ctx.emit_backend(VPerm, "v_perm_b32", self.operands, "b32")

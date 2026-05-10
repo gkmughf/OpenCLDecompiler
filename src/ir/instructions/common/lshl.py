@@ -15,22 +15,6 @@ class ShiftInstruction(GenericInstruction):
 
     def _is_64bit(self) -> bool:
         return self.destination.bit_width == 64
-
-    def _get_normalize_opcode(self) -> str:
-        raise NotImplementedError
-    
-    def get_parts(self) -> list[list[str]]:
-        result = []
-        opcode = self._get_normalize_opcode()
-        dest_str = self.destination.name
-        op1_str = self.operand1.name
-        op2_str =self.operand2.name
-        
-        if self.is_scalar():
-            result.append([opcode, dest_str, op1_str, op2_str])
-        else:
-            result.append([opcode, dest_str, op2_str, op1_str])
-        return result
     
     def get_suffix(self):
         if self._is_64bit():
@@ -88,6 +72,7 @@ class AShr_Rev(ShiftInstruction):
         if self._is_64bit():
             return "i64"
         return "i32"
+    
     def to_fill_node(self, state, parents):
         return NodeLoweringContext(state, parents).emit_backend(
             VAshrrev,
