@@ -1,5 +1,5 @@
 from src.base_instruction import BaseInstruction
-from src.decompiler_data import make_op, set_reg, set_reg_value
+from src.decompiler_data import make_op, set_reg, set_reg_value, set_reg_save, set_reg_value_save
 from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.expression_node import ExpressionOperationType
 from src.expression_manager.types.opencl_types import OpenCLTypes
@@ -43,11 +43,11 @@ class SAnd(BaseInstruction):
                 self.decompiler_data.exec_registers[self.vdst.name] = new_exec_condition
                 new_exec_cond_node = self.get_expression_node(self.src1)
 
-                return set_reg_value(
+                return set_reg_value_save(
                     self.node,
                     new_exec_condition.top(),
-                    self.vdst.name,
-                    [self.src0.name, self.src1.name],
+                    self.vdst,
+                    [self.src0, self.src1],
                     "b64",
                     exec_condition=new_exec_condition,
                     expression_node=new_exec_cond_node,
@@ -55,11 +55,11 @@ class SAnd(BaseInstruction):
             if self.src0.name in self.node.state and self.src1.name in self.node.state:
                 ssrc0 = self.node.get_from_state(self.src0)
 
-                return set_reg_value(
+                return set_reg_value_save(
                     node=self.node,
                     new_value=make_op(self.node, self.src0, self.src1, "&&", suffix=self.suffix),
-                    to_reg=self.vdst.name,
-                    from_regs=[self.src0.name, self.src1.name],
+                    to_reg=self.vdst,
+                    from_regs=[self.src0, self.src1],
                     data_type=self.suffix,
                     reg_type=ssrc0.type,
                     integrity=ssrc0.integrity,
@@ -126,7 +126,7 @@ class SAnd(BaseInstruction):
                     if maybe_new_reg is None:
                         new_value, reg_type, expr_node = default_behaviour()
                     else:
-                        return set_reg(
+                        return set_reg_save(
                             node=self.node,
                             to_reg=self.vdst,
                             from_regs=[self.src0, self.src1],
@@ -134,16 +134,16 @@ class SAnd(BaseInstruction):
                         )
                 else:
                     new_value, reg_type, expr_node = default_behaviour()
-                    return set_reg_value(
-                        node=self.node,
-                        new_value=new_value,
-                        to_reg=self.vdst.name,
-                        from_regs=[self.src0.name, self.src1.name],
-                        data_type=self.suffix,
-                        reg_type=reg_type,
-                        integrity=self.node.get_from_state(self.src1).integrity,
-                        expression_node=expr_node,
-                    )
+                return set_reg_value_save(
+                    node=self.node,
+                    new_value=new_value,
+                    to_reg=self.vdst,
+                    from_regs=[self.src0, self.src1],
+                    data_type=self.suffix,
+                    reg_type=reg_type,
+                    integrity=self.node.get_from_state(self.src1).integrity,
+                    expression_node=expr_node,
+                )
             else:
                 if self.src0 in self.node.state:
                     reg = self.node.get_from_state(self.src0)
@@ -152,11 +152,11 @@ class SAnd(BaseInstruction):
                     src0 = get_reg_rang(self.src0)[0]
                     reg = self.node.get_from_state(src0)
                     expr_node = self.get_expression_node(src0)
-                return set_reg_value(
+                return set_reg_value_save(
                     node=self.node,
                     new_value=reg.val,
-                    to_reg=self.vdst.name,
-                    from_regs=[self.src0.name, self.src1.name],
+                    to_reg=self.vdst,
+                    from_regs=[self.src0, self.src1],
                     data_type=self.suffix,
                     reg_type=reg.type,
                     integrity=reg.integrity,

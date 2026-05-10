@@ -33,6 +33,61 @@ from src.ir.registers.reg import expand_register_names, Val, is_predicate, get_r
 from src.ir.kernel import Kernel
 
 
+def set_reg_value_save(  # noqa: PLR0913
+    node,
+    new_value,
+    to_reg,
+    from_regs,
+    data_type,
+    exec_condition=None,
+    reg_type=RegisterType.UNKNOWN,
+    integrity=Integrity.ENTIRE,
+    register_content_type=RegisterContent,
+    sign: RegisterSignType | list[RegisterSignType] = RegisterSignType.POSITIVE,
+    operation: OperationType | None = None,
+    size: list[int] | None = None,
+    expression_node: ExpressionNode = None,
+):
+    assert isinstance(to_reg, BaseReg)
+    assert all((isinstance(item, BaseReg) or isinstance(item, Val)) for item in from_regs)
+    
+    from_regs_names = [reg.name for reg in from_regs]
+    res = set_reg_value(
+        node,
+        new_value,
+        to_reg.name,
+        from_regs_names,
+        data_type,
+        exec_condition,
+        reg_type,
+        integrity,
+        register_content_type,
+        sign,
+        operation,
+        size,
+        expression_node,
+    )
+    if ir_is_range(to_reg):
+        subreg_names = expand_register_names(to_reg)
+        for srn in subreg_names:
+            set_reg_value(
+                node,
+                new_value,
+                srn,
+                from_regs_names,
+                data_type,
+                exec_condition,
+                reg_type,
+                integrity,
+                register_content_type,
+                sign,
+                operation,
+                size,
+                expression_node,
+            )
+
+    return res
+
 def set_reg_value(  # noqa: PLR0913
     node,
     new_value,
@@ -148,6 +203,32 @@ def set_reg(
     reg: Register,
 ):
     return set_reg_value(
+        node=node,
+        new_value=reg.register_content._value,  # noqa: SLF001
+        to_reg=to_reg,
+        from_regs=from_regs,
+        data_type=reg.register_content._data_type,  # noqa: SLF001
+        reg_type=reg.register_content._type,  # noqa: SLF001
+        integrity=reg.integrity,
+        sign=reg.register_content._sign,  # noqa: SLF001
+        register_content_type=type(reg.register_content),
+        operation=reg.register_content._operation  # noqa: SLF001
+        if isinstance(
+            reg.register_content,
+            OperationRegisterContent,
+        )
+        else None,
+        size=reg.register_content._size,  # noqa: SLF001
+        expression_node=reg.register_content._expression_node,  # noqa: SLF001
+    )
+
+def set_reg_save(
+    node,
+    to_reg,
+    from_regs,
+    reg: Register,
+):
+    return set_reg_value_save(
         node=node,
         new_value=reg.register_content._value,  # noqa: SLF001
         to_reg=to_reg,

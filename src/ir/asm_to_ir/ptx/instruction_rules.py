@@ -126,7 +126,7 @@ instruction_rules = {
     "s_bfe_i32": same(bfe_s),
     "v_bfe_i32": same(bfe_s),
 
-    "bar.sync": same(Barrier),
+    "bar.sync": Rule([Emit(Barrier)]),
 
     "ret": same(EndPgm),
 }

@@ -7,6 +7,15 @@ from src.register_content import RegisterContent
 from src.register_type import RegisterType
 from src.ir.registers.reg import expand_register_names
 
+zero = Register(
+        integrity=Integrity.ENTIRE,
+        register_content=RegisterContent(
+            value="0",
+            type_=RegisterType.INT32,
+            expression_node=ExpressionManager().get_empty_node(),
+        ),
+    )
+
 usesetup_dict = {
     "0x0": Register(
         integrity=Integrity.ENTIRE,
@@ -80,8 +89,9 @@ def upload_kernel_param(state, offset, to_registers, base):
     decompiler_data = DecompilerData()
     dest_regs_name = expand_register_names(to_registers)
     start, end = 0, len(dest_regs_name)-1
+    content = None
     while start <= end:
-        content = decompiler_data.config_data.offset_to_content[base.name].get(hex(offset))
+        content = decompiler_data.config_data.offset_to_content[base.name].get(hex(offset), content)
         if not content:
             # Motivation example:
             #   1. We have three args of size and align 4 and then arg with size and align 8
@@ -109,6 +119,7 @@ def upload_kernel_param(state, offset, to_registers, base):
             start += 2
             offset += 8
         else:
+            
             break
 
 
