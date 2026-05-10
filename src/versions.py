@@ -67,7 +67,7 @@ def check_for_use_new_version_in_one_instruction(curr_node):
     for num_of_reg in range(0, len(curr_node.operands)):
         register = curr_node.operands[num_of_reg]
         if (
-            (re.match(r"(flat|global)_store", curr_node.instruction) or num_of_reg > 1)
+            (re.match(r"(flat|global)_store", curr_node.instruction) or num_of_reg > 0)
             and "cnd" not in curr_node.instruction
             and isinstance(register, BaseReg)
         ):

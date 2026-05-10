@@ -19,6 +19,7 @@ from src.utils import get_context
 from src.versions import change_values, check_for_use_new_version, find_max_and_prev_versions
 
 from src.ir.instructions.special.mask import ChangeMask
+from src.ir.instructions.control_flow import Jump
 from src.ir.instructions.common.endpgm import EndPgm
 from src.ir.kernel import Kernel
 
@@ -113,7 +114,9 @@ def process_src(  # noqa: C901, PLR0912, PLR0915
             else_parent_index = None
             previous_branch_end = None
 
-            
+            if last_node.instruction == "s_branch":
+                parents = []
+                
             if isinstance(i, ChangeMask):
                 prev_exec_condition = get_exec(last_node)
                 next_exec_condition = decompiler_data.exec_registers[i.predicate.name]

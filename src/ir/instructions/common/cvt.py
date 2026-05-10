@@ -122,3 +122,25 @@ class Cvt_i32_f32(GenericInstruction):
             self.operands,
             "i32_f32",
         )
+    
+class Cvt_f64_u32(GenericInstruction):
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, is_scalar: bool = False):
+        super().__init__("cvt_u32_to_f64", destination, operand1, is_scalar=is_scalar)
+        self.destination = destination
+        self.operand1 = operand1
+        
+    def _is_64bit(self) -> bool:
+        return False
+    
+    def _get_normalize_opcode(self) -> str:
+        return "v_cvt_f64_u32"
+    
+
+    def to_fill_node(self, state, parents):
+        ctx = NodeLoweringContext(state, parents)
+        return ctx.emit_backend(
+            VCvt,
+            "v_cvt_f64_u32",
+            self.operands,
+            "f64_u32",
+        )

@@ -8,17 +8,17 @@ from src.ir.instructions.common.logical import And, Or, Xor
 from src.ir.instructions.common.lshl import AShr, AShr_Rev, LShl, LShl_Rev, LShr, LShr_Rev
 from src.ir.instructions.common.mad import Mad
 from src.ir.instructions.common.mov import Mov
-from src.ir.instructions.common.mul import Mul24, MulHi, MulHi_s, MulLo, MulLo_s
+from src.ir.instructions.common.mul import Mul24, MulHi, MulHi_s, MulLo, MulLo_s, Mul_f, Mac_f32
 from src.ir.instructions.common.store import Store8, Store16, Store32, Store64, Store128, FStore8, FStore16, FStore32, FStore64, FStore128
-from src.ir.instructions.common.sub import Sub, SubRev
-from src.ir.instructions.common.cvt import Cvt64_32, Cvt_i32_f32
+from src.ir.instructions.common.sub import Sub, SubRev, Sub_f
+from src.ir.instructions.common.cvt import Cvt64_32, Cvt_i32_f32, Cvt_f64_u32
 from src.ir.instructions.special.local_memory import LocalAdd, LocalLoad, LocalStore
 from src.ir.instructions.common.permute import Permute32
 from src.ir.instructions.common.cselect import CSelect
 from src.ir.instructions.common.min import IRMin
 from src.ir.registers.reg import PredReg, Val
 from src.ir.instructions.common.compare import get_compare_class
-from src.ir.instructions.control_flow import Branch, BranchNot, Label
+from src.ir.instructions.control_flow import Branch, BranchNot, Label, Jump
 from src.ir.instructions.special.mask import ChangeMask
 from src.ir.instructions.ignore import Ignore
 
@@ -193,7 +193,7 @@ _local_load = Rule(
 
 
 instruction_rules = {
-    "s_branch": _branch(None),
+    "s_branch": same(Jump),
     "s_cbranch_scc0": _branch_not(PredReg("scc")),
     "s_cbranch_scc1": _branch(PredReg("scc")),
     "s_cbranch_execz": Rule([Emit(Ignore, is_scalar=True)]),
@@ -208,6 +208,7 @@ instruction_rules = {
 
     "v_add_u32": _ignore_explicit_vcc(Add),
     "s_add_u32": _ignore_explicit_vcc(Add),
+    "v_add_f64": same(Add),
     "v_addc_u32": _ignore_explicit_vcc(AddC),
     "s_addc_u32": _ignore_explicit_vcc(AddC),
 
@@ -216,6 +217,7 @@ instruction_rules = {
     "v_sub_u32": _ignore_explicit_vcc(Sub),
     "s_subb_u32": _ignore_explicit_vcc(Sub),
     "v_subb_u32": _ignore_explicit_vcc(Sub),
+    "v_sub_f32": same(Sub_f),
 
     "v_mul_u32": same(MulLo),
     "s_mul_u32": same(MulLo),
@@ -228,6 +230,8 @@ instruction_rules = {
     "v_mul_hi_i32": same(MulHi_s),
     "s_mul_hi_i32": same(MulHi_s),
     "v_mul_i32_i24": same(Mul24),
+    "v_mul_f32": same(Mul_f),
+    'v_mac_f32': same(Mac_f32),
 
     "v_mad_u32": same(Mad),
     "s_mad_u32": same(Mad),
@@ -290,6 +294,7 @@ instruction_rules = {
     "v_perm_b32": same(Permute32),
 
     "v_cvt_i32_f32": same(Cvt_i32_f32),
+    'v_cvt_f64_u32': same(Cvt_f64_u32),
 
     "s_endpgm": same(EndPgm),
 

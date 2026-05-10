@@ -6,6 +6,7 @@ from src.instructions.vop2.v_mul_f32 import VMulF32
 from src.instructions.vop3.v_mul_lo import VMulLo, VMulHi
 from src.instructions.vop2.v_add import VAdd
 from src.instructions.vop3.v_mad import VMad
+from src.instructions.vop2.v_mac import VMac
 
 class Mul24(GenericInstruction):
     def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
@@ -25,6 +26,40 @@ class Mul24(GenericInstruction):
             "i32_i24",
         )
     
+class Mul_f(GenericInstruction):
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
+        super().__init__("mul_f", destination, operand1, operand2, is_scalar=is_scalar)
+        self.signed = signed
+
+
+    def _get_normalize_opcode(self) -> str:
+        return "v_mul_f32"
+    
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            VMulF32,
+            self._get_normalize_opcode(),
+            self.operands,
+            "f32",
+        )
+    
+class Mac_f32(GenericInstruction):
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
+        super().__init__("mac_f", destination, operand1, operand2, is_scalar=is_scalar)
+        self.signed = signed
+
+
+    def _get_normalize_opcode(self) -> str:
+        return "v_mac_f32"
+    
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            VMac,
+            self._get_normalize_opcode(),
+            self.operands,
+            "f32",
+        )
+
 
 class MulLo(GenericInstruction):
     def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
