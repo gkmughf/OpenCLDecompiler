@@ -116,6 +116,10 @@ def upload_kernel_param(state, offset, to_registers, base):
             decompiler_data.set_reg_make_version(
                 state, dest_regs_name[start+1], Register(integrity=Integrity.HIGH_PART, register_content=content)
             )
+            if "|lo" in dest_regs_name[start]:
+                decompiler_data.set_reg_make_version(
+                state, dest_regs_name[start].replace("|lo", ""), Register(integrity=Integrity.ENTIRE, register_content=content)
+                )   
             start += 2
             offset += 8
         else:

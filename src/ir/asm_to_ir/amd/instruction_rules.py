@@ -1,5 +1,5 @@
 from src.ir.asm_to_ir.lowering import Emit, InstructionContext, Rule, op, same, tmp64
-from src.ir.instructions.common.add import Add, AddC
+from src.ir.instructions.common.add import Add, AddC, AddF
 from src.ir.instructions.common.barrier import Barrier
 from src.ir.instructions.common.bfe import bfe, bfe_s
 from src.ir.instructions.common.endpgm import EndPgm
@@ -208,7 +208,7 @@ instruction_rules = {
 
     "v_add_u32": _ignore_explicit_vcc(Add),
     "s_add_u32": _ignore_explicit_vcc(Add),
-    "v_add_f64": same(Add),
+    "v_add_f64": same(AddF),
     "v_addc_u32": _ignore_explicit_vcc(AddC),
     "s_addc_u32": _ignore_explicit_vcc(AddC),
 

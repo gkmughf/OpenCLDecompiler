@@ -42,15 +42,9 @@ class Add(GenericInstruction):
         return ctx.emit_backend(
             VAdd,
             self._get_normalize_opcode(),
-            [dest_lo, op1_lo, op2_lo],
+            [self.destination, self.operand1, self.operand2],
             "u32",
         )
-        # return ctx.emit_backend(
-        #     VAddc,
-        #     self._get_normalize_opcode(is_addc=True),
-        #     [dest_hi, op1_hi, op2_hi],
-        #     "u32",
-        # )
 
 
 
@@ -73,4 +67,22 @@ class AddC(GenericInstruction):
             "u32",
         )
 
+
+class AddF(GenericInstruction):
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar: bool = False):
+        super().__init__("addc", destination, operand1, operand2, is_scalar=is_scalar)
+        self.destination = destination
+        self.operand1 = operand1
+        self.operand2 = operand2
         
+
+    def _get_normalize_opcode(self) -> str:
+        return "v_add_f64"
+    
+    def to_fill_node(self, state, parents):
+        return NodeLoweringContext(state, parents).emit_backend(
+            VAdd,
+            self._get_normalize_opcode(),
+            self.operands,
+            "f64",
+        )

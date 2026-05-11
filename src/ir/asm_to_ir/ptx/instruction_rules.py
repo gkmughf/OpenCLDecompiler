@@ -1,5 +1,5 @@
 from src.ir.asm_to_ir.lowering import Emit, Rule, named64, op, same
-from src.ir.instructions.common.add import Add
+from src.ir.instructions.common.add import Add, AddF
 from src.ir.instructions.common.barrier import Barrier
 from src.ir.instructions.common.bfe import bfe, bfe_s
 from src.ir.instructions.common.compare import get_compare_class
@@ -7,10 +7,10 @@ from src.ir.instructions.common.cvt import Cvt32_16, Cvt64_32, Cvt64_32_s, Cvt_i
 from src.ir.instructions.common.endpgm import EndPgm
 from src.ir.instructions.common.load import Load32, Load64#, LoadParamVector2U8
 from src.ir.instructions.common.logical import And, Or
-from src.ir.instructions.common.lshl import LShl
+from src.ir.instructions.common.lshl import LShl, AShr
 from src.ir.instructions.common.mad import Mad
 from src.ir.instructions.common.mov import Mov
-from src.ir.instructions.common.mul import MulHi, MulHi_s, MulLo, MulLo_s, MulWide, MulWide_s
+from src.ir.instructions.common.mul import MulHi, MulHi_s, MulLo, MulLo_s, MulWide, MulWide_s, Mul_f
 from src.ir.instructions.common.store import FStore8, FStore32, FStore64#, StoreGlobalVector2U8
 from src.ir.instructions.common.sub import Sub
 from src.ir.instructions.control_flow import Branch, BranchNot, Jump, Label
@@ -198,7 +198,7 @@ instruction_rules = {
     "add.s32": same(Add),
     "add.s64": same(Add),
     "add.s16": same(Add),
-    "add.f64": same(Add),
+    "add.f64": same(AddF),
     
     "sub.s32": same(Sub),
     "sub.s64": same(Sub),
@@ -212,6 +212,7 @@ instruction_rules = {
     "mul.wide.s32": same(MulWide_s),
     "mul.wide.u32": same(MulWide),
     "mul.lo.s64": same(MulLo),
+    "mul.f32": same(Mul_f),
 
     "mad.lo.s32": same(Mad),
 
@@ -220,6 +221,7 @@ instruction_rules = {
     "mov.u32": same(Mov),
     "mov.b64": same(Mov),
     "mov.u64": same(Mov),
+    "mov.f32": same(Mov),
 
     "cvt.s64.s32": same(Cvt64_32_s),
     "cvt.u64.u32": same(Cvt64_32),
@@ -232,6 +234,7 @@ instruction_rules = {
     "shl.b16": same(LShl),
     "shl.b32": same(LShl),
     "shl.b64": same(LShl),
+    "shr.s64": same(AShr),
 
     "and.b64": same(And),
 
