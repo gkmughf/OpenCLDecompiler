@@ -24,6 +24,9 @@ from src.ir.instructions.common.min import IRMin
 
 
 _MEMORY_TYPE_PATTERN = re.compile(r"^[busf](8|16|32|64)$")
+_MEMORY_ADDRESS_OFFSET_PATTERN = re.compile(
+    r"^\[\s*(%[\w.$]+)\s*([+-])\s*([+-]?(?:0x[0-9a-fA-F]+|\d+))\s*\]$"
+)
 
 def get_instruction_rule(opcode: str, args_offset) -> Rule | None:
     if opcode.startswith("."):
@@ -60,7 +63,7 @@ def _branch() -> Rule:
         elif ctx.predicate_negated:
             ctx.kernel.create_instruction(Branch, predicate, target, is_scalar=True)
         else:
-            tmo_predicate = PredReg(f"{predicate.name}_not")
+            tmo_predicate = PredReg(f"{predicate.name}Not")
             ctx.kernel.predicates.add(tmo_predicate)
             ctx.kernel.create_instruction(Not, tmo_predicate, predicate, is_scalar=True)
             ctx.kernel.create_instruction(BranchNot, tmo_predicate, target, is_scalar=True)
@@ -117,7 +120,8 @@ def _param_load(opcode: str, args_offset) -> Rule:
 def _global_load(opcode: str) -> Rule:
     access_type = _parse_memory_access_type(opcode)
     def emit_global_load(ctx) -> None:
-        ctx.emit(TypedMemoryLoad, ctx.operand(0), ctx.operand(1), Val("0"), access_type, is_scalar=False)
+        address = _emit_address_operand(ctx, 1)
+        ctx.emit(TypedMemoryLoad, ctx.operand(0), address, Val("0"), access_type, is_scalar=False)
 
     return Rule.dynamic(emit_global_load)
 
@@ -125,9 +129,46 @@ def _global_load(opcode: str) -> Rule:
 def _global_store(opcode: str) -> Rule:
     access_type = _parse_memory_access_type(opcode)
     def emit_global_store(ctx) -> None:
-        ctx.emit(TypedMemoryStore, ctx.operand(0), ctx.operand(1), access_type, is_scalar=False)
+        address = _emit_address_operand(ctx, 0)
+        ctx.emit(TypedMemoryStore, address, ctx.operand(1), access_type, is_scalar=False)
 
     return Rule.dynamic(emit_global_store)
+
+
+def _operand_token(ctx, operand_index: int) -> str:
+    operand_tokens = ctx.extras.get("operand_tokens", [])
+    if operand_index < len(operand_tokens):
+        return operand_tokens[operand_index]
+
+    return ctx.operand(operand_index).name
+
+
+def _parse_memory_address_offset(token: str) -> Val | None:
+    match = _MEMORY_ADDRESS_OFFSET_PATTERN.match(token)
+    if match is None:
+        return None
+
+    sign = match.group(2)
+    offset = int(match.group(3), 0)
+    if sign == "-":
+        offset = -offset
+
+    return Val(str(offset))
+
+
+def _emit_address_operand(ctx, operand_index: int):
+    offset = _parse_memory_address_offset(_operand_token(ctx, operand_index))
+    if offset is None:
+        return ctx.operand(operand_index)
+
+    offset32 = ctx.tmp("offset", "32")
+    offset64 = ctx.tmp("offset64", "64")
+    address = ctx.tmp("address", "64")
+
+    ctx.emit(Mov, offset32, offset)
+    ctx.emit(Cvt64_32_s, offset64, offset32)
+    ctx.emit(Add, address, ctx.operand(operand_index), offset64)
+    return address
 
 
 def _parse_memory_access_type(opcode: str) -> MemoryAccessType:

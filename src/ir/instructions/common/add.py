@@ -39,18 +39,18 @@ class Add(GenericInstruction):
         else:
             op2_lo, op2_hi = get_reg_rang(self.operand2)
 
-        ctx.emit_backend(
+        return ctx.emit_backend(
             VAdd,
             self._get_normalize_opcode(),
             [dest_lo, op1_lo, op2_lo],
             "u32",
         )
-        return ctx.emit_backend(
-            VAddc,
-            self._get_normalize_opcode(is_addc=True),
-            [dest_hi, op1_hi, op2_hi],
-            "u32",
-        )
+        # return ctx.emit_backend(
+        #     VAddc,
+        #     self._get_normalize_opcode(is_addc=True),
+        #     [dest_hi, op1_hi, op2_hi],
+        #     "u32",
+        # )
 
 
 

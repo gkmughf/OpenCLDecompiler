@@ -1,3 +1,5 @@
+import re
+
 from src.ir.kernel import Kernel
 
 from src.ir.instructions.control_flow import Label
@@ -10,6 +12,11 @@ from src.ir.asm_to_ir.ptx.register_factory import RegFactory
 from src.ir.asm_to_ir.ptx.instruction_rules import get_instruction_rule
 
 from src.ir.asm_to_ir.ptx.ptx_kernel import PTXKernel, PTXArgument
+
+
+_MEMORY_ADDRESS_OFFSET_PATTERN = re.compile(
+    r"^\[\s*(%[\w.$]+)\s*[+-]\s*[+-]?(?:0x[0-9a-fA-F]+|\d+)\s*\]$"
+)
 
 
 def _strip_array_suffix(name: str) -> str:
@@ -70,11 +77,20 @@ def _split_operands(text: str) -> list[str]:
     return operands
 
 
+def _normalize_memory_operand_for_rf(operand: str) -> str:
+    match = _MEMORY_ADDRESS_OFFSET_PATTERN.match(operand)
+    if match is None:
+        return operand
+
+    return f"[{match.group(1)}]"
+
+
 def _create_instruction_from_opcode(
     kernel: Kernel,
     opcode: str,
     operands: list[RegOrVal_ty],
     args_offset,
+    operand_tokens: list[str] | None = None,
     predicate: PredReg | None = None,
     predicate_negated: bool = False,
 ):
@@ -91,6 +107,7 @@ def _create_instruction_from_opcode(
             predicate_negated=predicate_negated,
             extras={
                 "args_offset": args_offset,
+                "operand_tokens": operand_tokens or [],
             },
         )
     )
@@ -245,7 +262,8 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
         operand_tokens = _split_operands(parts[1]) if len(parts) > 1 else []
 
         for operand in operand_tokens:
-            parsed_operand = rf.get_or_create_auto(operand)
+            normalized_operand = _normalize_memory_operand_for_rf(operand)
+            parsed_operand = rf.get_or_create_auto(normalized_operand)
             operands.append(parsed_operand)
 
         predicate = None
@@ -258,6 +276,7 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
             opcode,
             operands,
             args_offset,
+            operand_tokens=operand_tokens,
             predicate=predicate,
             predicate_negated=predicate_negated,
         )

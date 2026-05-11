@@ -705,9 +705,16 @@ class ExpressionManager(metaclass=Singleton):
         # That's why we try to use unoptimized node here
         if node in self._optimized_nodes_to_original:
             node = copy.deepcopy(self._optimized_nodes_to_original[node])
-
         original_node = copy.deepcopy(node)
-        node = node.replace(from_node, to_node)
+        #TODO(GFV) я не уверен что так правильно но только так и работает 
+        if from_node in self._optimized_nodes_to_original:
+            tmp = copy.deepcopy(self._optimized_nodes_to_original[from_node])
+            node = node.replace(tmp, to_node)
+            if original_node.contents_equal(node):
+                node = node.replace(from_node, to_node)
+        else:
+            node = node.replace(from_node, to_node)
+
         if not original_node.contents_equal(node):
             return self.apply_optimizations(node)
 

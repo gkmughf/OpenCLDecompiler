@@ -92,7 +92,7 @@ class InstructionContext:
                 )
             return existing
 
-        tmp_name = tva.generate(f"tmp_{name}")
+        tmp_name = tva.generate(f"tmp|{name}")
         new_reg = create_register(tmp_name, normalized_kind)
         self._temps[name] = new_reg
         return new_reg
