@@ -1,7 +1,7 @@
 import copy
 
 from src.base_instruction import BaseInstruction
-from src.decompiler_data import set_reg
+from src.decompiler_data import set_reg, set_reg_save
 from src.integrity import Integrity
 from src.ir.registers.reg import is_reg, Val, get_reg_rang, is_range
 
@@ -35,22 +35,25 @@ class VMad(BaseInstruction):
 
         if self.suffix == "u64_u32":
             new_reg.cast_to("u64")
+        else:
+            new_reg.cast_to("i64")
+
 
         low_part_reg = copy.deepcopy(new_reg)
         low_part_reg.integrity = Integrity.LOW_PART
         high_part_reg = copy.deepcopy(new_reg)
         high_part_reg.integrity = Integrity.LOW_PART
 
-        set_reg(
+        set_reg_save(
             node=self.node,
-            to_reg=self.vdst_from.name,
-            from_regs=[self.src0.name, self.src1.name, self.src2.name],
+            to_reg=self.vdst_from,
+            from_regs=[self.src0, self.src1, self.src2],
             reg=low_part_reg,
         )
-        set_reg(
+        set_reg_save(
             node=self.node,
-            to_reg=self.vdst_to.name,
-            from_regs=[self.src0.name, self.src1.name, self.src2.name],
+            to_reg=self.vdst_to,
+            from_regs=[self.src0, self.src1, self.src2],
             reg=high_part_reg,
         )
 

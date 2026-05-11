@@ -31,7 +31,7 @@ class SOr(BaseInstruction):
                 if is_predicate(self.ssrc1):
                     self.ssrc1, self.ssrc0 = self.ssrc0, self.ssrc1
                 old_exec_condition = self.decompiler_data.exec_registers[self.ssrc0.name]
-                new_cond = self.node.get_from_state(self.ssrc1).val
+                new_cond = self.decompiler_data.exec_registers[self.ssrc1.name]
                 new_exec_condition = old_exec_condition | new_cond
                 self.decompiler_data.exec_registers[self.sdst.name] = new_exec_condition
 

@@ -1,5 +1,5 @@
 from src.ir.instructions.generic import GenericInstruction
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, get_reg_rang
+from src.ir.registers.reg import Reg_ty, RegOrVal_ty, get_reg_rang, Val
 
 from src.ir.instructions.lowering import NodeLoweringContext
 from src.instructions.vop2.v_add import VAdd
@@ -34,7 +34,10 @@ class Add(GenericInstruction):
 
         dest_lo, dest_hi = get_reg_rang(self.destination)
         op1_lo, op1_hi = get_reg_rang(self.operand1)
-        op2_lo, op2_hi = get_reg_rang(self.operand2)
+        if isinstance(self.operand2, Val):
+            op2_lo, op2_hi = self.operand2, self.operand2
+        else:
+            op2_lo, op2_hi = get_reg_rang(self.operand2)
 
         ctx.emit_backend(
             VAdd,

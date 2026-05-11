@@ -1,10 +1,10 @@
 from src.base_instruction import BaseInstruction
-from src.decompiler_data import set_reg_value, try_get_reg
+from src.decompiler_data import set_reg_value_save, try_get_reg
 from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.expression_node import ExpressionType
 from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.register_type import RegisterType
-from src.ir.registers.reg import is_reg
+from src.ir.registers.reg import is_reg, Reg32
 
 
 class VCndmask(BaseInstruction):
@@ -27,36 +27,36 @@ class VCndmask(BaseInstruction):
         if self.suffix == "b32":
             if self.src1.name in self.node.state and self.node.get_from_state(self.src1).type == RegisterType.DIVISION_PT8:
                 new_value = self.node.get_from_state(self.src1).val
-                return set_reg_value(
+                return set_reg_value_save(
                     self.node,
                     new_value,
-                    self.vdst.name,
-                    [self.src0.name, self.src1.name],
+                    self.vdst,
+                    [self.src0, self.src1],
                     self.suffix,
                     reg_type=RegisterType.DIVISION_PT9,
                     expression_node=self.get_expression_node(self.src1),
                 )
             if self.src1.name in self.node.state and self.node.get_from_state(self.src1).type == RegisterType.DIVISION_PT10:
                 new_value = self.node.get_from_state(self.src1).val
-                return set_reg_value(
+                return set_reg_value_save(
                     self.node,
                     new_value,
-                    self.vdst.name,
-                    [self.src0.name, self.src1.name],
+                    self.vdst,
+                    [self.src0, self.src1],
                     self.suffix,
                     reg_type=RegisterType.UNKNOWN,
                     expression_node=self.get_expression_node(self.src1),
                 )
             if self.ssrc2.name in self.node.state and self.node.get_from_state(self.ssrc2).type == RegisterType.DIVISION_PASS:
-                return set_reg_value(
+                return set_reg_value_save(
                     self.node, "", self.vdst, [self.src0, self.src1], self.suffix, reg_type=RegisterType.DIVISION_PASS
                 )
             if self.ssrc2.name in self.node.state and self.node.get_from_state(self.ssrc2).val == "0":
-                return set_reg_value(
+                return set_reg_value_save(
                     self.node,
                     self.src0.name,
-                    self.vdst.name,
-                    [self.src0.name, self.src1.name],
+                    self.vdst,
+                    [self.src0, self.src1],
                     self.suffix,
                     expression_node=self.get_expression_node(self.src0),
                 )
@@ -83,11 +83,11 @@ class VCndmask(BaseInstruction):
                 self.get_expression_node(self.src0), self.get_expression_node(self.src1)
             ).set_is_const(False)
             var_node = self.expression_manager.add_variable_node(variable, src0_src1_common_type)
-            node = set_reg_value(
+            node = set_reg_value_save(
                 self.node,
                 variable,
-                self.vdst.name,
-                [self.src0.name, self.src1.name],
+                self.vdst,
+                [self.src0, self.src1],
                 self.suffix,
                 reg_type=reg_type,
                 expression_node=var_node,

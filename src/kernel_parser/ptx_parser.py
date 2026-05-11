@@ -1,10 +1,11 @@
 import re
-from src.ir.asm_to_ir.ptx.ptx_kernel import PTXKernel, PTXRegister, PTXArgument
+from src.ir.asm_to_ir.ptx.ptx_kernel import PTXKernel, PTXRegister, PTXArgument, PTXInstruction
 
 
 SPECIAL_REG_PATTERN = re.compile(
     r'%(?:envreg\d+|(?:ntid|ctaid|tid|nctaid)\.[xyz])'
 )
+PREDICATE_PATTERN = re.compile(r'^@(!?)(%[\w.$]+)\s+(.+)$')
 
 def _parse_params(func: PTXKernel, text: str):
     text = text.replace(')', '')
@@ -56,6 +57,7 @@ def _parse_reg(func: PTXKernel, line: str):
         rtype, prefix, count = m.groups()
         for n in range(1, int(count) + 1):
             func.registers.append(PTXRegister(name=f"%{prefix}{n}", reg_type=rtype))
+        return
 
 def _parse_locals(func: PTXKernel, line: str):
     m = re.match(r'\.shared\s+(?:\.align\s+\d+\s+)?\.(\w+)\s+([^\s\[]+)\[(\d+)\]', line)
@@ -73,6 +75,20 @@ def _parse_locals(func: PTXKernel, line: str):
         
         total_size = element_size * int(count)
         func.locals[name] = total_size
+
+
+def _parse_instruction(line: str) -> PTXInstruction:
+    text = ' '.join(line.rstrip(';').split())
+    predicate_match = PREDICATE_PATTERN.match(text)
+    if predicate_match is None:
+        return PTXInstruction(text=text)
+
+    negation, predicate, body = predicate_match.groups()
+    return PTXInstruction(
+        text=body.strip(),
+        predicate=predicate,
+        predicate_negated=bool(negation),
+    )
 
 def parse_kernel(lines: list[str]):
     func = None
@@ -117,8 +133,8 @@ def parse_kernel(lines: list[str]):
                 state = 'start'
 
             elif line and not line.startswith('.'):
-                instr = ' '.join(line.rstrip(';').split())
+                instr = _parse_instruction(line)
                 func.instructions.append(instr)
-                func.special_registers.extend(SPECIAL_REG_PATTERN.findall(instr))
+                func.special_registers.extend(SPECIAL_REG_PATTERN.findall(instr.text))
 
 

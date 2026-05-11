@@ -41,11 +41,12 @@ class Kernel:
            *args: Any,
            is_scalar: bool = False,
            predicate: str | PredReg | None = None,
+           predicate_negated: bool = False,
         ) -> "Kernel":
            instruction = instruction_class(*args, is_scalar=is_scalar)
            predicate_reg = self._coerce_predicate(predicate)
            if predicate_reg is not None:
-               instruction.set_predicate(predicate_reg)
+               instruction.set_predicate(predicate_reg, predicate_negated)
 
            self.instructions.append(instruction)
            return self

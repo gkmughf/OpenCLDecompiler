@@ -1,4 +1,4 @@
-from src.ir.registers.reg import Reg64, Reg32, Val, Reg_ty, RegOrVal_ty, CompositeReg
+from src.ir.registers.reg import PredReg, Reg64, Reg32, Val, Reg_ty, RegOrVal_ty, CompositeReg
 
 class RegFactory:
     def __init__(self):
@@ -25,6 +25,9 @@ class RegFactory:
         if reg_name.startswith("%fd"):
             return Reg64(reg_name)
 
+        if reg_name.startswith("%p"):
+            return PredReg(reg_name)
+
         if reg_name.startswith("%r") or reg_name.startswith("%rs") or reg_name.startswith("%f"):
             return Reg32(reg_name)
 
@@ -34,7 +37,7 @@ class RegFactory:
 
         return Val(reg_name)
 
-    def get_or_create_auto(self, reg_name: str) -> Reg32 | Reg64:
+    def get_or_create_auto(self, reg_name: str) -> RegOrVal_ty:
         if reg_name in self._registry:
             return self._registry[reg_name]
 
@@ -43,7 +46,7 @@ class RegFactory:
 
         return reg
     
-    def get_or_create(self, reg_name: str, reg_type: str) -> Reg32 | Reg64:
+    def get_or_create(self, reg_name: str, reg_type: str) -> Reg_ty:
         if reg_name in self._registry:
             return self._registry[reg_name]
 
@@ -51,6 +54,10 @@ class RegFactory:
             new_reg = Reg32(reg_name)
         elif reg_type == "64":
             new_reg = Reg64(reg_name)
+        elif reg_type in ("pred", "predicate"):
+            new_reg = PredReg(reg_name)
+        else:
+            raise ValueError(f"Unknown PTX register type: {reg_type}")
 
         self._registry[reg_name] = new_reg
 

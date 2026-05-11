@@ -18,8 +18,8 @@ class Mad(GenericInstruction):
             self.operand3_val = operand3
 
         if destination.bit_width == 32:
-            dest_name = tva.generate("mad_dest")
-            dest_hi = Reg32(tva.generate("dest_hi"))
+            dest_name = tva.generate("maddest")
+            dest_hi = Reg32(tva.generate("desthi"))
             destination = CompositeReg(dest_name, [destination, dest_hi])
 
         name =  "mad_s" if signed else "mad_u"   

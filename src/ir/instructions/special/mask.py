@@ -24,3 +24,20 @@ class ChangeMask(GenericInstruction):
 
     def has_side_effects(self) -> bool:
         return True
+
+
+class Unmask(GenericInstruction):
+    def __init__(self, is_scalar: bool = True):
+        super().__init__("unmask", is_scalar=is_scalar)
+
+    def _get_normalize_opcode(self):
+        return "unmask"
+
+    def to_fill_node(self, state, parents):
+        return super().to_fill_node(state, parents)
+
+    def writes_first_operand(self) -> bool:
+        return False
+
+    def has_side_effects(self) -> bool:
+        return True

@@ -19,8 +19,10 @@ class ExecCondition:
 
         if self.is_superset_of(other):
             return ExecCondition.from_conditions(other.condition_set())
-        assert other.is_superset_of(self)
-        return ExecCondition.from_conditions(self.condition_set())
+        if other.is_superset_of(self):
+            return ExecCondition.from_conditions(self.condition_set())
+        
+        return ExecCondition.from_conditions(str(self)+"||" + str(other))
 
     def __xor__(self, other: "ExecCondition") -> "ExecCondition":
         if other.is_strict_subset_of(self):

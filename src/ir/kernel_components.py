@@ -106,6 +106,8 @@ class KernelPredicates:
         self._materialized = False
 
     def add(self, predicate: PredReg) -> None:
+        if any(existing.name == predicate.name for existing in self._predicates):
+            return
         self._predicates.append(predicate)
 
     def all(self) -> list[PredReg]:
@@ -134,6 +136,9 @@ class KernelInstructions:
 
     def prepend_list(self, instructions: list[GenericInstruction]) -> None:
         self._instructions = instructions + self._instructions
+
+    def replace_all(self, instructions: list[GenericInstruction]) -> None:
+        self._instructions = list(instructions)
 
     def get(self) -> list[GenericInstruction]:
         return self._instructions

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from src.ir.instructions.common.typed_memory import TypedMemoryLoad
+from src.ir.instructions.common.typed_memory import MemoryAccessType, TypedMemoryLoad
 from src.ir.passes.base import KernelPass, PassContext
+from src.opencl_types import evaluate_size, make_asm_type
 
 
 class InferPTXArgumentTypesPass(KernelPass):
@@ -29,7 +30,7 @@ class InferPTXArgumentTypesPass(KernelPass):
             if argument is None or argument.name.startswith("*"):
                 continue
 
-            type_name = instruction.access_type.to_value_type()
+            type_name = self._infer_type_name(instruction.access_type, argument)
             inferred_type = inferred_types.get(offset)
             if inferred_type is not None:
                 continue
@@ -41,6 +42,33 @@ class InferPTXArgumentTypesPass(KernelPass):
             inferred_count += 1
 
         context.metadata["ptx_argument_types_inferred"] = inferred_count
+
+    @staticmethod
+    def _infer_type_name(access_type: MemoryAccessType, argument) -> str:
+        type_name = access_type.to_value_type()
+        declared_size = argument.declared_size if argument.declared_size else argument.size
+        element_size = access_type.element_bits // 8
+
+        if declared_size <= 0 or element_size <= 0:
+            return type_name
+
+        if declared_size % element_size != 0:
+            return type_name
+
+        declared_vector_width = declared_size // element_size
+        if declared_vector_width <= access_type.vector_width:
+            return type_name
+
+        declared_type = MemoryAccessType(
+            access_type.address_space,
+            access_type.base_type,
+            declared_vector_width,
+        ).to_value_type()
+        declared_type_size, _ = evaluate_size(make_asm_type(declared_type))
+        if declared_type_size != declared_size:
+            return type_name
+
+        return declared_type
 
     @staticmethod
     def _parse_int_value(value: str) -> int | None:

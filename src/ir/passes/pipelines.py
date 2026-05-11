@@ -5,15 +5,18 @@ from src.ir.passes.materialize_local_memory import MaterializeLocalMemoryPass
 from src.ir.passes.ptx_pointer_types import InferPTXPointerTypesPass
 from src.ir.passes.register_flow import BuildRegisterFlowPass
 from src.ir.passes.init_predicate import MaterializePredicatePass
+from src.ir.passes.ptx_predicates import PTXPredicatesPass
 
 PTX_PIPELINE = PassPipeline(
     [
         BuildRegisterFlowPass(),
         InferPTXArgumentTypesPass(),
         InferPTXPointerTypesPass(),
+        PTXPredicatesPass(),
 
         MaterializeArgumentStoresPass(),
         MaterializeLocalMemoryPass(),
+        MaterializePredicatePass(),
     ]
 )
 AMD_PIPELINE = PassPipeline(

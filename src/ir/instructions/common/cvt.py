@@ -61,6 +61,23 @@ class Cvt32_16(GenericInstruction):
             "b32",
         )
         
+class Cvt32_64(GenericInstruction):
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, 
+                 signed: bool = False, is_scalar: bool = False):
+        super().__init__("cvt64to32", destination, operand1, is_scalar=is_scalar)
+        self.destination = destination
+        self.operand1 = operand1
+        self.signed = signed
+
+    def to_fill_node(self, state, parents):
+        ctx = NodeLoweringContext(state, parents)
+        return ctx.emit_backend(
+            SMov,
+            "s_mov_b32",
+            [self.destination, self.operand1.get_element(0)],
+            "b32",
+        )
+    
 
 class Cvt_i32_f32(GenericInstruction):
     def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, is_scalar: bool = False):

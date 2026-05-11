@@ -1,14 +1,12 @@
 from src.ir.kernel import Kernel
 
-from src.ir.instructions.control_flow import Branch, Label
-from src.ir.instructions.special.memory import MemoryAllocation
+from src.ir.instructions.control_flow import Label
 from src.ir.instructions.special.InitReg import InitReg
-from src.ir.registers.reg import Val, RegOrVal_ty, Reg64
+from src.ir.registers.reg import PredReg, Val, RegOrVal_ty, Reg64
 
 from src.ir.asm_to_ir.lowering import InstructionContext
 from src.ir.asm_to_ir.ptx.register_factory import RegFactory
 
-from src.ir.instructions.special.memory import Store
 from src.ir.asm_to_ir.ptx.instruction_rules import get_instruction_rule
 
 from src.ir.asm_to_ir.ptx.ptx_kernel import PTXKernel, PTXArgument
@@ -32,30 +30,13 @@ def _align_to_eight(size: int) -> int:
     return ((size + 7) // 8) * 8
 
 
-def _argument_storage_size(arg: PTXArgument) -> int:
+def _argument_declared_size(arg: PTXArgument) -> int:
     if arg.is_pointer:
         return 8
 
     element_count = _extract_array_size(arg.name) or 1
     element_size = max(1, arg.size // 8)
-    return _align_to_eight(element_size * element_count)
-
-
-def _parse_setp_opcode(opcode: str) -> tuple[str, str]:
-    parts = opcode.split(".")
-    if len(parts) != 3:
-        raise NotImplementedError(opcode)
-
-    _, comparison, data_type = parts
-    normalized_type = {
-        "s8": "i8",
-        "s16": "i16",
-        "s32": "i32",
-        "s64": "i64",
-    }.get(data_type, data_type)
-
-    return comparison, normalized_type
-
+    return element_size * element_count
 
 def _split_operands(text: str) -> list[str]:
     operands: list[str] = []
@@ -94,24 +75,9 @@ def _create_instruction_from_opcode(
     opcode: str,
     operands: list[RegOrVal_ty],
     args_offset,
-    predicate: str | None = None,
+    predicate: PredReg | None = None,
+    predicate_negated: bool = False,
 ):
-    # if opcode == "bra":
-    #     kernel.create_instruction(Branch, Val(operands[0].name), is_scalar=True, predicate=predicate)
-    #     return
-
-    # if opcode.startswith("setp."):
-    #     comparison, data_type = _parse_setp_opcode(opcode)
-    #     kernel.create_instruction(
-    #         Compare,
-    #         *operands,
-    #         comparison,
-    #         data_type,
-    #         is_scalar=False,
-    #         predicate=predicate,
-    #     )
-    #     return
-
     rule = get_instruction_rule(opcode, args_offset)
     if rule is None:
         raise NotImplementedError(opcode)
@@ -122,7 +88,10 @@ def _create_instruction_from_opcode(
             operands=operands,
             is_scalar=False,
             predicate=predicate,
-            extras={"args_offset": args_offset},
+            predicate_negated=predicate_negated,
+            extras={
+                "args_offset": args_offset,
+            },
         )
     )
 
@@ -143,6 +112,7 @@ def _normalize_arg_type(arg: PTXArgument) -> str:
         ("b8", 4): "char4",
         ("u8", 4): "char4",
         ("s8", 4): "char4",
+        ("b8", 32): "uint8",
     }
     type_to_type = {
         "b8": "char",
@@ -217,12 +187,11 @@ def _init_special_registers(kernel: Kernel, rf: RegFactory, special_registers: l
             kernel.create_instruction(InitReg, rf.get_or_create_auto(reg_name), Val(value))
 
 
-def _split_predicate(line: str) -> tuple[str | None, str]:
-    if not line.startswith("@"):
-        return None, line
+def _ensure_predicate(kernel: Kernel, rf: RegFactory, predicate_name: str) -> PredReg:
+    predicate = rf.get_or_create(predicate_name, "pred")
+    kernel.predicates.add(predicate)
+    return predicate
 
-    predicate_token, _, body = line.partition(" ")
-    return predicate_token[1:], body.strip()
 
 def textToIR(kernel_info: PTXKernel) -> Kernel:
     rf = RegFactory()
@@ -233,12 +202,23 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
         kernel.local_memory.set(name, size)
         parsed_operand = rf.get_or_create(name, "64")
 
+    for register in kernel_info.registers:
+        if register.reg_type == "pred":
+            kernel.predicates.add(rf.get_or_create(register.name, "pred"))
+
     args_offset = {}
     offset = 0
     for arg_idx, arg in enumerate(kernel_info.arguments):
-        kernel.arguments.add(_normalize_arg_name(arg, arg_idx), _normalize_arg_type(arg), arg.is_const, offset=offset)
+        declared_size = _argument_declared_size(arg)
+        kernel_argument = kernel.arguments.add(
+            _normalize_arg_name(arg, arg_idx),
+            _normalize_arg_type(arg),
+            arg.is_const,
+            offset=offset,
+        )
+        kernel_argument.declared_size = declared_size
         args_offset[_strip_array_suffix(arg.name)] = Val(hex(offset,))
-        offset += _argument_storage_size(arg)
+        offset += _align_to_eight(declared_size)
     
     arg_reg_name = "argptr"
     agr_reg = Reg64(arg_reg_name)
@@ -246,19 +226,15 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
 
     _init_special_registers(kernel, rf, kernel_info.special_registers)
 
-    for line in kernel_info.instructions:
-        line = line.strip()
+    for instruction_info in kernel_info.instructions:
+        line = instruction_info.text.strip()
         if not line:
             continue
 
         if line.endswith(":"):
-            kernel.create_instruction(Label, Val(line[:-1]), is_scalar=True)
+            kernel.create_instruction(Label, "."+line[:-1], is_scalar=True)
             continue
 
-        predicate, line = _split_predicate(line)
-        if not line:
-            continue
-        
         parts = line.split(None, 1)
         if not parts:
             continue
@@ -271,7 +247,19 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
         for operand in operand_tokens:
             parsed_operand = rf.get_or_create_auto(operand)
             operands.append(parsed_operand)
-        
-        _create_instruction_from_opcode(kernel, opcode, operands, args_offset, predicate=predicate)
+
+        predicate = None
+        predicate_negated = instruction_info.predicate_negated
+        if instruction_info.predicate is not None:
+            predicate = _ensure_predicate(kernel, rf, instruction_info.predicate)
+
+        _create_instruction_from_opcode(
+            kernel,
+            opcode,
+            operands,
+            args_offset,
+            predicate=predicate,
+            predicate_negated=predicate_negated,
+        )
 
     return kernel

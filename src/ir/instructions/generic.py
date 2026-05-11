@@ -10,6 +10,8 @@ class GenericInstruction:
         self.opcode = opcode
         self.operands = tuple(operands)
         self._is_scalar = is_scalar
+        self._predicate: PredReg | None = None
+        self._predicate_negated = False
 
     def to_text(self) -> str:
         if self.operands:
@@ -33,12 +35,16 @@ class GenericInstruction:
     def get_predicate(self) -> PredReg | None:
         return self._predicate
     
-    def set_predicate(self, predicate: PredReg | None) -> "GenericInstruction":
+    def set_predicate(self, predicate: PredReg | None, predicate_negated: bool = False) -> "GenericInstruction":
         self._predicate = predicate
+        self._predicate_negated = predicate is not None and predicate_negated
         return self
     
     def has_predicate(self) -> bool:
         return self._predicate is not None
+
+    def is_predicate_negated(self) -> bool:
+        return self._predicate_negated
     
     def is_control_flow(self) -> bool:
         return False

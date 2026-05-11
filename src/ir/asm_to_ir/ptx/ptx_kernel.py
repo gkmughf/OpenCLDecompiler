@@ -16,6 +16,12 @@ class PTXRegister:
     reg_type: str
 
 @dataclass
+class PTXInstruction:
+    text: str
+    predicate: str | None = None
+    predicate_negated: bool = False
+
+@dataclass
 class PTXKernel:
     name: str
     locals: dict[str, int] = field(default_factory=dict)
@@ -23,4 +29,4 @@ class PTXKernel:
     arguments: list[PTXArgument] = field(default_factory=list)
     registers: list[PTXRegister] = field(default_factory=list)
     special_registers: list[str] = field(default_factory=list)
-    instructions: list[str] = field(default_factory=list)
+    instructions: list[PTXInstruction] = field(default_factory=list)

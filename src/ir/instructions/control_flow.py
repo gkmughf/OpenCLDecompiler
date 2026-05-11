@@ -7,12 +7,12 @@ from src.instructions.sopp.s_branch import SBranch
 from src.instructions.label import Label as backend_Label
 
 class Label(GenericInstruction):
-    def __init__(self, name: Val, is_scalar: bool = True):
-        super().__init__("label", name, is_scalar=is_scalar)
-        self.name = name
+    def __init__(self, label: str, is_scalar: bool = True):
+        super().__init__("label", label, is_scalar=is_scalar)
+        self.label = label
 
     def to_text(self) -> str:
-        return f"label {self.name.to_text()}"
+        return f"label {self.label.to_text()}"
 
     def writes_first_operand(self) -> bool:
         return False
@@ -23,7 +23,7 @@ class Label(GenericInstruction):
     def to_fill_node(self, state, parents):
         return NodeLoweringContext(state, parents).emit_backend(
             backend_Label,
-            self.name,
+            self.label,
             [],
         )
 
