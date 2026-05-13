@@ -1,12 +1,12 @@
 from src.ir.instructions.special.local_memory import LocalMemory
-from src.ir.passes.base import KernelPass, PassContext
+from src.ir.passes.base import PassContext
 from src.ir.registers.reg import Reg64, Val
 
 
-class MaterializeLocalMemoryPass(KernelPass):
+class MaterializeLocalMemoryPass:
     name = "materialize-local-memory"
 
-    def run(self, kernel, context: PassContext) -> None:
+    def run(self, kernel, _context: PassContext) -> None:
         if kernel.local_memory.is_materialized():
             return
 

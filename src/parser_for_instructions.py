@@ -2,19 +2,16 @@ import argparse
 import sys
 from pathlib import Path
 
-from src.decompiler import process_src
 from src.decompiler_data import DecompilerData
 from src.flag_type import FlagType
 from src.graph import GraphType
 from src.graph.control_flow_graph import CONTROL_FLOW_GRAPH_ENABLED_CONTEXT_KEY, ControlFlowGraph
-from src.kernel_parser import parse_kernel as parse_kernel_amd
-from src.kernel_parser.ptx_parser import parse_kernel as parse_kernel_ptx
-from src.utils import get_context
-
 from src.ir.asm_to_ir.amd.asm_to_ir import textToIR as textToIR_amd
 from src.ir.asm_to_ir.ptx.asm_to_ir import textToIR as textToIR_ptx
 from src.ir.passes.pipelines import AMD_PIPELINE, PTX_PIPELINE
-
+from src.kernel_parser import parse_kernel as parse_kernel_amd
+from src.kernel_parser.ptx_parser import parse_kernel as parse_kernel_ptx
+from src.utils import get_context
 
 CONTEXT = get_context()
 
@@ -44,30 +41,23 @@ def main(input_par, output_par, flag_for_decompilation, cfg_path, unrolling_limi
         decompiler_data.unrolling_limit = unrolling_limit
 
         flag_newline = False
-        if Path(input_par).suffix == '.ptx':
-            ptxKernel = parse_kernel_ptx(body_of_file.splitlines())
-            for func in ptxKernel:
+        if Path(input_par).suffix == ".ptx":
+            ptx_kernel = parse_kernel_ptx(body_of_file.splitlines())
+            for func in ptx_kernel:
                 kernel = textToIR_ptx(func)
-                PTX_PIPELINE.run(kernel)
-                # print(kernel.to_text())
                 if flag_newline:
                     output_file.write("\n")
                 flag_newline = True
-                process_src(kernel)
+                PTX_PIPELINE.run(kernel)
         else:
             functions_data, decompiler_data.gpu = parse_kernel_amd(body_of_file.splitlines())
             for function_data in functions_data:
-                # function_data[0] = kernel_name
-                # function_data[1] = config
-                # function_data[2] = instructions
                 function_data[1].kernel_name = function_data[0]
                 kernel = textToIR_amd(function_data[2], function_data[1])
-                AMD_PIPELINE.run(kernel)
-                # print(kernel.to_text())
                 if flag_newline:
                     output_file.write("\n")
                 flag_newline = True
-                process_src(kernel)
+                AMD_PIPELINE.run(kernel)
 
 
 def create_parser():

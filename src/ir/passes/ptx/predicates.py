@@ -1,14 +1,14 @@
+from src.ir.instructions.common.Not import Not
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.instructions.special.mask import ChangeMask, Unmask
-from src.ir.instructions.common.Not import Not
-from src.ir.passes.base import KernelPass, PassContext
+from src.ir.passes.base import PassContext
 from src.ir.registers.reg import PredReg
 
 
-class PTXPredicatesPass(KernelPass):
+class PTXPredicatesPass:
     name = "ptx-predicates"
 
-    def run(self, kernel, context: PassContext) -> None:
+    def run(self, kernel, _context: PassContext) -> None:
         instructions: list[GenericInstruction] = []
         open_predicate: PredReg | None = None
 
@@ -25,7 +25,7 @@ class PTXPredicatesPass(KernelPass):
             predicate_negated = instruction.is_predicate_negated()
             mask_predicate = predicate
             if predicate_negated:
-                mask_predicate = PredReg(f"{predicate.name}_not")
+                mask_predicate = PredReg(f"{predicate.name}Not")
                 kernel.predicates.add(mask_predicate)
 
             if open_predicate is None:

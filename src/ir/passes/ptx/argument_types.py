@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from src.ir.instructions.common.typed_memory import MemoryAccessType, TypedMemoryLoad
-from src.ir.passes.base import KernelPass, PassContext
+from src.ir.passes.base import PassContext
 from src.opencl_types import evaluate_size, make_asm_type
 
 
-class InferPTXArgumentTypesPass(KernelPass):
+class InferPTXArgumentTypesPass:
     name = "infer-ptx-argument-types"
 
     def run(self, kernel, context: PassContext) -> None:

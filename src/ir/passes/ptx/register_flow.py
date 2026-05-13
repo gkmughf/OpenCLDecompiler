@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-
-from src.ir.instructions.common.load import Load
-from src.ir.instructions.common.mov import Mov
-from src.ir.instructions.common.typed_memory import TypedMemoryLoad
-from src.ir.passes.base import KernelPass, PassContext
-from src.ir.registers.reg import BaseReg
 from typing import TYPE_CHECKING
+
+from src.ir.passes.base import PassContext
 
 if TYPE_CHECKING:
     from src.ir.kernel import Kernel
@@ -30,7 +26,7 @@ class RegisterFlowGraph:
         return self.writer_by_use.get((reader_index, register_name))
 
 
-class BuildRegisterFlowPass(KernelPass):
+class BuildRegisterFlowPass:
     name = "build-register-flow"
 
     def run(self, kernel, context: PassContext) -> None:

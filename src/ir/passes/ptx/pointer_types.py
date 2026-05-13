@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from src.ir.instructions.common.load import Load
 from src.ir.instructions.common.typed_memory import TypedMemoryLoad, TypedMemoryStore
-from src.ir.passes.base import KernelPass, PassContext
-from src.ir.passes.register_flow import BuildRegisterFlowPass, RegisterFlowGraph
+from src.ir.passes.base import PassContext
+from src.ir.passes.ptx.register_flow import RegisterFlowGraph
 from src.ir.registers.reg import BaseReg, get_reg_rang
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.ir.kernel import Kernel
 
-class InferPTXPointerTypesPass(KernelPass):
+
+PTX_POINTER_SIZE_BITS = 64
+
+
+class InferPTXPointerTypesPass:
     name = "infer-ptx-pointer-types"
 
     def run(self, kernel, context: PassContext) -> None:
@@ -43,10 +48,11 @@ class InferPTXPointerTypesPass(KernelPass):
                     set(),
                 ):
                     inferred_count += 1
+                continue
 
         context.metadata["ptx_pointer_types_inferred"] = inferred_count
 
-    def _propagate_pointer_type(
+    def _propagate_pointer_type(  # noqa: PLR0913
         self,
         kernel: Kernel,
         flow: RegisterFlowGraph,
@@ -65,7 +71,6 @@ class InferPTXPointerTypesPass(KernelPass):
         if writer_index is None:
             return False
 
-        #TODO(GFV) тут как-то расточительно 
         writer = kernel.instructions.get()[writer_index]
         if self._try_update_argument_from_load(kernel, writer, type_name, inferred_types):
             return True
@@ -87,7 +92,7 @@ class InferPTXPointerTypesPass(KernelPass):
 
         return updated
 
-    def _try_update_argument_from_load(
+    def _try_update_argument_from_load(  # noqa: PLR0911
         self,
         kernel: Kernel,
         instruction,
@@ -100,7 +105,7 @@ class InferPTXPointerTypesPass(KernelPass):
         if instruction.address.name != kernel.arguments.arg_ptr().name:
             return False
 
-        if instruction.size != 64:
+        if instruction.size != PTX_POINTER_SIZE_BITS:
             return False
 
         offset = self._parse_int_value(instruction.offset.value)

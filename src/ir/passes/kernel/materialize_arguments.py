@@ -1,12 +1,12 @@
 from src.ir.instructions.special.memory import MemoryAllocation, Store
-from src.ir.passes.base import KernelPass, PassContext
+from src.ir.passes.base import PassContext
 from src.ir.registers.reg import Val
 
 
-class MaterializeArgumentStoresPass(KernelPass):
+class MaterializeArgumentStoresPass:
     name = "materialize-argument-stores"
 
-    def run(self, kernel, context: PassContext) -> None:
+    def run(self, kernel, _context: PassContext) -> None:
         if kernel.arguments.is_materialized():
             return
 

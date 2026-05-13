@@ -1,11 +1,11 @@
 from src.ir.instructions.special.initPredicate import InitPredicate
-from src.ir.passes.base import KernelPass, PassContext
+from src.ir.passes.base import PassContext
 
 
-class MaterializePredicatePass(KernelPass):
+class MaterializePredicatePass:
     name = "materialize-predicate"
 
-    def run(self, kernel, context: PassContext) -> None:
+    def run(self, kernel, _context: PassContext) -> None:
         if kernel.predicates.is_materialized():
             return
 

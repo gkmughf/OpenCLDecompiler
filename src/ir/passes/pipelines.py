@@ -1,28 +1,106 @@
 from src.ir.passes.base import PassPipeline
-from src.ir.passes.materialize_arguments import MaterializeArgumentStoresPass
-from src.ir.passes.ptx_argument_types import InferPTXArgumentTypesPass
-from src.ir.passes.materialize_local_memory import MaterializeLocalMemoryPass
-from src.ir.passes.ptx_pointer_types import InferPTXPointerTypesPass
-from src.ir.passes.register_flow import BuildRegisterFlowPass
-from src.ir.passes.init_predicate import MaterializePredicatePass
-from src.ir.passes.ptx_predicates import PTXPredicatesPass
+from src.ir.passes.decompilation import (
+    BuildDecompilerCfgPass,
+    BuildRegionGraphPass,
+    EmitOpenCLPass,
+    FinalizeDecompilerValuesPass,
+    KernelToDecompilerPipelineAdaptor,
+    NormalizeDecompilerStatePass,
+    ProcessUnrolledLoopsPass,
+    RenderControlFlowGraphPass,
+)
+from src.ir.passes.kernel import (
+    MaterializeArgumentStoresPass,
+    MaterializeLocalMemoryPass,
+    MaterializePredicatePass,
+)
+from src.ir.passes.ptx import (
+    BuildRegisterFlowPass,
+    InferPTXArgumentTypesPass,
+    InferPTXPointerTypesPass,
+    PTXPredicatesPass,
+)
 
-PTX_PIPELINE = PassPipeline(
+PTX_PRE_DECOMPILATION_PIPELINE = PassPipeline.named(
+    "ptx-pre-decompilation",
     [
         BuildRegisterFlowPass(),
         InferPTXArgumentTypesPass(),
         InferPTXPointerTypesPass(),
         PTXPredicatesPass(),
-
-        MaterializeArgumentStoresPass(),
-        MaterializeLocalMemoryPass(),
-        MaterializePredicatePass(),
-    ]
+    ],
 )
-AMD_PIPELINE = PassPipeline(
+
+COMMON_KERNEL_LOWERING_PIPELINE = PassPipeline.named(
+    "common-kernel-lowering",
     [
         MaterializeArgumentStoresPass(),
         MaterializeLocalMemoryPass(),
         MaterializePredicatePass(),
     ]
+)
+
+CORE_DECOMPILATION_PIPELINE = PassPipeline.named(
+    "core-decompilation",
+    [
+        BuildDecompilerCfgPass(),
+        NormalizeDecompilerStatePass(),
+        BuildRegionGraphPass(),
+    ],
+)
+
+DIAGNOSTIC_OUTPUT_PIPELINE = PassPipeline.named(
+    "diagnostic-output",
+    [
+        RenderControlFlowGraphPass(),
+    ],
+)
+
+POST_DECOMPILATION_PIPELINE = PassPipeline.named(
+    "post-decompilation",
+    [
+        FinalizeDecompilerValuesPass(),
+        ProcessUnrolledLoopsPass(),
+    ],
+)
+
+EMIT_OPENCL_PIPELINE = PassPipeline.named(
+    "emit-opencl",
+    [
+        EmitOpenCLPass(),
+    ],
+)
+
+DECOMPILATION_PIPELINE = PassPipeline.named(
+    "decompilation",
+    [
+        CORE_DECOMPILATION_PIPELINE,
+        DIAGNOSTIC_OUTPUT_PIPELINE,
+        POST_DECOMPILATION_PIPELINE,
+        EMIT_OPENCL_PIPELINE,
+    ],
+)
+
+KERNEL_DECOMPILATION_PIPELINE = PassPipeline.named(
+    "kernel-decompilation",
+    [
+        KernelToDecompilerPipelineAdaptor(DECOMPILATION_PIPELINE),
+    ],
+)
+
+PTX_PIPELINE = PassPipeline.named(
+    "ptx",
+    [
+        PTX_PRE_DECOMPILATION_PIPELINE,
+        COMMON_KERNEL_LOWERING_PIPELINE,
+        KERNEL_DECOMPILATION_PIPELINE,
+    ],
+)
+
+AMD_PIPELINE = PassPipeline.named(
+    "amd",
+    [
+        COMMON_KERNEL_LOWERING_PIPELINE,
+        KERNEL_DECOMPILATION_PIPELINE,
+    ],
 )
