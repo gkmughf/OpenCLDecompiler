@@ -8,8 +8,8 @@ from src.instructions.vop1.v_cvt import VCvt
 
 class Cvt64_32(GenericInstruction):
     def __init__(self, destination: Reg64, operand1: RegOrVal_ty,
-                 signed=False,  is_scalar=False):
-        super().__init__("cvt32to64", destination, operand1, is_scalar=is_scalar)
+                 signed=False):
+        super().__init__("cvt32to64", destination, operand1)
         self.destination = destination
         self.operand1 = operand1
         self.signed = signed
@@ -41,13 +41,13 @@ class Cvt64_32(GenericInstruction):
        
 
 class Cvt64_32_s(Cvt64_32):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, is_scalar=False):
-        super().__init__(destination, operand1, is_scalar=is_scalar, signed=True)
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty):
+        super().__init__(destination, operand1, signed=True)
     
 class Cvt32_16(GenericInstruction):
     def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, 
-                 signed: bool = False, is_scalar: bool = False):
-        super().__init__("cvt16to32", destination, operand1, is_scalar=is_scalar)
+                 signed: bool = False):
+        super().__init__("cvt16to32", destination, operand1)
         self.destination = destination
         self.operand1 = operand1
         self.signed = signed
@@ -63,8 +63,8 @@ class Cvt32_16(GenericInstruction):
         
 class Cvt32_64(GenericInstruction):
     def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, 
-                 signed: bool = False, is_scalar: bool = False):
-        super().__init__("cvt64to32", destination, operand1, is_scalar=is_scalar)
+                 signed: bool = False):
+        super().__init__("cvt64to32", destination, operand1)
         self.destination = destination
         self.operand1 = operand1
         self.signed = signed
@@ -80,8 +80,8 @@ class Cvt32_64(GenericInstruction):
     
 
 class Cvt_i32_f32(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, is_scalar: bool = False):
-        super().__init__("cvt_f32_to_i32", destination, operand1, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty):
+        super().__init__("cvt_f32_to_i32", destination, operand1)
         self.destination = destination
         self.operand1 = operand1
     
@@ -98,8 +98,8 @@ class Cvt_i32_f32(GenericInstruction):
         )
     
 class Cvt_f64_u32(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, is_scalar: bool = False):
-        super().__init__("cvt_u32_to_f64", destination, operand1, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty):
+        super().__init__("cvt_u32_to_f64", destination, operand1)
         self.destination = destination
         self.operand1 = operand1
     

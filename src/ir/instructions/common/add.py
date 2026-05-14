@@ -7,8 +7,8 @@ from src.instructions.vop2.v_addc import VAddc
 
 
 class Add(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar: bool = False):
-        super().__init__("add", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__("add", destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -42,8 +42,8 @@ class Add(GenericInstruction):
 
 
 class AddC(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar: bool = False):
-        super().__init__("addc", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__("addc", destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -62,8 +62,8 @@ class AddC(GenericInstruction):
 
 
 class AddF(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar: bool = False):
-        super().__init__("addc", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__("addc", destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2

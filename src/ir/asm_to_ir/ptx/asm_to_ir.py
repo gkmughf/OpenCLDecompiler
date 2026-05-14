@@ -102,7 +102,6 @@ def _create_instruction_from_opcode(
         InstructionContext(
             kernel=kernel,
             operands=operands,
-            is_scalar=False,
             predicate=predicate,
             predicate_negated=predicate_negated,
             extras={
@@ -249,7 +248,7 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
             continue
 
         if line.endswith(":"):
-            kernel.create_instruction(Label, "."+line[:-1], is_scalar=True)
+            kernel.create_instruction(Label, "."+line[:-1])
             continue
 
         parts = line.split(None, 1)

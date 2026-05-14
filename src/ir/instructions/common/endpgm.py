@@ -4,8 +4,8 @@ from src.ir.instructions.lowering import NodeLoweringContext
 from src.instructions.sopp.s_endpgm import SEndpgm
 
 class EndPgm(GenericInstruction):
-    def __init__(self, is_scalar: bool):
-        super().__init__("endpgm", is_scalar=is_scalar)
+    def __init__(self):
+        super().__init__("endpgm")
    
     def _get_normalize_opcode(self) -> str:
         return "s_endpgm"

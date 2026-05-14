@@ -4,8 +4,8 @@ from src.ir.instructions.lowering import NodeLoweringContext
 from src.instructions.sop2.s_min import SMin
 
 class IRMin(GenericInstruction):
-    def __init__(self, dst, src0, src1,  is_scalar: bool):
-        super().__init__("min", dst, src0, src1, is_scalar=is_scalar)
+    def __init__(self, dst, src0, src1):
+        super().__init__("min", dst, src0, src1)
    
     def _get_normalize_opcode(self) -> str:
         return "s_min_i32"

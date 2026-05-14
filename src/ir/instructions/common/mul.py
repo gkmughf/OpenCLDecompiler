@@ -9,9 +9,9 @@ from src.instructions.vop3.v_mad import VMad
 from src.instructions.vop2.v_mac import VMac
 
 class Mul24(GenericInstruction):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
         name =  "mul_s" if signed else "mul_u"   
-        super().__init__(name, destination, operand1, operand2, is_scalar=is_scalar)
+        super().__init__(name, destination, operand1, operand2)
         self.signed = signed
 
 
@@ -27,8 +27,8 @@ class Mul24(GenericInstruction):
         )
     
 class Mul_f(GenericInstruction):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
-        super().__init__("mul_f", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
+        super().__init__("mul_f", destination, operand1, operand2)
         self.signed = signed
 
 
@@ -44,8 +44,8 @@ class Mul_f(GenericInstruction):
         )
     
 class Mac_f32(GenericInstruction):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
-        super().__init__("mac_f", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
+        super().__init__("mac_f", destination, operand1, operand2)
         self.signed = signed
 
 
@@ -62,9 +62,9 @@ class Mac_f32(GenericInstruction):
 
 
 class MulLo(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
         name =  "mul_s" if signed else "mul_u"   
-        super().__init__(name, destination, operand1, operand2, is_scalar=is_scalar)
+        super().__init__(name, destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -99,16 +99,16 @@ class MulLo(GenericInstruction):
 
 
 class MulLo_s(MulLo):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar=False):
-        super().__init__(destination, operand1, operand2, signed=True, is_scalar=is_scalar)
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__(destination, operand1, operand2, signed=True)
 
 
 
 
 class MulHi(GenericInstruction):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
         name =  "mul_hi_s" if signed else "mul_hi_u"   
-        super().__init__(name, destination, operand1, operand2, is_scalar=is_scalar)
+        super().__init__(name, destination, operand1, operand2)
         self.signed = signed
 
     def _get_normalize_opcode(self) -> str:
@@ -128,14 +128,14 @@ class MulHi(GenericInstruction):
 
 
 class MulHi_s(MulHi):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar=False):
-        super().__init__(destination, operand1, operand2, signed=True, is_scalar=is_scalar)    
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__(destination, operand1, operand2, signed=True)
 
 
 class MulWide(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
         name =  "mul64_s" if signed else "mul64_u"   
-        super().__init__(name, destination, operand1, operand2, is_scalar=is_scalar)
+        super().__init__(name, destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -160,6 +160,6 @@ class MulWide(GenericInstruction):
         )    
     
 class MulWide_s(MulWide):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar=False):
-        super().__init__(destination, operand1, operand2, signed=True, is_scalar=is_scalar)    
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__(destination, operand1, operand2, signed=True)
 

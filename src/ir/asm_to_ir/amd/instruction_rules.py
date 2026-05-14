@@ -45,7 +45,7 @@ def _same_with_exec_mask(instruction_class: type) -> Rule:
     def emit(ctx: InstructionContext) -> None:
         ctx.emit(instruction_class, *ctx.operands)
         if _writes_exec(ctx):
-            ctx.emit(ChangeMask, PredReg("exec"), is_scalar=True)
+            ctx.emit(ChangeMask, PredReg("exec"))
 
     return Rule.dynamic(emit)
 
@@ -55,10 +55,10 @@ def get_instruction_rule(opcode: str) -> Rule | None:
         return _label(opcode)
     
     if opcode.startswith("s_cmp_"):
-        return _compare_rule(opcode, PredReg("scc"), is_scalar=True)
+        return _compare_rule(opcode, PredReg("scc"))
 
     if opcode.startswith("v_cmpx_"):
-        return _compare_rule(opcode, PredReg("exec"), is_scalar=False)
+        return _compare_rule(opcode, PredReg("exec"))
 
     if opcode.startswith("v_cmp_"):
         return _vector_compare_rule(opcode)
@@ -78,12 +78,11 @@ def _label(opcode: str) -> Rule:
         ctx.emit(
             Label,
             opcode[:-1],
-            is_scalar=True,
         )
 
     return Rule.dynamic(emit)
 
-def _compare_rule(opcode: str, destination: PredReg, is_scalar: bool) -> Rule:
+def _compare_rule(opcode: str, destination: PredReg) -> Rule:
     comparison = _parse_compare_opcode(opcode)
     compare_class = get_compare_class(comparison)
 
@@ -93,10 +92,9 @@ def _compare_rule(opcode: str, destination: PredReg, is_scalar: bool) -> Rule:
             destination,
             ctx.operand(0),
             ctx.operand(1),
-            is_scalar=is_scalar,
         )
         if destination.name == "exec":
-            ctx.emit(ChangeMask, PredReg("exec"), is_scalar=True)
+            ctx.emit(ChangeMask, PredReg("exec"))
 
     return Rule.dynamic(emit)
 
@@ -111,7 +109,6 @@ def _vector_compare_rule(opcode: str) -> Rule:
             ctx.operand(0),
             ctx.operand(1),
             ctx.operand(2),
-            is_scalar=False,
         )
 
     return Rule.dynamic(emit)
@@ -123,7 +120,6 @@ def _branch(predicate: PredReg) -> Rule:
             Branch,
             predicate, 
             Val(ctx.operand(0).name),
-            is_scalar=True,
         )
 
     return Rule.dynamic(emit)
@@ -134,7 +130,6 @@ def _branch_not(predicate: PredReg) -> Rule:
             BranchNot,
             predicate, 
             Val(ctx.operand(0).name),
-            is_scalar=True,
         )
 
     return Rule.dynamic(emit)
@@ -142,9 +137,9 @@ def _branch_not(predicate: PredReg) -> Rule:
 def _saveexec(operation) -> Rule:
     return Rule(
         [
-            Emit(Mov, op(0), PredReg("exec"), is_scalar=True),
-            Emit(operation, PredReg("exec"), PredReg("exec"), op(1), is_scalar=True),
-            Emit(ChangeMask, PredReg("exec"), is_scalar=True),
+            Emit(Mov, op(0), PredReg("exec")),
+            Emit(operation, PredReg("exec"), PredReg("exec"), op(1)),
+            Emit(ChangeMask, PredReg("exec")),
         ]
     )
 
@@ -196,8 +191,8 @@ instruction_rules = {
     "s_branch": same(Jump),
     "s_cbranch_scc0": _branch_not(PredReg("scc")),
     "s_cbranch_scc1": _branch(PredReg("scc")),
-    "s_cbranch_execz": Rule([Emit(Ignore, is_scalar=True)]),
-    "s_cbranch_execnz": Rule([Emit(Ignore, is_scalar=True)]),
+    "s_cbranch_execz": Rule([Emit(Ignore)]),
+    "s_cbranch_execnz": Rule([Emit(Ignore)]),
     "s_cbranch_vccz": _branch_not(PredReg("vcc")),
     "s_cbranch_vccnz": _branch(PredReg("vcc")),
 
@@ -300,7 +295,7 @@ instruction_rules = {
 
     "s_waitcnt": Rule([Emit(Barrier)]),
 
-    "s_nop": Rule([Emit(Ignore, is_scalar=True)]),
+    "s_nop": Rule([Emit(Ignore)]),
     "v_cndmask_b32": same(CSelect),
     "s_min_i32": same(IRMin),
     "s_cselect_b64": _scalar_cselect_b64(),

@@ -8,7 +8,7 @@ from src.instructions.sop1.s_mov import SMov
 
 
 class Mad(GenericInstruction):
-    def __init__(self, destination: RegOrVal_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, operand3: RegOrVal_ty, signed=True,  is_scalar=False):
+    def __init__(self, destination: RegOrVal_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, operand3: RegOrVal_ty, signed=True):
         self.operand3_val: Optional[Val] = None
         self.operand3_tmp_reg: Optional[Reg64] = None
         
@@ -23,7 +23,7 @@ class Mad(GenericInstruction):
             destination = CompositeReg(dest_name, [destination, dest_hi])
 
         name =  "mad_s" if signed else "mad_u"   
-        super().__init__(name, destination, operand1, operand2, operand3, is_scalar=is_scalar)
+        super().__init__(name, destination, operand1, operand2, operand3)
 
 
         self.destination = destination
@@ -56,4 +56,4 @@ class Mad(GenericInstruction):
             self._get_normalize_opcode(),
             [self.destination, Val('0'), self.operand1, self.operand2, self.operand3],
             self.get_suffix(),
-        )  
+        )

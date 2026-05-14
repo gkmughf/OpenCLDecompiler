@@ -5,8 +5,8 @@ from src.instructions.IRspecial.ChangeMask import UseMask
 
 
 class ChangeMask(GenericInstruction):
-    def __init__(self, predicate: PredReg, is_scalar: bool = True):
-        super().__init__("change_mask", predicate, is_scalar=is_scalar)
+    def __init__(self, predicate: PredReg):
+        super().__init__("change_mask", predicate)
         self.predicate = predicate
 
     def _get_normalize_opcode(self):
@@ -27,8 +27,8 @@ class ChangeMask(GenericInstruction):
 
 
 class Unmask(GenericInstruction):
-    def __init__(self, is_scalar: bool = True):
-        super().__init__("unmask", is_scalar=is_scalar)
+    def __init__(self):
+        super().__init__("unmask")
 
     def _get_normalize_opcode(self):
         return "unmask"

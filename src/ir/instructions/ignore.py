@@ -3,8 +3,8 @@ from src.ir.instructions.lowering import NodeLoweringContext
 from src.instructions.sopp.s_nop import SNop
 
 class Ignore(GenericInstruction):
-    def __init__(self, *operands, is_scalar):
-        super().__init__("s_nop", is_scalar=is_scalar)
+    def __init__(self, *operands):
+        super().__init__("s_nop")
 
     def to_text(self) -> str:
         return ""

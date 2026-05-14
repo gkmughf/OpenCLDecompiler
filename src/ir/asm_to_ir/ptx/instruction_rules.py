@@ -51,7 +51,6 @@ def _label(opcode: str) -> Rule:
         ctx.emit(
             Label,
             "."+opcode[1:-1],
-            is_scalar=True,
         )
 
     return Rule.dynamic(emit)
@@ -62,14 +61,14 @@ def _branch() -> Rule:
         predicate = ctx.predicate
 
         if predicate is None:
-            ctx.kernel.create_instruction(Jump, target, is_scalar=True)
+            ctx.kernel.create_instruction(Jump, target)
         elif ctx.predicate_negated:
-            ctx.kernel.create_instruction(Branch, predicate, target, is_scalar=True)
+            ctx.kernel.create_instruction(Branch, predicate, target)
         else:
             tmo_predicate = PredReg(f"{predicate.name}Not")
             ctx.kernel.predicates.add(tmo_predicate)
-            ctx.kernel.create_instruction(Not, tmo_predicate, predicate, is_scalar=True)
-            ctx.kernel.create_instruction(BranchNot, tmo_predicate, target, is_scalar=True)
+            ctx.kernel.create_instruction(Not, tmo_predicate, predicate)
+            ctx.kernel.create_instruction(BranchNot, tmo_predicate, target)
 
     return Rule.dynamic(emit_branch)
 
@@ -105,7 +104,6 @@ def _setp(opcode: str) -> Rule:
             ctx.operand(0),
             ctx.operand(1),
             ctx.operand(2),
-            is_scalar=False,
         )
 
     return Rule.dynamic(emit_setp)

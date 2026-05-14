@@ -16,8 +16,8 @@ class GenericStore(GenericInstruction):
     operation: str
     backend_instruction: type
 
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar, size):
-        super().__init__("store", address, value, is_scalar=is_scalar)
+    def __init__(self, address: Reg64, value: RegOrVal_ty, size):
+        super().__init__("store", address, value)
         self.address = address
         self.value = value
         self.size = size
@@ -49,33 +49,28 @@ class Store(GenericStore):
 
 
 class Store8(Store):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=True, size=8)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=8)
 
 
 class Store16(Store):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=True, size=16)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=16)
 
 
 class Store32(Store):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=True, size=32)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=32)
 
 
 class Store64(Store):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=True, size=64)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=64)
 
 
 class Store128(Store):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=True, size=128)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=128)
 
 
 class FStore(GenericStore):
@@ -84,30 +79,25 @@ class FStore(GenericStore):
 
 
 class FStore8(FStore):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=False, size=8)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=8)
 
 
 class FStore16(FStore):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=False, size=16)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=16)
 
 
 class FStore32(FStore):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=False, size=32)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=32)
 
 
 class FStore64(FStore):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=False, size=64)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=64)
 
 
 class FStore128(FStore):
-    def __init__(self, address: Reg64, value: RegOrVal_ty, is_scalar):
-        del is_scalar
-        super().__init__(address, value, is_scalar=False, size=128)
+    def __init__(self, address: Reg64, value: RegOrVal_ty):
+        super().__init__(address, value, size=128)

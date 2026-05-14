@@ -20,11 +20,10 @@ class MaterializeArgumentStoresPass:
                 Val(argument.name),
                 Val(argument.type_name),
                 Val(str(argument.offset)),
-                is_scalar=True,
             )
             for argument in kernel.arguments.all()
         ]
-        instructions = [MemoryAllocation(arg_ptr, is_scalar=True), *stores]
+        instructions = [MemoryAllocation(arg_ptr), *stores]
 
         kernel.instructions.prepend_list(instructions)
         kernel.arguments.mark_materialized()

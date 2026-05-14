@@ -6,8 +6,8 @@ from src.instructions.sop1.s_mov import SMov
 
 
 class Mov(GenericInstruction):
-    def __init__(self, destination: Reg_ty, source: RegOrVal_ty, is_scalar):
-        super().__init__("mov", destination, source, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, source: RegOrVal_ty):
+        super().__init__("mov", destination, source)
         self.destination = destination
         self.source = source
 

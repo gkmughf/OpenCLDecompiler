@@ -5,8 +5,8 @@ from src.instructions.sop1.s_not import SNot
 
 
 class Not(GenericInstruction):
-    def __init__(self, destination: PredReg, source: PredReg, is_scalar: bool = True):
-        super().__init__("not", destination, source, is_scalar=is_scalar)
+    def __init__(self, destination: PredReg, source: PredReg):
+        super().__init__("not", destination, source)
         self.destination = destination
         self.source = source
 

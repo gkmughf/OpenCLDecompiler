@@ -5,11 +5,9 @@ class GenericInstruction:
         self,
         opcode: str,
         *operands,
-        is_scalar: bool = False,
     ):
         self.opcode = opcode
         self.operands = tuple(operands)
-        self._is_scalar = is_scalar
         self._predicate: PredReg | None = None
         self._predicate_negated = False
 
@@ -25,9 +23,6 @@ class GenericInstruction:
     
     def update_operands(self, *operands):
         self.operands = tuple(operands)
-    
-    def is_scalar(self):
-        return self._is_scalar
     
     def writes_first_operand(self) -> bool:
         return bool(self.operands)

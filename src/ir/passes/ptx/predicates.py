@@ -17,7 +17,7 @@ class PTXPredicatesPass:
 
             if predicate is None or instruction.is_control_flow():
                 if open_predicate is not None:
-                    instructions.append(Unmask(is_scalar=True))
+                    instructions.append(Unmask())
                     open_predicate = None
                 instructions.append(instruction)
                 continue
@@ -30,20 +30,20 @@ class PTXPredicatesPass:
 
             if open_predicate is None:
                 if predicate_negated:
-                    instructions.append(Not(mask_predicate, predicate, is_scalar=True))
-                instructions.append(ChangeMask(mask_predicate, is_scalar=True))
+                    instructions.append(Not(mask_predicate, predicate))
+                instructions.append(ChangeMask(mask_predicate))
                 open_predicate = mask_predicate
             elif open_predicate.name != mask_predicate.name:
-                instructions.append(Unmask(is_scalar=True))
+                instructions.append(Unmask())
                 if predicate_negated:
-                    instructions.append(Not(mask_predicate, predicate, is_scalar=True))
-                instructions.append(ChangeMask(mask_predicate, is_scalar=True))
+                    instructions.append(Not(mask_predicate, predicate))
+                instructions.append(ChangeMask(mask_predicate))
                 open_predicate = mask_predicate
 
             instruction.set_predicate(None)
             instructions.append(instruction)
 
         if open_predicate is not None:
-            instructions.append(Unmask(is_scalar=True))
+            instructions.append(Unmask())
 
         kernel.instructions.replace_all(instructions)

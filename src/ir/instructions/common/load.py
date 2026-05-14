@@ -15,11 +15,11 @@ class GenericLoad(GenericInstruction):
     operation: str
     backend_instruction: type
     
-    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val, is_scalar, size):
+    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val, size):
         self.destination = destination
         self.address = address
         self.offset = offset if offset != None else Val("0")
-        super().__init__("load", self.destination, self.address, self.offset, is_scalar=is_scalar)
+        super().__init__("load", self.destination, self.address, self.offset)
         self.size = size
 
     def _get_normalize_opcode(self) -> str:
@@ -47,16 +47,16 @@ class Load(GenericLoad):
     backend_instruction: type = SLoad
 
 class Load32(Load):
-    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = False):
-        super().__init__(destination, address, offset, is_scalar=True, size=32)
+    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
+        super().__init__(destination, address, offset, size=32)
 
 class Load64(Load):
-    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = False):
-        super().__init__(destination, address, offset, is_scalar=True, size=64)
+    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
+        super().__init__(destination, address, offset, size=64)
 
 class Load128(Load):
-    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = False):
-        super().__init__(destination, address, offset, is_scalar=True, size=128)
+    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
+        super().__init__(destination, address, offset, size=128)
 
 
 class FLoad(GenericLoad):
@@ -64,13 +64,13 @@ class FLoad(GenericLoad):
     backend_instruction: type = FlatLoad
 
 class FLoad32(FLoad):
-    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = True):
-        super().__init__(destination, address, offset, is_scalar=False, size=32)
+    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
+        super().__init__(destination, address, offset, size=32)
 
 class FLoad64(FLoad):
-    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = True):
-        super().__init__(destination, address, offset, is_scalar=False, size=64)
+    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
+        super().__init__(destination, address, offset, size=64)
 
 class FLoad128(FLoad):
-    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = True):
-        super().__init__(destination, address, offset, is_scalar=False, size=128)
+    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
+        super().__init__(destination, address, offset, size=128)

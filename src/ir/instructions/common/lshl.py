@@ -7,8 +7,8 @@ from src.instructions.vop2.v_ashrrev import VAshrrev
 
 
 class ShiftInstruction(GenericInstruction):
-    def __init__(self, name: str, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
-        super().__init__(name, destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, name: str, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
+        super().__init__(name, destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -23,8 +23,8 @@ class ShiftInstruction(GenericInstruction):
 
 
 class LShl_Rev(ShiftInstruction):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
-        super().__init__("lshl", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
+        super().__init__("lshl", destination, operand1, operand2)
 
     def _get_normalize_opcode(self) -> str:
         if self._is_64bit():
@@ -42,8 +42,8 @@ class LShl_Rev(ShiftInstruction):
 
 
 class LShr_Rev(ShiftInstruction):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
-        super().__init__("rshl", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
+        super().__init__("rshl", destination, operand1, operand2)
 
 
     def _get_normalize_opcode(self) -> str:
@@ -60,8 +60,8 @@ class LShr_Rev(ShiftInstruction):
         )
 
 class AShr_Rev(ShiftInstruction):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
-        super().__init__("rshl", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
+        super().__init__("rshl", destination, operand1, operand2)
 
     def _get_normalize_opcode(self) -> str:
         if self._is_64bit():
@@ -82,13 +82,13 @@ class AShr_Rev(ShiftInstruction):
         )
     
 class LShl(LShl_Rev):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
-        super().__init__(destination, operand2, operand1, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
+        super().__init__(destination, operand2, operand1)
 
 class LShr(LShr_Rev):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
-        super().__init__(destination, operand2, operand1, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
+        super().__init__(destination, operand2, operand1)
 
 class AShr(AShr_Rev):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
-        super().__init__(destination, operand2, operand1, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
+        super().__init__(destination, operand2, operand1)

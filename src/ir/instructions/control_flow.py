@@ -7,8 +7,8 @@ from src.instructions.sopp.s_branch import SBranch
 from src.instructions.label import Label as backend_Label
 
 class Label(GenericInstruction):
-    def __init__(self, label: str, is_scalar: bool = True):
-        super().__init__("label", label, is_scalar=is_scalar)
+    def __init__(self, label: str):
+        super().__init__("label", label)
         self.label = label
 
     def to_text(self) -> str:
@@ -28,8 +28,8 @@ class Label(GenericInstruction):
         )
 
 class Branch(GenericInstruction):
-    def __init__(self, predicate: PredReg, target: Val, is_scalar: bool = True):
-        super().__init__("bra", predicate, target, is_scalar=is_scalar)
+    def __init__(self, predicate: PredReg, target: Val):
+        super().__init__("bra", predicate, target)
         self.target = target
 
     def writes_first_operand(self) -> bool:
@@ -47,8 +47,8 @@ class Branch(GenericInstruction):
     
 
 class BranchNot(GenericInstruction):
-    def __init__(self, predicate: PredReg, target: Val, is_scalar: bool = True):
-        super().__init__("bra_n", predicate, target, is_scalar=is_scalar)
+    def __init__(self, predicate: PredReg, target: Val):
+        super().__init__("bra_n", predicate, target)
         self.target = target
 
     def writes_first_operand(self) -> bool:
@@ -64,8 +64,8 @@ class BranchNot(GenericInstruction):
             self.operands,
         )
 class Jump(Branch):
-    def __init__(self, target: Val, is_scalar: bool = True):
-        super().__init__("jump", target, is_scalar=is_scalar)
+    def __init__(self, target: Val):
+        super().__init__("jump", target)
         self.target = target
 
     def writes_first_operand(self) -> bool:

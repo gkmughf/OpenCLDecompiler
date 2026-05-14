@@ -1,4 +1,4 @@
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Val
+from src.ir.registers.reg import Reg_ty, RegOrVal_ty
 from src.ir.instructions.generic import GenericInstruction
 from src.instructions.sop2.s_and import SAnd
 from src.instructions.sop2.s_xor import SXor
@@ -10,15 +10,11 @@ class LogicalInstruction(GenericInstruction):
     operation: str
     backend_instruction: type
 
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty, is_scalar):
-        super().__init__(self.operation, destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
+        super().__init__(self.operation, destination, operand1, operand2)
         self.destination = destination
-        if isinstance(operand2, Val) and not is_scalar:
-            self.operand1 = operand2
-            self.operand2 = operand1
-        else:
-            self.operand1 = operand1
-            self.operand2 = operand2
+        self.operand1 = operand1
+        self.operand2 = operand2
         
 
     def _is_64bit(self) -> bool:

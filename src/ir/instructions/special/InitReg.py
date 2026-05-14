@@ -6,8 +6,8 @@ from src.instructions.IRspecial.InitReg import InitReg as decInitReg
 
 
 class InitReg(GenericInstruction):
-    def __init__(self, destination: Reg_ty, value: Val, is_scalar: bool):
-        super().__init__("init", destination, value, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, value: Val):
+        super().__init__("init", destination, value)
 
     def _get_normalize_opcode(self) -> str:
         return "s_init"
@@ -18,4 +18,3 @@ class InitReg(GenericInstruction):
             self._get_normalize_opcode(),
             self.operands,
         )
-    

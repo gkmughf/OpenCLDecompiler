@@ -13,8 +13,8 @@ from src.instructions.sop1.s_mov import SMov
 
 
 class LocalMemory(GenericInstruction):
-    def __init__(self, destination: Reg64, size, is_scalar: bool = True):
-        super().__init__("local", destination, size, is_scalar=is_scalar)
+    def __init__(self, destination: Reg64, size):
+        super().__init__("local", destination, size)
     def _get_normalize_opcode(self) -> str:
         return "s_local"
     
@@ -27,8 +27,8 @@ class LocalMemory(GenericInstruction):
     
 
 class LocalStore(GenericInstruction):
-    def __init__(self, destination: Reg_ty, val: Reg_ty, is_scalar: bool = True):
-        super().__init__("local_store", destination, val, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, val: Reg_ty):
+        super().__init__("local_store", destination, val)
     def _get_normalize_opcode(self) -> str:
         return "ds_write_b32"
     
@@ -42,8 +42,8 @@ class LocalStore(GenericInstruction):
 
 
 class LocalLoad(GenericInstruction):
-    def __init__(self, destination: Reg64, from_mem: Reg_ty, is_scalar: bool = True):
-        super().__init__("local_load", destination, from_mem, is_scalar=is_scalar)
+    def __init__(self, destination: Reg64, from_mem: Reg_ty):
+        super().__init__("local_load", destination, from_mem)
     def _get_normalize_opcode(self) -> str:
         return "ds_read_b32"
 
@@ -56,8 +56,8 @@ class LocalLoad(GenericInstruction):
         )
 
 class LocalAdd(GenericInstruction):
-    def __init__(self, destination: Reg64, val: RegOrVal_ty, is_scalar: bool = True):
-        super().__init__("local_add", destination, val, is_scalar=is_scalar)
+    def __init__(self, destination: Reg64, val: RegOrVal_ty):
+        super().__init__("local_add", destination, val)
         self.operand1_val: Optional[Val] = None
         self.operand1_tmp_reg: Optional[Reg32] = None
         

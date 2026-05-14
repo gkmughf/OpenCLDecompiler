@@ -6,8 +6,8 @@ from src.ir.instructions.lowering import NodeLoweringContext
 from src.instructions.IRspecial.memory import MemoryAllocation as DecMA, StoreInMem
 
 class MemoryAllocation(GenericInstruction):
-    def __init__(self, destination: Reg64, is_scalar: bool = True):
-        super().__init__("alloc", destination, is_scalar=is_scalar)
+    def __init__(self, destination: Reg64):
+        super().__init__("alloc", destination)
         
     def _get_normalize_opcode(self) -> str:
         return "s_alloc"
@@ -21,8 +21,8 @@ class MemoryAllocation(GenericInstruction):
 
 
 class Store(GenericInstruction):
-    def __init__(self, destination: Reg_ty, arg_name: Val, arg_type: Val, offset: Val, is_scalar: bool = True):
-        super().__init__("store", destination, arg_type, arg_name, offset, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, arg_name: Val, arg_type: Val, offset: Val):
+        super().__init__("store", destination, arg_type, arg_name, offset)
         self.destination = destination
         self.arg_name = arg_name
         self.arg_type = arg_type

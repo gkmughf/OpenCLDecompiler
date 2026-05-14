@@ -11,7 +11,7 @@ class MaterializeLocalMemoryPass:
             return
 
         local_memories = [
-            LocalMemory(destination=Reg64(name), size=Val(str(size)), is_scalar=True)
+            LocalMemory(destination=Reg64(name), size=Val(str(size)))
             for name, size in kernel.local_memory.all().items()
         ]
 

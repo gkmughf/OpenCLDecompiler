@@ -5,8 +5,8 @@ from src.instructions.IRspecial.InitPred import InitPred
 
 
 class InitPredicate(GenericInstruction):
-    def __init__(self, predicate: PredReg, is_scalar: bool = True):
-        super().__init__("init_pred", predicate, is_scalar=is_scalar)
+    def __init__(self, predicate: PredReg):
+        super().__init__("init_pred", predicate)
         self.predicate = predicate
     
     def _get_normalize_opcode(self):

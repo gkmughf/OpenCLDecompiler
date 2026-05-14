@@ -4,8 +4,8 @@ from src.ir.instructions.lowering import NodeLoweringContext
 
 
 class Barrier(GenericInstruction):
-    def __init__(self, is_scalar: bool):
-        super().__init__("barrier", is_scalar=is_scalar)
+    def __init__(self):
+        super().__init__("barrier")
    
     def _get_normalize_opcode(self) -> str:
         return "s_waitcnt"

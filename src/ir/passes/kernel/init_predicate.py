@@ -10,7 +10,7 @@ class MaterializePredicatePass:
             return
 
         init_predicates = [
-            InitPredicate(predicate=reg, is_scalar=True)
+            InitPredicate(predicate=reg)
             for reg in kernel.predicates.all()
         ]
 

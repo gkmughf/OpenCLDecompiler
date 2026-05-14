@@ -68,7 +68,6 @@ class ArgOffsetRef(LoweringArg):
 class InstructionContext:
     kernel: Kernel
     operands: list[RegOrVal_ty]
-    is_scalar: bool = False
     predicate: str | PredReg | None = None
     predicate_negated: bool = False
     extras: dict[str, Any] = field(default_factory=dict)
@@ -101,12 +100,10 @@ class InstructionContext:
         self,
         instruction_class: type,
         *args: Any,
-        is_scalar: bool | None = None,
         predicate: str | PredReg | None = None,
         predicate_negated: bool | None = None,
     ) -> None:
         instruction_args = tuple(resolve_arg(arg, self) for arg in args)
-        actual_is_scalar = self.is_scalar if is_scalar is None else is_scalar
         if predicate is None:
             actual_predicate = self.predicate
             actual_predicate_negated = self.predicate_negated
@@ -123,7 +120,6 @@ class InstructionContext:
         self.kernel.create_instruction(
             instruction_class,
             *instruction_args,
-            is_scalar=actual_is_scalar,
             predicate=actual_predicate,
             predicate_negated=actual_predicate_negated,
         )
@@ -133,7 +129,6 @@ class InstructionContext:
 class Emit:
     instruction_class: type
     args: tuple[Any, ...]
-    is_scalar: bool | None = None
     predicate: str | PredReg | None = None
     predicate_negated: bool | None = None
 
@@ -141,13 +136,11 @@ class Emit:
         self,
         instruction_class: type,
         *args: Any,
-        is_scalar: bool | None = None,
         predicate: str | PredReg | None = None,
         predicate_negated: bool | None = None,
     ):
         object.__setattr__(self, "instruction_class", instruction_class)
         object.__setattr__(self, "args", tuple(args))
-        object.__setattr__(self, "is_scalar", is_scalar)
         object.__setattr__(self, "predicate", predicate)
         object.__setattr__(self, "predicate_negated", predicate_negated)
 
@@ -155,7 +148,6 @@ class Emit:
         ctx.emit(
             self.instruction_class,
             *self.args,
-            is_scalar=self.is_scalar,
             predicate=self.predicate,
             predicate_negated=self.predicate_negated,
         )

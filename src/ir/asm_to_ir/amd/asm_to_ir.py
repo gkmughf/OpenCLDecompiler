@@ -30,9 +30,6 @@ def init_dispatch_reg(dispatch_reg: Reg_ty, kernel: Kernel):
     kernel.create_instruction(Store, dispatch_reg, Val("UNKNOWN"), Val("uint"), Val("24"))
 
 def create_instruction_from_opcode(kernel: Kernel, opcode: str, operands: list[RegOrVal_ty]):
-    def is_scalar(opcode: str):
-        return opcode[0] == 's'
-    
     normalized_opcode = opcode.removesuffix("_e32").removesuffix("_e64")
 
     rule = get_instruction_rule(normalized_opcode)
@@ -43,7 +40,6 @@ def create_instruction_from_opcode(kernel: Kernel, opcode: str, operands: list[R
         InstructionContext(
             kernel=kernel,
             operands=operands,
-            is_scalar=is_scalar(normalized_opcode),
         )
     )
     return

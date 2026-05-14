@@ -18,9 +18,8 @@ class BaseCompare(GenericInstruction):
         destination: PredReg,
         operand1: RegOrVal_ty,
         operand2: RegOrVal_ty,
-        is_scalar: bool = False,
     ):
-        super().__init__(f"cmp.{self.operation}", destination, operand1, operand2, is_scalar=is_scalar)
+        super().__init__(f"cmp.{self.operation}", destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2

@@ -60,22 +60,17 @@ class MemoryAccessType:
 
 
 class TypedMemoryLoadBase(GenericLoad):
-    fixed_is_scalar: bool
-
     def __init__(
         self,
         destination: Reg_ty,
         address: Reg64,
         offset: Val,
         access_type: MemoryAccessType,
-        is_scalar: bool = False,
     ):
-        del is_scalar
         super().__init__(
             destination,
             address,
             offset,
-            is_scalar=self.fixed_is_scalar,
             size=max(32, access_type.total_bits),
         )
         self.access_type = access_type
@@ -144,17 +139,14 @@ class TypedMemoryLoadBase(GenericLoad):
 class TypedMemoryLoad(TypedMemoryLoadBase):
     operation: str = "s_load"
     backend_instruction: type = SLoad
-    fixed_is_scalar = True
 
 
 class TypedMemoryFLoad(TypedMemoryLoadBase):
     operation: str = "flat_load"
     backend_instruction: type = FlatLoad
-    fixed_is_scalar = False
 
 
 class TypedMemoryStoreBase(GenericStore):
-    fixed_is_scalar: bool
     PACK_SELECTOR = Val("0x2010004")
 
     def __init__(
@@ -162,13 +154,10 @@ class TypedMemoryStoreBase(GenericStore):
         address: Reg64,
         value: RegOrVal_ty,
         access_type: MemoryAccessType,
-        is_scalar: bool = False,
     ):
-        del is_scalar
         super().__init__(
             address,
             value,
-            is_scalar=self.fixed_is_scalar,
             size=max(8, access_type.total_bits),
         )
         self.access_type = access_type
@@ -269,10 +258,8 @@ class TypedMemoryStoreBase(GenericStore):
 class TypedMemoryStore(TypedMemoryStoreBase):
     operation: str = "flat_store"
     backend_instruction: type = FlatStore
-    fixed_is_scalar = True
 
 
 class TypedMemoryFStore(TypedMemoryStoreBase):
     operation: str = "flat_store"
     backend_instruction: type = FlatStore
-    fixed_is_scalar = False

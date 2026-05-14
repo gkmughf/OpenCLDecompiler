@@ -5,9 +5,9 @@ from src.ir.instructions.lowering import NodeLoweringContext
 from src.instructions.sop2.s_bfe import SBfe
 
 class bfe(GenericInstruction):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False,  is_scalar=False):
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
         name =  "bfe_s" if signed else "bfe_u"   
-        super().__init__(name, destination, operand1, operand2, is_scalar=is_scalar)
+        super().__init__(name, destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -37,5 +37,5 @@ class bfe(GenericInstruction):
     
 
 class bfe_s(bfe):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar=False):
-        super().__init__(destination, operand1, operand2, signed=True, is_scalar=is_scalar)
+    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__(destination, operand1, operand2, signed=True)

@@ -5,8 +5,8 @@ from src.ir.instructions.lowering import NodeLoweringContext
 from src.instructions.vop2.v_sub import VSub
 
 class Sub(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar: bool = False):
-        super().__init__("sub", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__("sub", destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -46,8 +46,8 @@ class Sub(GenericInstruction):
         )
 
 class Sub_f(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar: bool = False):
-        super().__init__("sub", destination, operand1, operand2, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__("sub", destination, operand1, operand2)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -61,5 +61,5 @@ class Sub_f(GenericInstruction):
         )
         
 class SubRev(Sub):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, is_scalar):
-        super().__init__(destination, operand2, operand1, is_scalar=is_scalar)
+    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
+        super().__init__(destination, operand2, operand1)
