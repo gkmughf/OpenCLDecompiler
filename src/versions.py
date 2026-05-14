@@ -21,8 +21,8 @@ def find_max_and_prev_versions(curr_node):
             if reg in parent.state and parent.state[reg].version is not None:
                 parent_version = parent.state[reg].version
                 prev_versions_of_reg.add(parent_version)
-                if len(prev_versions_of_reg) == 0 or int(parent_version[parent_version.find("_") + 1 :]) > max_version:
-                    max_version = int(parent_version[parent_version.find("_") + 1 :])
+                if len(prev_versions_of_reg) == 0 or int(parent_version[parent_version.find("#") + 1 :]) > max_version:
+                    max_version = int(parent_version[parent_version.find("#") + 1 :])
         if len(prev_versions_of_reg) > 1:
             curr_node = update_reg_version(reg, curr_node, max_version, prev_versions_of_reg)
     return curr_node.state

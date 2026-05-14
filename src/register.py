@@ -50,7 +50,7 @@ class Register:
 
     @property
     def version(self) -> str:
-        return f"{self._version_name}_{self._version_num}"
+        return f"{self._version_name}#{self._version_num}"
 
     def __copy__(self):
         return Register(
@@ -248,7 +248,7 @@ class Register:
         self._version_num = num_version + 1
 
     def make_prev(self):
-        self.prev_version = [f"{self._version_name}_{self._version_num - 1}"]
+        self.prev_version = [f"{self._version_name}#{self._version_num - 1}"]
 
 
 def is_vector_type(data_type: str) -> bool:

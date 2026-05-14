@@ -244,7 +244,7 @@ def check_changes_in_reg(register, reg_versions_in_instruction, curr_node, reg_v
         change_node = reg_version_node[register_version]
         instruction_version_list = reg_versions_in_instruction[register_version]
         for version in instruction_version_list:
-            instruction_register = version[: version.find("_")]
+            instruction_register = version[: version.find("#")]
             instruction_register_version = curr_node.state[instruction_register].version
             if version != instruction_register_version:
                 if re.match(r"(flat|global)_store", instruction) or "cmp" in instruction:
@@ -310,7 +310,7 @@ def process_loop(region_start, region_end):  # noqa: PLR0912
                 and num_of_register == 0
                 and register.name in curr_node.state
             ):
-                separation = first_reg_version.find("_")
+                separation = first_reg_version.find("#")
                 first_reg_prev_version = first_reg_version[: separation + 1] + str(
                     int(first_reg_version[separation + 1 :]) - 1
                 )

@@ -3,6 +3,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 
+RESERVED_REGISTER_NAME_CHARS = frozenset({"|", "#"})
+
+
+def validate_register_name(name: str) -> None:
+    forbidden_chars = RESERVED_REGISTER_NAME_CHARS.intersection(name)
+    if forbidden_chars:
+        chars = ", ".join(f"'{char}'" for char in sorted(forbidden_chars))
+        raise ValueError(f"Register name '{name}' contains reserved character(s): {chars}")
+
+
 class BaseReg(ABC):
     @property
     @abstractmethod
@@ -20,7 +30,9 @@ class BaseReg(ABC):
 
 
 class Reg32(BaseReg):
-    def __init__(self, name: str):
+    def __init__(self, name: str, *, _internal: bool = False):
+        if not _internal:
+            validate_register_name(name)
         self._name: str = name
 
     @property
@@ -38,12 +50,16 @@ class Reg32(BaseReg):
     def to_text(self) -> str:
         return self._name
 
+
     @classmethod
-    def create_new(cls, name: str) -> Reg32:
-        return cls(name) 
+    def internal(cls, name: str) -> Reg32:
+        return cls(name, _internal=True)
+
 
 class CompositeReg(BaseReg):
-    def __init__(self, name: str, regs: list[Reg32]):
+    def __init__(self, name: str, regs: list[Reg32], *, _internal: bool = False):
+        if not _internal:
+            validate_register_name(name)
         self._regs: tuple[Reg32, ...] = tuple(regs)
         self._name: str = name
 
@@ -71,31 +87,36 @@ class CompositeReg(BaseReg):
         return self._regs[index]
 
     @classmethod
-    def create_new(cls, name: str, regs: list[Reg32]) -> CompositeReg:
-        return cls(name, regs) 
+    def internal(cls, name: str, regs: list[Reg32]) -> CompositeReg:
+        return cls(name, regs, _internal=True)
     
     def __len__(self):
         return len(self._regs)
     
 
 class Reg64(CompositeReg):
-    def __init__(self, name: str):
-        super().__init__(name, [Reg32(name+"|lo"), Reg32(name+"|hi")])
+    def __init__(self, name: str, *, _internal: bool = False):
+        if not _internal:
+            validate_register_name(name)
+        super().__init__(
+            name,
+            [Reg32.internal(name + "|lo"), Reg32.internal(name + "|hi")],
+            _internal=True,
+        )
 
     @classmethod
-    def create_new(cls, name: str, regs: list[Reg32]) -> CompositeReg:
-        res = cls(name) 
-        res._regs[0]._name = regs[0].name
-        res._regs[1]._name = regs[1].name
-        return res
-    
+    def internal(cls, name: str) -> Reg64:
+        return cls(name, _internal=True)
+
+
 class PredReg(Reg64):
-    def __init__(self, name: str):
-        super().__init__(name)
+    def __init__(self, name: str, *, _internal: bool = False):
+        super().__init__(name, _internal=_internal)
 
     @property
     def type_suffix(self) -> str:
         return "pred"
+
 
 class Val:
     def __init__(self, value: str):
@@ -112,9 +133,6 @@ class Val:
     def to_text(self) -> str:
         return self._value
     
-    @classmethod
-    def create_new(cls, name: str) -> Reg32:
-        return cls(name) 
 
 
 Reg_ty = Reg32 | Reg64 | PredReg | CompositeReg

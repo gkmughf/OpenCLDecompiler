@@ -19,8 +19,10 @@ class PipelinePass(Protocol):
 
 class InvalidPipelinePassError(TypeError):
     def __init__(self, pipeline_name: str, pipeline_pass: object):
-        super().__init__(f"Unsupported pass in pipeline {pipeline_name}: {pipeline_pass!r}")
-
+        super().__init__(
+            f"Pipeline '{pipeline_name}' contains invalid pass {pipeline_pass!r}. "
+            f"All passes must implement the 'run' method."
+        )
 
 class PassPipeline:
     def __init__(self, name: str, passes: Iterable[PipelinePass]):

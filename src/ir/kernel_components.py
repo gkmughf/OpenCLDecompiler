@@ -103,12 +103,14 @@ class KernelLocalMemory:
 class KernelPredicates:
     def __init__(self) -> None:
         self._predicates: list[PredReg] = []
+        self._predicate_names: set[str] = set()
         self._materialized = False
 
     def add(self, predicate: PredReg) -> None:
-        if any(existing.name == predicate.name for existing in self._predicates):
+        if predicate.name in self._predicate_names:
             return
         self._predicates.append(predicate)
+        self._predicate_names.add(predicate.name)
 
     def all(self) -> list[PredReg]:
         return list(self._predicates)

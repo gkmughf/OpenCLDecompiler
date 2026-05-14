@@ -9,7 +9,7 @@ class tva:
         count = cls._counters[prefix]
         cls._counters[prefix] += 1
         
-        return f"{prefix}#{count}"
+        return f"__{prefix}_{count}"
 
     @classmethod
     def reset(cls):
