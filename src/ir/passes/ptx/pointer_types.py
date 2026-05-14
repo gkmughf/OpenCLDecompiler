@@ -2,8 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from src.ir.instructions.common.load import Load
-from src.ir.instructions.common.typed_memory import TypedMemoryLoad, TypedMemoryStore
+from src.ir.instructions.common.load import GenericLoad
+from src.ir.instructions.common.typed_memory import (
+    TypedMemoryFLoad,
+    TypedMemoryFStore,
+    TypedMemoryLoad,
+    TypedMemoryStore,
+)
 from src.ir.passes.base import PassContext
 from src.ir.passes.ptx.register_flow import RegisterFlowGraph
 from src.ir.registers.reg import BaseReg, get_reg_rang
@@ -24,7 +29,7 @@ class InferPTXPointerTypesPass:
         inferred_types = context.metadata.setdefault("ptx_inferred_pointer_arg_types", {})
         inferred_count = 0
         for index, instruction in enumerate(kernel.instructions.get()):
-            if isinstance(instruction, TypedMemoryLoad):
+            if isinstance(instruction, TypedMemoryLoad | TypedMemoryFLoad):
                 if self._propagate_pointer_type(
                     kernel,
                     flow,
@@ -37,7 +42,7 @@ class InferPTXPointerTypesPass:
                     inferred_count += 1
                 continue
 
-            if isinstance(instruction, TypedMemoryStore):
+            if isinstance(instruction, TypedMemoryStore | TypedMemoryFStore):
                 if self._propagate_pointer_type(
                     kernel,
                     flow,
@@ -99,7 +104,7 @@ class InferPTXPointerTypesPass:
         type_name: str,
         inferred_types: dict[int, str],
     ) -> bool:
-        if not isinstance(instruction, Load):
+        if not isinstance(instruction, GenericLoad):
             return False
 
         if instruction.address.name != kernel.arguments.arg_ptr().name:

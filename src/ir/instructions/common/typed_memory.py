@@ -1,13 +1,16 @@
 from dataclasses import dataclass
 
 from src.ir.TemporaryVariableAllocator import tva
-from src.ir.instructions.common.load import Load
-from src.ir.instructions.common.store import Store
-from src.ir.registers.reg import CompositeReg, Reg32, Reg64, RegOrVal_ty, Reg_ty, Val
+from src.ir.instructions.common.load import GenericLoad
+from src.ir.instructions.common.store import GenericStore
 from src.ir.instructions.lowering import NodeLoweringContext
+from src.ir.registers.reg import CompositeReg, Reg32, Reg64, RegOrVal_ty, Reg_ty, Val
+from src.instructions.flat.flat_load import FlatLoad
+from src.instructions.flat.flat_store import FlatStore
+from src.instructions.smem.s_load import SLoad
+from src.instructions.sop1.s_mov import SMov
 from src.instructions.sop2.s_and import SAnd
 from src.instructions.sop2.s_bfe import SBfe
-from src.instructions.sop1.s_mov import SMov
 from src.instructions.vop3.v_perm import VPerm
 
 
@@ -56,7 +59,9 @@ class MemoryAccessType:
         return MemoryAccessType(self.address_space, self.base_type, 1).to_value_type()
 
 
-class TypedMemoryLoad(Load):
+class TypedMemoryLoadBase(GenericLoad):
+    fixed_is_scalar: bool
+
     def __init__(
         self,
         destination: Reg_ty,
@@ -65,25 +70,35 @@ class TypedMemoryLoad(Load):
         access_type: MemoryAccessType,
         is_scalar: bool = False,
     ):
+        del is_scalar
         super().__init__(
             destination,
             address,
             offset,
-            is_scalar=is_scalar,
+            is_scalar=self.fixed_is_scalar,
             size=max(32, access_type.total_bits),
         )
         self.access_type = access_type
         self.packed_value = self._make_internal_reg("typed_ld")
 
     def to_fill_node(self, state, parents):
-        if self.packed_value is None:              
+        if self.packed_value is None:
             if self._needs_dword_vector_load():
-                return NodeLoweringContext(state, parents).emit_backend(self._get_opcode(), self._get_normalize_opcode(), [self.destination, self.address, self.offset], self.get_suffix())
+                return NodeLoweringContext(state, parents).emit_backend(
+                    self._get_opcode(),
+                    self._get_normalize_opcode(),
+                    [self.destination, self.address, self.offset],
+                    self.get_suffix(),
+                )
             return super().to_fill_node(state, parents)
-        
-        ctx = NodeLoweringContext(state, parents)
-        ctx.emit_backend(self._get_opcode(), self._get_normalize_opcode(), [self.packed_value, self.address, self.offset], self.get_suffix())
 
+        ctx = NodeLoweringContext(state, parents)
+        ctx.emit_backend(
+            self._get_opcode(),
+            self._get_normalize_opcode(),
+            [self.packed_value, self.address, self.offset],
+            self.get_suffix(),
+        )
 
         assert isinstance(self.destination, CompositeReg)
         for index, destination in enumerate(self.destination.regs):
@@ -116,7 +131,7 @@ class TypedMemoryLoad(Load):
         offset = index * self.access_type.element_bits
         width = self.access_type.element_bits
         return Val(hex((width << 16) | offset))
-    
+
     def _needs_dword_vector_load(self) -> bool:
         return (
             isinstance(self.destination, CompositeReg)
@@ -124,10 +139,22 @@ class TypedMemoryLoad(Load):
             and self.access_type.element_bits == 32
             and self.access_type.total_bits in {64, 128}
         )
-    
 
 
-class TypedMemoryStore(Store):
+class TypedMemoryLoad(TypedMemoryLoadBase):
+    operation: str = "s_load"
+    backend_instruction: type = SLoad
+    fixed_is_scalar = True
+
+
+class TypedMemoryFLoad(TypedMemoryLoadBase):
+    operation: str = "flat_load"
+    backend_instruction: type = FlatLoad
+    fixed_is_scalar = False
+
+
+class TypedMemoryStoreBase(GenericStore):
+    fixed_is_scalar: bool
     PACK_SELECTOR = Val("0x2010004")
 
     def __init__(
@@ -137,10 +164,11 @@ class TypedMemoryStore(Store):
         access_type: MemoryAccessType,
         is_scalar: bool = False,
     ):
+        del is_scalar
         super().__init__(
             address,
             value,
-            is_scalar=is_scalar,
+            is_scalar=self.fixed_is_scalar,
             size=max(8, access_type.total_bits),
         )
         self.access_type = access_type
@@ -148,19 +176,18 @@ class TypedMemoryStore(Store):
         self.packed_value = self._make_internal_reg("typed_st")
         self.store_value = self._make_dword_vector_store_value()
 
-
     def to_fill_node(self, state, parents):
         if not isinstance(self.value, CompositeReg):
             return super().to_fill_node(state, parents)
-        
+
         if self._needs_small_vector_pack():
             return self._to_fill_small_vector_store_parts(state, parents)
-        
+
         if self.store_value is not None:
             return self._to_fill_dword_vector_store_parts(state, parents)
-        
+
         return super().to_fill_node(state, parents)
-    
+
     def _to_fill_small_vector_store_parts(self, state, parents):
         assert isinstance(self.value, CompositeReg)
         ctx = NodeLoweringContext(state, parents)
@@ -169,11 +196,20 @@ class TypedMemoryStore(Store):
         second_value = self.value.get_element(1)
         ctx.emit_backend(SMov, "s_mov_b32", [self.selector, self.PACK_SELECTOR], "b32")
         if self.access_type.vector_width == 2:
-            ctx.emit_backend(VPerm, "v_perm_b32", [self.packed_value, first_value, second_value, self.selector], "b32")
-            return ctx.emit_backend(opcode, self._get_normalize_opcode(), [self.address, self.packed_value], self.get_suffix())
+            ctx.emit_backend(
+                VPerm,
+                "v_perm_b32",
+                [self.packed_value, first_value, second_value, self.selector],
+                "b32",
+            )
+            return ctx.emit_backend(
+                opcode,
+                self._get_normalize_opcode(),
+                [self.address, self.packed_value],
+                self.get_suffix(),
+            )
 
         return super().to_fill_node(ctx.state, ctx.parents)
-    
 
     def _needs_small_vector_pack(self) -> bool:
         return (
@@ -187,7 +223,7 @@ class TypedMemoryStore(Store):
         if self._needs_small_vector_pack():
             return Reg32(tva.generate(prefix))
         return None
-    
+
     def _needs_dword_vector_store(self) -> bool:
         return (
             isinstance(self.value, CompositeReg)
@@ -195,7 +231,7 @@ class TypedMemoryStore(Store):
             and self.access_type.element_bits == 32
             and self.access_type.total_bits in {64, 128}
         )
-    
+
     def _to_fill_dword_vector_store_parts(self, state, parents):
         assert isinstance(self.value, CompositeReg)
         assert self.store_value is not None
@@ -203,15 +239,14 @@ class TypedMemoryStore(Store):
         ctx = NodeLoweringContext(state, parents)
         for index, source in enumerate(self.value.regs):
             ctx.emit_backend(SMov, "s_mov_b32", [self.store_value.get_element(index), source], "b32")
-            
+
         return ctx.emit_backend(
-                self._get_opcode(),
-                self._get_normalize_opcode(),
-                [self.address, self.store_value],
-                self.get_suffix()
+            self._get_opcode(),
+            self._get_normalize_opcode(),
+            [self.address, self.store_value],
+            self.get_suffix(),
         )
-    
-    
+
     def _make_dword_vector_store_value(self) -> CompositeReg | None:
         if not self._needs_dword_vector_store():
             return None
@@ -229,3 +264,15 @@ class TypedMemoryStore(Store):
             for _ in range(self.access_type.vector_width)
         ]
         return CompositeReg(name, regs)
+
+
+class TypedMemoryStore(TypedMemoryStoreBase):
+    operation: str = "flat_store"
+    backend_instruction: type = FlatStore
+    fixed_is_scalar = True
+
+
+class TypedMemoryFStore(TypedMemoryStoreBase):
+    operation: str = "flat_store"
+    backend_instruction: type = FlatStore
+    fixed_is_scalar = False

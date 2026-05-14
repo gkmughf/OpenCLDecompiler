@@ -78,7 +78,7 @@ class VAdd(BaseInstruction):
             new_value = make_op(self.node, self.src0, self.src1, "+", "(ulong)", "(ulong)", suffix=self.suffix)
             src0_reg = not isinstance(self.src0, Val)
             src1_reg = not isinstance(self.src1, Val)
-            data_type = self.suffix
+            data_type = "u32"
 
             left_node = None
             right_node = None
@@ -103,7 +103,7 @@ class VAdd(BaseInstruction):
                         src0_node, src1_node, data_size, OpenCLTypes.from_string(self.suffix)
                     )
                 elif self.node.get_from_state(start_from_src0).type == RegisterType.LOCAL_DATA_POINTER:
-                    data_type = 'u32'#self.node.state[self.src1].data_type
+                    data_type = 'u32'
                     reg_type = RegisterType.LOCAL_DATA_POINTER
                     name = self.node.get_from_state(start_from_src0).val
                     reg_entire = Integrity.ENTIRE
@@ -115,7 +115,7 @@ class VAdd(BaseInstruction):
                     src0_node = self.expression_manager.add_variable_node(
                             name,
                             ExpressionValueTypeHint(
-                                OpenCLTypes.from_string(self.suffix), TypeAddressSpaceQualifiers.LOCAL, is_pointer=True
+                                OpenCLTypes.from_string(data_type), TypeAddressSpaceQualifiers.LOCAL, is_pointer=True
                             ),
                         )
                     src1_node = self.get_expression_node(self.src1)

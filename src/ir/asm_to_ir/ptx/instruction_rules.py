@@ -5,17 +5,20 @@ from src.ir.instructions.common.bfe import bfe, bfe_s
 from src.ir.instructions.common.compare import get_compare_class
 from src.ir.instructions.common.cvt import Cvt32_16, Cvt64_32, Cvt64_32_s, Cvt_i32_f32, Cvt32_64, Cvt_f64_u32
 from src.ir.instructions.common.endpgm import EndPgm
-from src.ir.instructions.common.load import Load32, Load64#, LoadParamVector2U8
 from src.ir.instructions.common.logical import And, Or
 from src.ir.instructions.common.lshl import LShl, AShr
 from src.ir.instructions.common.mad import Mad
 from src.ir.instructions.common.mov import Mov
 from src.ir.instructions.common.mul import MulHi, MulHi_s, MulLo, MulLo_s, MulWide, MulWide_s, Mul_f
-from src.ir.instructions.common.store import FStore8, FStore32, FStore64#, StoreGlobalVector2U8
 from src.ir.instructions.common.sub import Sub
 from src.ir.instructions.control_flow import Branch, BranchNot, Jump, Label
 from src.ir.instructions.special.local_memory import LocalAdd, LocalLoad, LocalStore
-from src.ir.instructions.common.typed_memory import MemoryAccessType, TypedMemoryLoad, TypedMemoryStore
+from src.ir.instructions.common.typed_memory import (
+    MemoryAccessType,
+    TypedMemoryFLoad,
+    TypedMemoryFStore,
+    TypedMemoryLoad,
+)
 import re
 from src.ir.registers.reg import Val, PredReg
 from src.ir.instructions.common.Not import Not
@@ -112,7 +115,7 @@ def _setp(opcode: str) -> Rule:
 def _param_load(opcode: str, args_offset) -> Rule:
     access_type = _parse_memory_access_type(opcode)
     def emit_global_load(ctx) -> None:
-        ctx.emit(TypedMemoryLoad, ctx.operand(0), named64("argptr"), args_offset[ctx.operand(1).name], access_type, is_scalar=True)
+        ctx.emit(TypedMemoryLoad, ctx.operand(0), named64("argptr"), args_offset[ctx.operand(1).name], access_type)
 
     return Rule.dynamic(emit_global_load)
 
@@ -121,7 +124,7 @@ def _global_load(opcode: str) -> Rule:
     access_type = _parse_memory_access_type(opcode)
     def emit_global_load(ctx) -> None:
         address = _emit_address_operand(ctx, 1)
-        ctx.emit(TypedMemoryLoad, ctx.operand(0), address, Val("0"), access_type, is_scalar=False)
+        ctx.emit(TypedMemoryFLoad, ctx.operand(0), address, Val("0"), access_type)
 
     return Rule.dynamic(emit_global_load)
 
@@ -130,7 +133,7 @@ def _global_store(opcode: str) -> Rule:
     access_type = _parse_memory_access_type(opcode)
     def emit_global_store(ctx) -> None:
         address = _emit_address_operand(ctx, 0)
-        ctx.emit(TypedMemoryStore, address, ctx.operand(1), access_type, is_scalar=False)
+        ctx.emit(TypedMemoryFStore, address, ctx.operand(1), access_type)
 
     return Rule.dynamic(emit_global_store)
 

@@ -18,9 +18,9 @@ class bfe(GenericInstruction):
 
     def _get_normalize_opcode(self) -> str:
         if self.signed:
-            return "s_bfe_i32" if self.is_scalar() else "v_bfe_i32"
+            return "s_bfe_i32"
         else:
-            return "s_bfe_u32" if self.is_scalar() else "v_bfe_u32"
+            return "s_bfe_u32"
     
     def get_suffix(self) -> str:
         if self.signed:

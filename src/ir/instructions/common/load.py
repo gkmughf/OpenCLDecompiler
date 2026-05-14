@@ -5,7 +5,16 @@ from src.instructions.flat.flat_load import FlatLoad
 from src.ir.registers.reg import Reg64, Reg_ty, Val
 from src.ir.instructions.generic import GenericInstruction
 
-class Load(GenericInstruction):
+_SUFFIX_BY_SIZE = {
+    32: "dword",
+    64: "dwordx2",
+    128: "dwordx4",
+}
+
+class GenericLoad(GenericInstruction):
+    operation: str
+    backend_instruction: type
+    
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val, is_scalar, size):
         self.destination = destination
         self.address = address
@@ -14,25 +23,15 @@ class Load(GenericInstruction):
         self.size = size
 
     def _get_normalize_opcode(self) -> str:
-        prefix = "s_load" if self.is_scalar() else "flat_load"
+        return f"{self.operation}_{self.get_suffix()}"
 
-        if self.size<= 32:
-            return f"{prefix}_dword"
-        elif self.size <= 64:
-            return f"{prefix}_dwordx2"
-        else:
-            return f"{prefix}_dwordx4"
         
     def _get_opcode(self):
-        return SLoad if self.is_scalar() else FlatLoad
+        return self.backend_instruction
 
     def get_suffix(self):
-        if self.size<= 32:
-            return "dword"
-        elif self.size <= 64:
-            return "dwordx2"
-        else:
-            return "dwordx4"
+        return _SUFFIX_BY_SIZE.get(self.size)
+
 
     def to_fill_node(self, state, parents):
         ctx = NodeLoweringContext(state, parents)
@@ -43,7 +42,10 @@ class Load(GenericInstruction):
             self.get_suffix(),
         )
 
-                
+class Load(GenericLoad):
+    operation: str = "s_load"
+    backend_instruction: type = SLoad
+
 class Load32(Load):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = False):
         super().__init__(destination, address, offset, is_scalar=True, size=32)
@@ -57,14 +59,18 @@ class Load128(Load):
         super().__init__(destination, address, offset, is_scalar=True, size=128)
 
 
-class FLoad32(Load):
+class FLoad(GenericLoad):
+    operation: str = "flat_load"
+    backend_instruction: type = FlatLoad
+
+class FLoad32(FLoad):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = True):
         super().__init__(destination, address, offset, is_scalar=False, size=32)
 
-class FLoad64(Load):
+class FLoad64(FLoad):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = True):
         super().__init__(destination, address, offset, is_scalar=False, size=64)
 
-class FLoad128(Load):
+class FLoad128(FLoad):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None, is_scalar: bool = True):
         super().__init__(destination, address, offset, is_scalar=False, size=128)

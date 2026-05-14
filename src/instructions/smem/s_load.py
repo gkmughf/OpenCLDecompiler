@@ -41,7 +41,7 @@ class SLoad(BaseInstruction):
                 elif sbase.type == RegisterType.GLOBAL_DATA_POINTER:
                     upload_global_data_pointer(self.node.state, self.sdata, self.sbase)
             else:
-                #(GFV) эта ветка не исполняется 
+                #TODO(GFV) эта ветка не исполняется 
                 upload_usesetup(self.node.state, self.sdata, self.offset)
             return self.node
         return super().to_fill_node()

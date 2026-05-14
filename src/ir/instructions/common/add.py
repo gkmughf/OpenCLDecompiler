@@ -32,18 +32,11 @@ class Add(GenericInstruction):
                 "u32",
             )
 
-        dest_lo, dest_hi = get_reg_rang(self.destination)
-        op1_lo, op1_hi = get_reg_rang(self.operand1)
-        if isinstance(self.operand2, Val):
-            op2_lo, op2_hi = self.operand2, self.operand2
-        else:
-            op2_lo, op2_hi = get_reg_rang(self.operand2)
-
         return ctx.emit_backend(
             VAdd,
             self._get_normalize_opcode(),
             [self.destination, self.operand1, self.operand2],
-            "u32",
+            "u64",
         )
 
 
