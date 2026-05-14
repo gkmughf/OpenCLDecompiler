@@ -1,5 +1,6 @@
 from src.ir.registers.reg import Reg_ty, RegOrVal_ty
 from src.ir.instructions.generic import GenericInstruction
+from src.ir.instructions.types import IRType
 from src.instructions.sop2.s_and import SAnd
 from src.instructions.sop2.s_xor import SXor
 from src.instructions.sop2.s_or import SOr
@@ -7,11 +8,19 @@ from src.ir.instructions.lowering import NodeLoweringContext
 
 
 class LogicalInstruction(GenericInstruction):
+    allowed_types = (IRType.B32, IRType.B64, IRType.PRED)
+
     operation: str
     backend_instruction: type
 
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
-        super().__init__(self.operation, destination, operand1, operand2)
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: Reg_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__(self.operation, destination, operand1, operand2, op_type=op_type)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2

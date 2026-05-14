@@ -1,6 +1,6 @@
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.registers.reg import Reg64, Reg_ty, Val, RegOrVal_ty, Reg32
-from typing import Optional
+from src.ir.instructions.types import IRType
 from src.ir.TemporaryVariableAllocator import tva
 
 
@@ -27,8 +27,10 @@ class LocalMemory(GenericInstruction):
     
 
 class LocalStore(GenericInstruction):
-    def __init__(self, destination: Reg_ty, val: Reg_ty):
-        super().__init__("local_store", destination, val)
+    allowed_types = (IRType.B32,)
+
+    def __init__(self, destination: Reg_ty, val: Reg_ty, op_type: IRType):
+        super().__init__("local_store", destination, val, op_type=op_type)
     def _get_normalize_opcode(self) -> str:
         return "ds_write_b32"
     
@@ -42,8 +44,10 @@ class LocalStore(GenericInstruction):
 
 
 class LocalLoad(GenericInstruction):
-    def __init__(self, destination: Reg64, from_mem: Reg_ty):
-        super().__init__("local_load", destination, from_mem)
+    allowed_types = (IRType.B32,)
+
+    def __init__(self, destination: Reg64, from_mem: Reg_ty, op_type: IRType):
+        super().__init__("local_load", destination, from_mem, op_type=op_type)
     def _get_normalize_opcode(self) -> str:
         return "ds_read_b32"
 
@@ -56,10 +60,12 @@ class LocalLoad(GenericInstruction):
         )
 
 class LocalAdd(GenericInstruction):
-    def __init__(self, destination: Reg64, val: RegOrVal_ty):
-        super().__init__("local_add", destination, val)
-        self.operand1_val: Optional[Val] = None
-        self.operand1_tmp_reg: Optional[Reg32] = None
+    allowed_types = (IRType.U32, IRType.I32)
+
+    def __init__(self, destination: Reg64, val: RegOrVal_ty, op_type: IRType):
+        super().__init__("local_add", destination, val, op_type=op_type)
+        self.operand1_val: Val | None = None
+        self.operand1_tmp_reg: Reg32 | None = None
         
         if isinstance(val, Val):
             tmp_reg_name = tva.generate("ladd")

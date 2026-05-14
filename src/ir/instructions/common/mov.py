@@ -1,13 +1,28 @@
 from src.ir.registers.reg import Reg_ty, RegOrVal_ty
 from src.ir.instructions.generic import GenericInstruction
+from src.ir.instructions.types import IRType
 
 from src.ir.instructions.lowering import NodeLoweringContext
 from src.instructions.sop1.s_mov import SMov
 
 
 class Mov(GenericInstruction):
-    def __init__(self, destination: Reg_ty, source: RegOrVal_ty):
-        super().__init__("mov", destination, source)
+    allowed_types = (
+        IRType.B16,
+        IRType.B32,
+        IRType.B64,
+        IRType.U16,
+        IRType.U32,
+        IRType.U64,
+        IRType.I32,
+        IRType.I64,
+        IRType.F32,
+        IRType.F64,
+        IRType.PRED,
+    )
+
+    def __init__(self, destination: Reg_ty, source: RegOrVal_ty, op_type: IRType):
+        super().__init__("mov", destination, source, op_type=op_type)
         self.destination = destination
         self.source = source
 

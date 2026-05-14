@@ -1,23 +1,39 @@
-from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Reg32, get_reg_rang, Val
 from src.ir.instructions.generic import GenericInstruction
-
 from src.ir.instructions.lowering import NodeLoweringContext
-from src.instructions.vop2.v_mul_f32 import VMulF32
-from src.instructions.vop3.v_mul_lo import VMulLo, VMulHi
+from src.ir.instructions.types import IRType
+from src.ir.registers.reg import Reg32, RegOrVal_ty, Reg_ty, Val, get_reg_rang
 from src.instructions.vop2.v_add import VAdd
-from src.instructions.vop3.v_mad import VMad
 from src.instructions.vop2.v_mac import VMac
+from src.instructions.vop2.v_mul_f32 import VMulF32
+from src.instructions.vop3.v_mad import VMad
+from src.instructions.vop3.v_mul_lo import VMulHi, VMulLo
+
+
+_INTEGER_I_TYPES = (IRType.I16, IRType.I32, IRType.I64)
+
+
+def _integer_kind_name(i_name: str, u_name: str, op_type: IRType) -> str:
+    if op_type in _INTEGER_I_TYPES or op_type == IRType.I64_I32:
+        return i_name
+    return u_name
+
 
 class Mul24(GenericInstruction):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
-        name =  "mul_s" if signed else "mul_u"   
-        super().__init__(name, destination, operand1, operand2)
-        self.signed = signed
+    allowed_types = (IRType.U32, IRType.I32)
 
+    def __init__(
+        self,
+        destination: Reg32,
+        operand1: RegOrVal_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        name = _integer_kind_name("mul_i", "mul_u", op_type)
+        super().__init__(name, destination, operand1, operand2, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         return "v_mul_i32_i24"
-    
+
     def to_fill_node(self, state, parents):
         return NodeLoweringContext(state, parents).emit_backend(
             VMulF32,
@@ -25,16 +41,23 @@ class Mul24(GenericInstruction):
             self.operands,
             "i32_i24",
         )
-    
-class Mul_f(GenericInstruction):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
-        super().__init__("mul_f", destination, operand1, operand2)
-        self.signed = signed
 
+
+class Mul_f(GenericInstruction):
+    allowed_types = (IRType.F32,)
+
+    def __init__(
+        self,
+        destination: Reg32,
+        operand1: RegOrVal_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__("mul_f", destination, operand1, operand2, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         return "v_mul_f32"
-    
+
     def to_fill_node(self, state, parents):
         return NodeLoweringContext(state, parents).emit_backend(
             VMulF32,
@@ -42,16 +65,23 @@ class Mul_f(GenericInstruction):
             self.operands,
             "f32",
         )
-    
-class Mac_f32(GenericInstruction):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
-        super().__init__("mac_f", destination, operand1, operand2)
-        self.signed = signed
 
+
+class Mac_f32(GenericInstruction):
+    allowed_types = (IRType.F32,)
+
+    def __init__(
+        self,
+        destination: Reg32,
+        operand1: RegOrVal_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__("mac_f", destination, operand1, operand2, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         return "v_mac_f32"
-    
+
     def to_fill_node(self, state, parents):
         return NodeLoweringContext(state, parents).emit_backend(
             VMac,
@@ -62,20 +92,26 @@ class Mac_f32(GenericInstruction):
 
 
 class MulLo(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
-        name =  "mul_s" if signed else "mul_u"   
-        super().__init__(name, destination, operand1, operand2)
+    allowed_types = (IRType.U16, IRType.I16, IRType.U32, IRType.I32, IRType.U64, IRType.I64)
+
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: RegOrVal_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        name = _integer_kind_name("mul_i", "mul_u", op_type)
+        super().__init__(name, destination, operand1, operand2, op_type=op_type)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
-        self.signed = signed
 
     def _is_64bit(self) -> bool:
-        return self.destination.bit_width == 64
-    
+        return self.op_type in (IRType.U64, IRType.I64)
+
     def _get_normalize_opcode(self) -> str:
         return "v_mul_lo_i32"
-    
 
     def to_fill_node(self, state, parents):
         ctx = NodeLoweringContext(state, parents)
@@ -86,36 +122,40 @@ class MulLo(GenericInstruction):
                 self.operands,
                 "u32",
             )
-        
+
         dest_lo, dest_hi = get_reg_rang(self.destination)
         op1_lo, op1_hi = get_reg_rang(self.operand1)
         op2_lo, op2_hi = get_reg_rang(self.operand2)
-        ctx.emit_backend(VMulHi, "v_mul_hi_u32", [dest_lo, op1_lo, op2_lo],   "u32")
-        ctx.emit_backend(VMulLo, "v_mul_lo_u32", [dest_hi, op1_lo, op2_hi],   "u32")
-        ctx.emit_backend(VAdd,   "v_add_u32",    [dest_hi, dest_hi, dest_lo], "u32")
-        ctx.emit_backend(VMulLo, "v_mul_lo_u32", [dest_lo, op1_hi, op2_lo],   "u32") 
-        ctx.emit_backend(VAdd,   "v_add_u32",    [dest_hi, dest_hi, dest_lo], "u32")
+        ctx.emit_backend(VMulHi, "v_mul_hi_u32", [dest_lo, op1_lo, op2_lo], "u32")
+        ctx.emit_backend(VMulLo, "v_mul_lo_u32", [dest_hi, op1_lo, op2_hi], "u32")
+        ctx.emit_backend(VAdd, "v_add_u32", [dest_hi, dest_hi, dest_lo], "u32")
+        ctx.emit_backend(VMulLo, "v_mul_lo_u32", [dest_lo, op1_hi, op2_lo], "u32")
+        ctx.emit_backend(VAdd, "v_add_u32", [dest_hi, dest_hi, dest_lo], "u32")
         return ctx.emit_backend(VMulLo, "v_mul_lo_u32", [dest_lo, op1_lo, op2_lo], "u32")
 
 
-class MulLo_s(MulLo):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
-        super().__init__(destination, operand1, operand2, signed=True)
-
-
-
-
 class MulHi(GenericInstruction):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
-        name =  "mul_hi_s" if signed else "mul_hi_u"   
-        super().__init__(name, destination, operand1, operand2)
-        self.signed = signed
+    allowed_types = (IRType.U32, IRType.I32)
+
+    def __init__(
+        self,
+        destination: Reg32,
+        operand1: RegOrVal_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        name = _integer_kind_name("mul_hi_i", "mul_hi_u", op_type)
+        super().__init__(name, destination, operand1, operand2, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
-        return "v_mul_hi_i32" if self.signed else "s_mul_hi_u32"
-    
+        if self.op_type == IRType.I32:
+            return "v_mul_hi_i32"
+        return "s_mul_hi_u32"
+
     def get_suffix(self):
-        return "i32" if self.signed else "u32"
+        if self.op_type == IRType.I32:
+            return "i32"
+        return "u32"
 
     def to_fill_node(self, state, parents):
         ctx = NodeLoweringContext(state, parents)
@@ -127,39 +167,40 @@ class MulHi(GenericInstruction):
         )
 
 
-class MulHi_s(MulHi):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
-        super().__init__(destination, operand1, operand2, signed=True)
-
-
 class MulWide(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty, signed=False):
-        name =  "mul64_s" if signed else "mul64_u"   
-        super().__init__(name, destination, operand1, operand2)
+    allowed_types = (IRType.U64_U32, IRType.I64_I32)
+
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: RegOrVal_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        name = _integer_kind_name("mul64_i", "mul64_u", op_type)
+        super().__init__(name, destination, operand1, operand2, op_type=op_type)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
-        self.signed = signed
 
     def _is_64bit(self) -> bool:
         return True
 
     def _get_normalize_opcode(self) -> str:
-        return "v_mad_i64_i32"  if self.signed else "v_mad_u64_u32" 
-    
+        if self.op_type == IRType.I64_I32:
+            return "v_mad_i64_i32"
+        return "v_mad_u64_u32"
+
     def get_suffix(self):
-        return "i64_i32" if self.signed else "u64_u32"
-    
+        if self.op_type == IRType.I64_I32:
+            return "i64_i32"
+        return "u64_u32"
+
     def to_fill_node(self, state, parents):
         ctx = NodeLoweringContext(state, parents)
         return ctx.emit_backend(
             VMad,
             self._get_normalize_opcode(),
-            [self.destination, Val('0'), self.operand1, self.operand2, Val('0')],
+            [self.destination, Val("0"), self.operand1, self.operand2, Val("0")],
             self.get_suffix(),
-        )    
-    
-class MulWide_s(MulWide):
-    def __init__(self, destination: Reg32, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
-        super().__init__(destination, operand1, operand2, signed=True)
-
+        )

@@ -1,5 +1,6 @@
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.registers.reg import PredReg, RegOrVal_ty
+from src.ir.instructions.types import IRType
 
 from src.instructions.vopc.v_cmp_eq import VCmpEq
 from src.instructions.vopc.v_cmp_ge import VCmpGe
@@ -10,6 +11,8 @@ from src.instructions.vopc.v_cmp_ne import VCmpNe
 from src.ir.instructions.lowering import NodeLoweringContext
 
 class BaseCompare(GenericInstruction):
+    allowed_types = (IRType.U32, IRType.I32, IRType.U64, IRType.I64, IRType.F32, IRType.F64)
+
     operation: str
     backend_instruction: type
 
@@ -18,8 +21,9 @@ class BaseCompare(GenericInstruction):
         destination: PredReg,
         operand1: RegOrVal_ty,
         operand2: RegOrVal_ty,
+        op_type: IRType,
     ):
-        super().__init__(f"cmp.{self.operation}", destination, operand1, operand2)
+        super().__init__(f"cmp.{self.operation}", destination, operand1, operand2, op_type=op_type)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2

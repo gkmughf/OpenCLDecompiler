@@ -4,6 +4,7 @@ from src.ir.TemporaryVariableAllocator import tva
 from src.ir.instructions.common.load import GenericLoad
 from src.ir.instructions.common.store import GenericStore
 from src.ir.instructions.lowering import NodeLoweringContext
+from src.ir.instructions.types import MEMORY_VALUE_TYPES, IRType
 from src.ir.registers.reg import CompositeReg, Reg32, Reg64, RegOrVal_ty, Reg_ty, Val
 from src.instructions.flat.flat_load import FlatLoad
 from src.instructions.flat.flat_store import FlatStore
@@ -12,6 +13,24 @@ from src.instructions.sop1.s_mov import SMov
 from src.instructions.sop2.s_and import SAnd
 from src.instructions.sop2.s_bfe import SBfe
 from src.instructions.vop3.v_perm import VPerm
+
+_IR_TYPE_BY_MEMORY_BASE_TYPE = {
+    "b8": IRType.B8,
+    "b16": IRType.B16,
+    "b32": IRType.B32,
+    "b64": IRType.B64,
+    "u8": IRType.U8,
+    "u16": IRType.U16,
+    "u32": IRType.U32,
+    "u64": IRType.U64,
+    "s8": IRType.I8,
+    "s16": IRType.I16,
+    "s32": IRType.I32,
+    "s64": IRType.I64,
+    "f16": IRType.F16,
+    "f32": IRType.F32,
+    "f64": IRType.F64,
+}
 
 
 @dataclass(frozen=True)
@@ -27,6 +46,9 @@ class MemoryAccessType:
     @property
     def total_bits(self) -> int:
         return self.element_bits * self.vector_width
+
+    def to_ir_type(self) -> IRType:
+        return _IR_TYPE_BY_MEMORY_BASE_TYPE[self.base_type]
 
     def to_opencl_type(self) -> str:
         return f"__{self.address_space} {self.to_value_type()}"
@@ -60,6 +82,8 @@ class MemoryAccessType:
 
 
 class TypedMemoryLoadBase(GenericLoad):
+    allowed_types = MEMORY_VALUE_TYPES
+
     def __init__(
         self,
         destination: Reg_ty,
@@ -71,7 +95,8 @@ class TypedMemoryLoadBase(GenericLoad):
             destination,
             address,
             offset,
-            size=max(32, access_type.total_bits),
+            op_type=access_type.to_ir_type(),
+            memory_bits=max(32, access_type.total_bits),
         )
         self.access_type = access_type
         self.packed_value = self._make_internal_reg("typed_ld")
@@ -147,6 +172,8 @@ class TypedMemoryFLoad(TypedMemoryLoadBase):
 
 
 class TypedMemoryStoreBase(GenericStore):
+    allowed_types = MEMORY_VALUE_TYPES
+
     PACK_SELECTOR = Val("0x2010004")
 
     def __init__(
@@ -158,7 +185,8 @@ class TypedMemoryStoreBase(GenericStore):
         super().__init__(
             address,
             value,
-            size=max(8, access_type.total_bits),
+            op_type=access_type.to_ir_type(),
+            memory_bits=max(8, access_type.total_bits),
         )
         self.access_type = access_type
         self.selector = self._make_internal_reg("perm_selector")

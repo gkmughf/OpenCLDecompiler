@@ -4,23 +4,29 @@ from src.instructions.flat.flat_load import FlatLoad
 
 from src.ir.registers.reg import Reg64, Reg_ty, Val
 from src.ir.instructions.generic import GenericInstruction
+from src.ir.instructions.types import IRType, memory_suffix_for_bits
 
-_SUFFIX_BY_SIZE = {
-    32: "dword",
-    64: "dwordx2",
-    128: "dwordx4",
-}
+LOAD_TYPES = (IRType.B32, IRType.B64, IRType.B128)
 
 class GenericLoad(GenericInstruction):
+    allowed_types = LOAD_TYPES
     operation: str
     backend_instruction: type
     
-    def __init__(self, destination: Reg_ty, address: Reg64, offset: Val, size):
+    def __init__(
+        self,
+        destination: Reg_ty,
+        address: Reg64,
+        offset: Val | None = None,
+        *,
+        op_type: IRType,
+        memory_bits: int | None = None,
+    ):
         self.destination = destination
         self.address = address
-        self.offset = offset if offset != None else Val("0")
-        super().__init__("load", self.destination, self.address, self.offset)
-        self.size = size
+        self.offset = offset if offset is not None else Val("0")
+        super().__init__("load", self.destination, self.address, self.offset, op_type=op_type)
+        self.size = memory_bits or self.op_type.bits
 
     def _get_normalize_opcode(self) -> str:
         return f"{self.operation}_{self.get_suffix()}"
@@ -30,7 +36,7 @@ class GenericLoad(GenericInstruction):
         return self.backend_instruction
 
     def get_suffix(self):
-        return _SUFFIX_BY_SIZE.get(self.size)
+        return memory_suffix_for_bits(self.size)
 
 
     def to_fill_node(self, state, parents):
@@ -48,15 +54,15 @@ class Load(GenericLoad):
 
 class Load32(Load):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
-        super().__init__(destination, address, offset, size=32)
+        super().__init__(destination, address, offset, op_type=IRType.B32)
 
 class Load64(Load):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
-        super().__init__(destination, address, offset, size=64)
+        super().__init__(destination, address, offset, op_type=IRType.B64)
 
 class Load128(Load):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
-        super().__init__(destination, address, offset, size=128)
+        super().__init__(destination, address, offset, op_type=IRType.B128)
 
 
 class FLoad(GenericLoad):
@@ -65,12 +71,12 @@ class FLoad(GenericLoad):
 
 class FLoad32(FLoad):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
-        super().__init__(destination, address, offset, size=32)
+        super().__init__(destination, address, offset, op_type=IRType.B32)
 
 class FLoad64(FLoad):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
-        super().__init__(destination, address, offset, size=64)
+        super().__init__(destination, address, offset, op_type=IRType.B64)
 
 class FLoad128(FLoad):
     def __init__(self, destination: Reg_ty, address: Reg64, offset: Val | None = None):
-        super().__init__(destination, address, offset, size=128)
+        super().__init__(destination, address, offset, op_type=IRType.B128)

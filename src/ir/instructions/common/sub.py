@@ -2,24 +2,43 @@ from src.ir.instructions.generic import GenericInstruction
 from src.ir.registers.reg import Reg_ty, RegOrVal_ty, get_reg_rang
 
 from src.ir.instructions.lowering import NodeLoweringContext
+from src.ir.instructions.types import IRType
 from src.instructions.vop2.v_sub import VSub
 
 class Sub(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
-        super().__init__("sub", destination, operand1, operand2)
+    allowed_types = (IRType.U16, IRType.I16, IRType.U32, IRType.I32, IRType.U64, IRType.I64, IRType.F32)
+
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: RegOrVal_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__("sub", destination, operand1, operand2, op_type=op_type)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
         
     def _is_64bit(self) -> bool:
-        return self.destination.bit_width == 64
+        return self.op_type in (IRType.U64, IRType.I64)
     
     def _get_normalize_opcode(self) -> str:
+        if self.op_type == IRType.F32:
+            return "v_sub_f32"
         return "v_sub_u32"
 
     
     def to_fill_node(self, state, parents):
         ctx = NodeLoweringContext(state, parents)
+        if self.op_type == IRType.F32:
+            return ctx.emit_backend(
+                VSub,
+                self._get_normalize_opcode(),
+                self.operands,
+                "f32",
+            )
+
         if not self._is_64bit():
             return ctx.emit_backend(
                 VSub,
@@ -45,21 +64,12 @@ class Sub(GenericInstruction):
             "u32",
         )
 
-class Sub_f(GenericInstruction):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
-        super().__init__("sub", destination, operand1, operand2)
-        self.destination = destination
-        self.operand1 = operand1
-        self.operand2 = operand2
-
-    def to_fill_node(self, state, parents):
-        return NodeLoweringContext(state, parents).emit_backend(
-            VSub,
-            "v_sub_f32",
-            self.operands,
-            "f32",
-        )
-        
 class SubRev(Sub):
-    def __init__(self, destination: Reg_ty, operand1: RegOrVal_ty, operand2: RegOrVal_ty):
-        super().__init__(destination, operand2, operand1)
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: RegOrVal_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__(destination, operand2, operand1, op_type=op_type)

@@ -1,12 +1,20 @@
+from typing import ClassVar
+
+from src.ir.instructions.types import IRType
 from src.ir.registers.reg import PredReg, Reg_ty, BaseReg, CompositeReg, expand_register_names, is_range, Reg64
 
 class GenericInstruction:
+    allowed_types: ClassVar[tuple[IRType, ...] | None] = (IRType.NONE,)
+    default_type: ClassVar[IRType] = IRType.NONE
+
     def __init__(
         self,
         opcode: str,
         *operands,
+        op_type: IRType | None = None,
     ):
         self.opcode = opcode
+        self.op_type = self._resolve_op_type(op_type)
         self.operands = tuple(operands)
         self._predicate: PredReg | None = None
         self._predicate_negated = False
@@ -20,7 +28,10 @@ class GenericInstruction:
     
     def get_operands(self):
         return self.operands
-    
+
+    def get_operation_type(self) -> IRType:
+        return self.op_type
+
     def update_operands(self, *operands):
         self.operands = tuple(operands)
     
@@ -70,9 +81,6 @@ class GenericInstruction:
         ]
         return tuple(registers)
     
-    def writes_any_predicate(self) -> bool:
-        return any(isinstance(reg, PredReg) for reg in self.get_written_registers())
-    
     def get_written_register_names(self) -> set[str]:
         return self._expand_registers(self.get_written_registers())
 
@@ -96,3 +104,20 @@ class GenericInstruction:
         for reg in registers:
             expanded.update(expand_register_names(reg))
         return expanded
+
+    def _resolve_op_type(self, op_type: IRType | None) -> IRType:
+        if op_type is None:
+            resolved_type = self.default_type
+        elif isinstance(op_type, IRType):
+            resolved_type = op_type
+        else:
+            raise TypeError("op_type must be an IRType")
+
+        allowed_types = self.allowed_types
+        if allowed_types is not None and resolved_type not in allowed_types:
+            allowed = ", ".join(ir_type.value for ir_type in allowed_types)
+            raise ValueError(
+                f"{self.__class__.__name__} does not support operation type "
+                f"{resolved_type.value}; allowed types: {allowed}"
+            )
+        return resolved_type

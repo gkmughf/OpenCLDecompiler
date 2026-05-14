@@ -1,12 +1,15 @@
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.instructions.lowering import NodeLoweringContext
+from src.ir.instructions.types import IRType
 from src.ir.registers.reg import PredReg
 from src.instructions.sop1.s_not import SNot
 
 
 class Not(GenericInstruction):
-    def __init__(self, destination: PredReg, source: PredReg):
-        super().__init__("not", destination, source)
+    allowed_types = (IRType.PRED, IRType.I32, IRType.B32, IRType.B64)
+
+    def __init__(self, destination: PredReg, source: PredReg, op_type: IRType):
+        super().__init__("not", destination, source, op_type=op_type)
         self.destination = destination
         self.source = source
 

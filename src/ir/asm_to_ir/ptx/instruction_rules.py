@@ -1,15 +1,15 @@
 from src.ir.asm_to_ir.lowering import Emit, Rule, named64, op, same
-from src.ir.instructions.common.add import Add, AddF
+from src.ir.instructions.common.add import Add
 from src.ir.instructions.common.barrier import Barrier
-from src.ir.instructions.common.bfe import bfe, bfe_s
+from src.ir.instructions.common.bfe import bfe
 from src.ir.instructions.common.compare import get_compare_class
-from src.ir.instructions.common.cvt import Cvt32_16, Cvt64_32, Cvt64_32_s, Cvt_i32_f32, Cvt32_64, Cvt_f64_u32
+from src.ir.instructions.common.cvt import Cvt32_16, Cvt64_32, Cvt_i32_f32, Cvt32_64, Cvt_f64_u32
 from src.ir.instructions.common.endpgm import EndPgm
 from src.ir.instructions.common.logical import And, Or
 from src.ir.instructions.common.lshl import LShl, AShr
 from src.ir.instructions.common.mad import Mad
 from src.ir.instructions.common.mov import Mov
-from src.ir.instructions.common.mul import MulHi, MulHi_s, MulLo, MulLo_s, MulWide, MulWide_s, Mul_f
+from src.ir.instructions.common.mul import MulHi, MulLo, MulWide, Mul_f
 from src.ir.instructions.common.sub import Sub
 from src.ir.instructions.control_flow import Branch, BranchNot, Jump, Label
 from src.ir.instructions.special.local_memory import LocalAdd, LocalLoad, LocalStore
@@ -24,12 +24,28 @@ from src.ir.registers.reg import Val, PredReg
 from src.ir.instructions.common.Not import Not
 from src.ir.instructions.common.cselect import CSelect
 from src.ir.instructions.common.min import IRMin
+from src.ir.instructions.types import IRType
 
 
 _MEMORY_TYPE_PATTERN = re.compile(r"^[busf](8|16|32|64)$")
 _MEMORY_ADDRESS_OFFSET_PATTERN = re.compile(
     r"^\[\s*(%[\w.$]+)\s*([+-])\s*([+-]?(?:0x[0-9a-fA-F]+|\d+))\s*\]$"
 )
+
+_PTX_TYPE_BY_SUFFIX = {
+    "b16": IRType.B16,
+    "b32": IRType.B32,
+    "b64": IRType.B64,
+    "u16": IRType.U16,
+    "u32": IRType.U32,
+    "u64": IRType.U64,
+    "s16": IRType.I16,
+    "s32": IRType.I32,
+    "s64": IRType.I64,
+    "f32": IRType.F32,
+    "f64": IRType.F64,
+    "pred": IRType.PRED,
+}
 
 def get_instruction_rule(opcode: str, args_offset) -> Rule | None:
     if opcode.startswith("."):
@@ -67,7 +83,7 @@ def _branch() -> Rule:
         else:
             tmo_predicate = PredReg(f"{predicate.name}Not")
             ctx.kernel.predicates.add(tmo_predicate)
-            ctx.kernel.create_instruction(Not, tmo_predicate, predicate)
+            ctx.kernel.create_instruction(Not, tmo_predicate, predicate, op_type=IRType.PRED)
             ctx.kernel.create_instruction(BranchNot, tmo_predicate, target)
 
     return Rule.dynamic(emit_branch)
@@ -93,9 +109,13 @@ def _parse_setp_opcode(opcode: str) -> str:
 
     return normalized_comparison
 
+def _parse_ptx_opcode_type(opcode: str) -> IRType:
+    return _PTX_TYPE_BY_SUFFIX[opcode.split(".")[-1]]
+
 
 def _setp(opcode: str) -> Rule:
     comparison = _parse_setp_opcode(opcode)
+    op_type = _parse_ptx_opcode_type(opcode)
     compare_class = get_compare_class(comparison)
 
     def emit_setp(ctx) -> None:
@@ -104,6 +124,7 @@ def _setp(opcode: str) -> Rule:
             ctx.operand(0),
             ctx.operand(1),
             ctx.operand(2),
+            op_type=op_type,
         )
 
     return Rule.dynamic(emit_setp)
@@ -166,9 +187,9 @@ def _emit_address_operand(ctx, operand_index: int):
     offset64 = ctx.tmp("offset64", "64")
     address = ctx.tmp("address", "64")
 
-    ctx.emit(Mov, offset32, offset)
-    ctx.emit(Cvt64_32_s, offset64, offset32)
-    ctx.emit(Add, address, ctx.operand(operand_index), offset64)
+    ctx.emit(Mov, offset32, offset, op_type=IRType.I32)
+    ctx.emit(Cvt64_32, offset64, offset32, op_type=IRType.I64_I32)
+    ctx.emit(Add, address, ctx.operand(operand_index), offset64, op_type=IRType.U64)
     return address
 
 
@@ -196,69 +217,69 @@ def _parse_memory_access_type(opcode: str) -> MemoryAccessType:
     )
 
 instruction_rules = {
-    "add.s32": same(Add),
-    "add.s64": same(Add),
-    "add.s16": same(Add),
-    "add.f64": same(AddF),
+    "add.s32": same(Add, IRType.I32),
+    "add.s64": same(Add, IRType.I64),
+    "add.s16": same(Add, IRType.I16),
+    "add.f64": same(Add, IRType.F64),
     
-    "sub.s32": same(Sub),
-    "sub.s64": same(Sub),
-    "sub.s16": same(Sub),
+    "sub.s32": same(Sub, IRType.I32),
+    "sub.s64": same(Sub, IRType.I64),
+    "sub.s16": same(Sub, IRType.I16),
 
-    "mul.lo.s16": same(MulLo_s),
-    "mul.lo.s32": same(MulLo_s),
-    "mul.hi.s32": same(MulHi_s),
-    "mul.lo.u32": same(MulLo),
-    "mul.hi.u32": same(MulHi),
-    "mul.wide.s32": same(MulWide_s),
-    "mul.wide.u32": same(MulWide),
-    "mul.lo.s64": same(MulLo),
-    "mul.f32": same(Mul_f),
+    "mul.lo.s16": same(MulLo, IRType.I16),
+    "mul.lo.s32": same(MulLo, IRType.I32),
+    "mul.hi.s32": same(MulHi, IRType.I32),
+    "mul.lo.u32": same(MulLo, IRType.U32),
+    "mul.hi.u32": same(MulHi, IRType.U32),
+    "mul.wide.s32": same(MulWide, IRType.I64_I32),
+    "mul.wide.u32": same(MulWide, IRType.U64_U32),
+    "mul.lo.s64": same(MulLo, IRType.I64),
+    "mul.f32": same(Mul_f, IRType.F32),
 
-    "mad.lo.s32": same(Mad),
+    "mad.lo.s32": same(Mad, IRType.I64_I32),
 
-    "mov.u16": same(Mov),
-    "mov.b32": same(Mov),
-    "mov.u32": same(Mov),
-    "mov.b64": same(Mov),
-    "mov.u64": same(Mov),
-    "mov.f32": same(Mov),
+    "mov.u16": same(Mov, IRType.U16),
+    "mov.b32": same(Mov, IRType.B32),
+    "mov.u32": same(Mov, IRType.U32),
+    "mov.b64": same(Mov, IRType.B64),
+    "mov.u64": same(Mov, IRType.U64),
+    "mov.f32": same(Mov, IRType.F32),
 
-    "cvt.s64.s32": same(Cvt64_32_s),
-    "cvt.u64.u32": same(Cvt64_32),
-    "cvt.u32.u64": same(Cvt32_64),
-    "cvt.u16.u32": same(Cvt32_16),
-    "cvt.rzi.s32.f32": same(Cvt_i32_f32),
-    "cvt.rn.f64.u32": same(Cvt_f64_u32),
-    "cvt.s32.s16": same(Cvt32_16),
+    "cvt.s64.s32": same(Cvt64_32, IRType.I64_I32),
+    "cvt.u64.u32": same(Cvt64_32, IRType.U64_U32),
+    "cvt.u32.u64": same(Cvt32_64, IRType.U32_U64),
+    "cvt.u16.u32": same(Cvt32_16, IRType.U16_U32),
+    "cvt.rzi.s32.f32": same(Cvt_i32_f32, IRType.I32_F32),
+    "cvt.rn.f64.u32": same(Cvt_f64_u32, IRType.F64_U32),
+    "cvt.s32.s16": same(Cvt32_16, IRType.I32_I16),
 
-    "shl.b16": same(LShl),
-    "shl.b32": same(LShl),
-    "shl.b64": same(LShl),
-    "shr.s64": same(AShr),
+    "shl.b16": same(LShl, IRType.B16),
+    "shl.b32": same(LShl, IRType.B32),
+    "shl.b64": same(LShl, IRType.B64),
+    "shr.s64": same(AShr, IRType.I64),
 
-    "and.b64": same(And),
+    "and.b64": same(And, IRType.B64),
 
-    "st.shared.u32": same(LocalStore),
+    "st.shared.u32": same(LocalStore, IRType.B32),
     "atom.shared.add.u32": Rule(
         [
-            Emit(LocalAdd, op(1), op(2)),
+            Emit(LocalAdd, op(1), op(2), op_type=IRType.U32),
         ]
     ),
-    "ld.shared.u32": same(LocalLoad),
+    "ld.shared.u32": same(LocalLoad, IRType.B32),
 
-    "s_bfe_u32": same(bfe),
-    "v_bfe_u32": same(bfe),
-    "s_bfe_i32": same(bfe_s),
-    "v_bfe_i32": same(bfe_s),
+    "s_bfe_u32": same(bfe, IRType.U32),
+    "v_bfe_u32": same(bfe, IRType.U32),
+    "s_bfe_i32": same(bfe, IRType.I32),
+    "v_bfe_i32": same(bfe, IRType.I32),
 
     "bar.sync": Rule([Emit(Barrier)]),
     
-    "selp.b32": Rule([Emit(CSelect, op(0), op(2), op(1), op(3))]),
-    "selp.b64": Rule([Emit(CSelect, op(0), op(2), op(1), op(3))]),
-    "min.s32": same(IRMin),
+    "selp.b32": Rule([Emit(CSelect, op(0), op(2), op(1), op(3), op_type=IRType.B32)]),
+    "selp.b64": Rule([Emit(CSelect, op(0), op(2), op(1), op(3), op_type=IRType.B64)]),
+    "min.s32": same(IRMin, IRType.I32),
     "ret": same(EndPgm),
-    "or.pred": same(Or),
-    "and.b32": same(And),
-    "neg.s32": same(Not)
+    "or.pred": same(Or, IRType.PRED),
+    "and.b32": same(And, IRType.B32),
+    "neg.s32": same(Not, IRType.I32)
 }

@@ -1,14 +1,24 @@
 from src.ir.registers.reg import Reg_ty, RegOrVal_ty
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.instructions.lowering import NodeLoweringContext
+from src.ir.instructions.types import IRType
 from src.instructions.vop2.v_lshlrev import VLshlrev
 from src.instructions.vop2.v_lshrrev import VLshrrev
 from src.instructions.vop2.v_ashrrev import VAshrrev
 
 
 class ShiftInstruction(GenericInstruction):
-    def __init__(self, name: str, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
-        super().__init__(name, destination, operand1, operand2)
+    allowed_types = (IRType.B16, IRType.B32, IRType.B64, IRType.I32, IRType.I64)
+
+    def __init__(
+        self,
+        name: str,
+        destination: Reg_ty,
+        operand1: Reg_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__(name, destination, operand1, operand2, op_type=op_type)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -23,8 +33,14 @@ class ShiftInstruction(GenericInstruction):
 
 
 class LShl_Rev(ShiftInstruction):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
-        super().__init__("lshl", destination, operand1, operand2)
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: Reg_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__("lshl", destination, operand1, operand2, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         if self._is_64bit():
@@ -42,8 +58,14 @@ class LShl_Rev(ShiftInstruction):
 
 
 class LShr_Rev(ShiftInstruction):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
-        super().__init__("rshl", destination, operand1, operand2)
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: Reg_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__("rshl", destination, operand1, operand2, op_type=op_type)
 
 
     def _get_normalize_opcode(self) -> str:
@@ -60,8 +82,16 @@ class LShr_Rev(ShiftInstruction):
         )
 
 class AShr_Rev(ShiftInstruction):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
-        super().__init__("rshl", destination, operand1, operand2)
+    allowed_types = (IRType.I32, IRType.I64)
+
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: Reg_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__("rshl", destination, operand1, operand2, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         if self._is_64bit():
@@ -82,13 +112,31 @@ class AShr_Rev(ShiftInstruction):
         )
     
 class LShl(LShl_Rev):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
-        super().__init__(destination, operand2, operand1)
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: Reg_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__(destination, operand2, operand1, op_type=op_type)
 
 class LShr(LShr_Rev):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
-        super().__init__(destination, operand2, operand1)
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: Reg_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__(destination, operand2, operand1, op_type=op_type)
 
 class AShr(AShr_Rev):
-    def __init__(self, destination: Reg_ty, operand1: Reg_ty, operand2: RegOrVal_ty):
-        super().__init__(destination, operand2, operand1)
+    def __init__(
+        self,
+        destination: Reg_ty,
+        operand1: Reg_ty,
+        operand2: RegOrVal_ty,
+        op_type: IRType,
+    ):
+        super().__init__(destination, operand2, operand1, op_type=op_type)

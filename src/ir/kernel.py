@@ -1,4 +1,5 @@
 from typing import Any
+from src.ir.instructions.types import IRType
 from src.ir.registers.reg import PredReg
 from src.ir.kernel_components import (
     KernelArguments,
@@ -6,6 +7,14 @@ from src.ir.kernel_components import (
     KernelPredicates,
     KernelInstructions,
 )
+
+
+class _OperationTypeUnset:
+    pass
+
+
+OP_TYPE_UNSET = _OperationTypeUnset()
+OperationTypeArg = IRType | _OperationTypeUnset
 
 
 class Kernel:
@@ -41,8 +50,14 @@ class Kernel:
            *args: Any,
            predicate: str | PredReg | None = None,
            predicate_negated: bool = False,
+           op_type: OperationTypeArg = OP_TYPE_UNSET,
         ) -> "Kernel":
-           instruction = instruction_class(*args)
+           if op_type is OP_TYPE_UNSET:
+               instruction = instruction_class(*args)
+           elif isinstance(op_type, IRType):
+               instruction = instruction_class(*args, op_type=op_type)
+           else:
+               raise TypeError("op_type must be an IRType")
            predicate_reg = self._coerce_predicate(predicate)
            if predicate_reg is not None:
                instruction.set_predicate(predicate_reg, predicate_negated)

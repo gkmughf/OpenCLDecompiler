@@ -5,7 +5,7 @@ from typing import Any
 from src.ir.TemporaryVariableAllocator import tva
 from src.ir.registers.reg import PredReg, Reg32, Reg64, RegOrVal_ty, Reg_ty, Val
 
-from src.ir.kernel import Kernel
+from src.ir.kernel import OP_TYPE_UNSET, Kernel, OperationTypeArg
 
 
 class LoweringArg:
@@ -102,6 +102,7 @@ class InstructionContext:
         *args: Any,
         predicate: str | PredReg | None = None,
         predicate_negated: bool | None = None,
+        op_type: OperationTypeArg = OP_TYPE_UNSET,
     ) -> None:
         instruction_args = tuple(resolve_arg(arg, self) for arg in args)
         if predicate is None:
@@ -117,11 +118,21 @@ class InstructionContext:
         if actual_predicate is None:
             actual_predicate_negated = False
 
+        if op_type is OP_TYPE_UNSET:
+            self.kernel.create_instruction(
+                instruction_class,
+                *instruction_args,
+                predicate=actual_predicate,
+                predicate_negated=actual_predicate_negated,
+            )
+            return
+
         self.kernel.create_instruction(
             instruction_class,
             *instruction_args,
             predicate=actual_predicate,
             predicate_negated=actual_predicate_negated,
+            op_type=op_type,
         )
 
 
@@ -131,6 +142,7 @@ class Emit:
     args: tuple[Any, ...]
     predicate: str | PredReg | None = None
     predicate_negated: bool | None = None
+    op_type: OperationTypeArg = OP_TYPE_UNSET
 
     def __init__(
         self,
@@ -138,11 +150,13 @@ class Emit:
         *args: Any,
         predicate: str | PredReg | None = None,
         predicate_negated: bool | None = None,
+        op_type: OperationTypeArg = OP_TYPE_UNSET,
     ):
         object.__setattr__(self, "instruction_class", instruction_class)
         object.__setattr__(self, "args", tuple(args))
         object.__setattr__(self, "predicate", predicate)
         object.__setattr__(self, "predicate_negated", predicate_negated)
+        object.__setattr__(self, "op_type", op_type)
 
     def emit(self, ctx: InstructionContext) -> None:
         ctx.emit(
@@ -150,6 +164,7 @@ class Emit:
             *self.args,
             predicate=self.predicate,
             predicate_negated=self.predicate_negated,
+            op_type=self.op_type,
         )
 
 
@@ -178,9 +193,12 @@ class Rule:
             item.emit(ctx)
 
 
-def same(instruction_class: type) -> Rule:
+def same(instruction_class: type, op_type: OperationTypeArg = OP_TYPE_UNSET) -> Rule:
     def emit_same(ctx: InstructionContext) -> None:
-        ctx.emit(instruction_class, *list(ctx.operands))
+        if op_type is OP_TYPE_UNSET:
+            ctx.emit(instruction_class, *list(ctx.operands))
+            return
+        ctx.emit(instruction_class, *list(ctx.operands), op_type=op_type)
 
     return Rule.dynamic(emit_same)
 
