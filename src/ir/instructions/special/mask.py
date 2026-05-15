@@ -1,7 +1,7 @@
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.registers.reg import PredReg
 from src.ir.instructions.lowering import NodeLoweringContext
-from src.instructions.IRspecial.ChangeMask import UseMask
+from src.instructions.IRspecial.ChangeMask import UseMask, Unmask as be_Unmask
 
 
 class ChangeMask(GenericInstruction):
@@ -34,7 +34,11 @@ class Unmask(GenericInstruction):
         return "unmask"
 
     def to_fill_node(self, state, parents):
-        return super().to_fill_node(state, parents)
+        return NodeLoweringContext(state, parents).emit_backend(
+            be_Unmask,
+            self._get_normalize_opcode(),
+            [],
+        )
 
     def writes_first_operand(self) -> bool:
         return False

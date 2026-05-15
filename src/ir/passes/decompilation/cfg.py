@@ -1,5 +1,5 @@
 from src.ir.instructions.common.endpgm import EndPgm
-from src.ir.instructions.special.mask import ChangeMask
+from src.ir.instructions.special.mask import ChangeMask, Unmask
 from src.ir.passes.base import PassContext
 from src.ir.passes.decompilation.state import DecompilationState, OpenMask
 from src.logical_variable import ExecCondition
@@ -111,6 +111,9 @@ class BuildDecompilerCfgPass:
                         node_state = previous_branch.change_mask.state
                         previous_branch_end = last_node
 
+            if isinstance(instruction, EndPgm | Unmask):
+                _close_open_masks(masked_blocks, ExecCondition.default(), parents)
+
             state.last_node = instruction.to_fill_node(node_state, parents)
             last_node = state.last_node
 
@@ -127,13 +130,6 @@ class BuildDecompilerCfgPass:
                             previous_branch_end,
                         )
                     )
-
-            if isinstance(instruction, EndPgm):
-                for masked_block in masked_blocks[1:]:
-                    if masked_block.previous_branch_end is not None:
-                        _connect(masked_block.previous_branch_end, last_node)
-                    else:
-                        _connect(masked_block.change_mask, last_node)
 
             if len(last_node.parent) > 1:
                 find_max_and_prev_versions(last_node)
