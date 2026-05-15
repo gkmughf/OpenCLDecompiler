@@ -265,8 +265,8 @@ instruction_rules = {
 
     "bar.sync": Rule([Emit(Barrier)]),
     
-    "selp.b32": Rule([Emit(CSelect, op(0), op(2), op(1), op(3), op_type=IRType.B32)]),
-    "selp.b64": Rule([Emit(CSelect, op(0), op(2), op(1), op(3), op_type=IRType.B64)]),
+    "selp.b32": same(CSelect, op_type=IRType.B32),
+    "selp.b64": same(CSelect, op_type=IRType.B64),
     "min.s32": same(IRMin, IRType.I32),
     "ret": same(EndPgm),
     "or.pred": same(Or, IRType.PRED),

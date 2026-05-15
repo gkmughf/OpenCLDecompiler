@@ -180,8 +180,8 @@ def _scalar_cselect_b64() -> Rule:
         ctx.emit(
             CSelect,
             ctx.operand(0),
-            replace_exec(ctx.operand(1)),
             replace_exec(ctx.operand(2)),
+            replace_exec(ctx.operand(1)),
             PredReg("scc"),
             op_type=IRType.B64,
         )
@@ -326,7 +326,7 @@ instruction_rules = {
     "s_waitcnt": Rule([Emit(Barrier)]),
 
     "s_nop": Rule([Emit(Ignore)]),
-    "v_cndmask_b32": same(CSelect, IRType.B32),
+    "v_cndmask_b32": Rule([Emit(CSelect, op(0), op(2), op(1), op(3), op_type=IRType.B32)]),
     "s_min_i32": same(IRMin, IRType.I32),
     "s_cselect_b64": _scalar_cselect_b64(),
 }

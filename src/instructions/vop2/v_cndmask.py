@@ -128,7 +128,7 @@ class VCndmask(BaseInstruction):
             else:
                 src0_parent_val = self.src0.name
             self.output_string = (
-                f"{vdst.get_expression_node().value} = {ssrc2_val} ? {src1_parent_val} : {src0_parent_val}"
+                f"{vdst.get_expression_node().value} = {ssrc2_val} ? {src0_parent_val} : {src1_parent_val}"
             )
             return self.output_string
         return super().to_print()
