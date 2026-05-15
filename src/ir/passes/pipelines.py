@@ -10,6 +10,7 @@ from src.ir.passes.decompilation import (
     RenderControlFlowGraphPass,
 )
 from src.ir.passes.kernel import (
+    EmitTextIRPass,
     MaterializeArgumentStoresPass,
     MaterializeLocalMemoryPass,
     MaterializePredicatePass,
@@ -88,6 +89,13 @@ KERNEL_DECOMPILATION_PIPELINE = PassPipeline.named(
     ],
 )
 
+TEXT_IR_PIPELINE = PassPipeline.named(
+    "text-ir",
+    [
+        EmitTextIRPass(),
+    ],
+)
+
 PTX_PIPELINE = PassPipeline.named(
     "ptx",
     [
@@ -97,10 +105,27 @@ PTX_PIPELINE = PassPipeline.named(
     ],
 )
 
+PTX_TEXT_IR_PIPELINE = PassPipeline.named(
+    "ptx-text-ir",
+    [
+        PTX_PRE_DECOMPILATION_PIPELINE,
+        COMMON_KERNEL_LOWERING_PIPELINE,
+        TEXT_IR_PIPELINE,
+    ],
+)
+
 AMD_PIPELINE = PassPipeline.named(
     "amd",
     [
         COMMON_KERNEL_LOWERING_PIPELINE,
         KERNEL_DECOMPILATION_PIPELINE,
+    ],
+)
+
+AMD_TEXT_IR_PIPELINE = PassPipeline.named(
+    "amd-text-ir",
+    [
+        COMMON_KERNEL_LOWERING_PIPELINE,
+        TEXT_IR_PIPELINE,
     ],
 )

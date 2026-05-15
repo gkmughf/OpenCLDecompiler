@@ -7,12 +7,9 @@ from src.instructions.sopp.s_branch import SBranch
 from src.instructions.label import Label as backend_Label
 
 class Label(GenericInstruction):
-    def __init__(self, label: str):
+    def __init__(self, label: Val):
         super().__init__("label", label)
         self.label = label
-
-    def to_text(self) -> str:
-        return f"label {self.label.to_text()}"
 
     def writes_first_operand(self) -> bool:
         return False
@@ -23,7 +20,7 @@ class Label(GenericInstruction):
     def to_fill_node(self, state, parents):
         return NodeLoweringContext(state, parents).emit_backend(
             backend_Label,
-            self.label,
+            self.label.name,
             [],
         )
 
@@ -63,7 +60,9 @@ class BranchNot(GenericInstruction):
             "s_nbr",
             self.operands,
         )
-class Jump(Branch):
+    
+
+class Jump(GenericInstruction):
     def __init__(self, target: Val):
         super().__init__("jump", target)
         self.target = target

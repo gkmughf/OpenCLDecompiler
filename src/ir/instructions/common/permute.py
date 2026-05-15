@@ -16,7 +16,7 @@ class Permute32(GenericInstruction):
         selector: RegOrVal_ty,
         op_type: IRType,
     ):
-        super().__init__("permute32", destination, operand1, operand2, selector, op_type=op_type)
+        super().__init__("permute", destination, operand1, operand2, selector, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         return "v_perm_b32"

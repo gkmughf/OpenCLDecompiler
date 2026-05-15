@@ -31,7 +31,7 @@ class Mad(GenericInstruction):
             dest_hi = Reg32(tva.generate("desthi"))
             destination = CompositeReg(dest_name, [destination, dest_hi])
 
-        name = "mad_i" if op_type == IRType.I64_I32 else "mad_u"
+        name = "mad"
         super().__init__(name, destination, operand1, operand2, operand3, op_type=op_type)
 
 

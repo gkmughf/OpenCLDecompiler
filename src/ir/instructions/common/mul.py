@@ -8,16 +8,6 @@ from src.instructions.vop2.v_mul_f32 import VMulF32
 from src.instructions.vop3.v_mad import VMad
 from src.instructions.vop3.v_mul_lo import VMulHi, VMulLo
 
-
-_INTEGER_I_TYPES = (IRType.I16, IRType.I32, IRType.I64)
-
-
-def _integer_kind_name(i_name: str, u_name: str, op_type: IRType) -> str:
-    if op_type in _INTEGER_I_TYPES or op_type == IRType.I64_I32:
-        return i_name
-    return u_name
-
-
 class Mul24(GenericInstruction):
     allowed_types = (IRType.U32, IRType.I32)
 
@@ -28,8 +18,7 @@ class Mul24(GenericInstruction):
         operand2: RegOrVal_ty,
         op_type: IRType,
     ):
-        name = _integer_kind_name("mul_i", "mul_u", op_type)
-        super().__init__(name, destination, operand1, operand2, op_type=op_type)
+        super().__init__("mul", destination, operand1, operand2, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         return "v_mul_i32_i24"
@@ -53,7 +42,7 @@ class Mul_f(GenericInstruction):
         operand2: RegOrVal_ty,
         op_type: IRType,
     ):
-        super().__init__("mul_f", destination, operand1, operand2, op_type=op_type)
+        super().__init__("mul", destination, operand1, operand2, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         return "v_mul_f32"
@@ -101,8 +90,7 @@ class MulLo(GenericInstruction):
         operand2: RegOrVal_ty,
         op_type: IRType,
     ):
-        name = _integer_kind_name("mul_i", "mul_u", op_type)
-        super().__init__(name, destination, operand1, operand2, op_type=op_type)
+        super().__init__("mul", destination, operand1, operand2, op_type=op_type)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2
@@ -144,8 +132,7 @@ class MulHi(GenericInstruction):
         operand2: RegOrVal_ty,
         op_type: IRType,
     ):
-        name = _integer_kind_name("mul_hi_i", "mul_hi_u", op_type)
-        super().__init__(name, destination, operand1, operand2, op_type=op_type)
+        super().__init__("mul_hi", destination, operand1, operand2, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         if self.op_type == IRType.I32:
@@ -177,8 +164,7 @@ class MulWide(GenericInstruction):
         operand2: RegOrVal_ty,
         op_type: IRType,
     ):
-        name = _integer_kind_name("mul64_i", "mul64_u", op_type)
-        super().__init__(name, destination, operand1, operand2, op_type=op_type)
+        super().__init__("mul", destination, operand1, operand2, op_type=op_type)
         self.destination = destination
         self.operand1 = operand1
         self.operand2 = operand2

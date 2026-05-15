@@ -248,7 +248,7 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
             continue
 
         if line.endswith(":"):
-            kernel.create_instruction(Label, "."+line[:-1])
+            kernel.create_instruction(Label, Val("."+line[:-1]))
             continue
 
         parts = line.split(None, 1)

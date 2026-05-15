@@ -16,7 +16,7 @@ class bfe(GenericInstruction):
         operand2: RegOrVal_ty,
         op_type: IRType,
     ):
-        name = "bfe_i" if op_type == IRType.I32 else "bfe_u"
+        name = "bfe"
         super().__init__(name, destination, operand1, operand2, op_type=op_type)
         self.destination = destination
         self.operand1 = operand1

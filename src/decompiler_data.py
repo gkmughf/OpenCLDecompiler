@@ -939,7 +939,7 @@ class DecompilerData(metaclass=Singleton):
         self.to_node[label] = node
 
     def to_fill_branch_node(self, node, operands):
-        label = operands[1].name
+        label = operands[-1].name
         to_node = self.to_node.get(label)
         if to_node is not None:
             node.add_child(to_node)

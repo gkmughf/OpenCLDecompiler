@@ -102,7 +102,7 @@ def _label(opcode: str) -> Rule:
     def emit(ctx: InstructionContext) -> None:
         ctx.emit(
             Label,
-            opcode[:-1],
+            Val(opcode[:-1]),
         )
 
     return Rule.dynamic(emit)

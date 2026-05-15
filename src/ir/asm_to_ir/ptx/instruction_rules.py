@@ -48,8 +48,6 @@ _PTX_TYPE_BY_SUFFIX = {
 }
 
 def get_instruction_rule(opcode: str, args_offset) -> Rule | None:
-    if opcode.startswith("."):
-        return _label(opcode)
     if opcode in ("bra", "bra.uni"):
         return _branch()
     if opcode.startswith("setp."):
@@ -62,14 +60,6 @@ def get_instruction_rule(opcode: str, args_offset) -> Rule | None:
         return _global_store(opcode)
     return instruction_rules.get(opcode)
 
-def _label(opcode: str) -> Rule:
-    def emit(ctx) -> None:
-        ctx.emit(
-            Label,
-            "."+opcode[1:-1],
-        )
-
-    return Rule.dynamic(emit)
 
 def _branch() -> Rule:
     def emit_branch(ctx) -> None:

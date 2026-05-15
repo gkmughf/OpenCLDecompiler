@@ -20,10 +20,14 @@ class GenericInstruction:
         self._predicate_negated = False
 
     def to_text(self) -> str:
+        opcode = self.opcode
+        if self.op_type != IRType.NONE:
+            opcode = f"{opcode}:{self.op_type.value}"
+
         if self.operands:
             operand_strings = [op.to_text() for op in self.operands]
-            return f"{self.opcode} {', '.join(operand_strings)}"
-        return self.opcode
+            return f"{opcode} {', '.join(operand_strings)}"
+        return opcode
     
     
     def get_operands(self):

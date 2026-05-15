@@ -44,6 +44,30 @@ class Kernel:
     def predicates(self) -> KernelPredicates:
         return self._predicates
 
+    def to_text(self) -> str:
+        lines = [
+            f".WGS {self.work_group_size}",
+            f"define kernel {self.name} (",
+        ]
+
+        arguments = [arg for arg in self.arguments.all() if not arg.hidden]
+        for index, argument in enumerate(arguments):
+            comma = "," if index < len(arguments) - 1 else ""
+            lines.append(f"    {argument}{comma}")
+
+        lines.extend([
+            ")",
+            "{",
+        ])
+
+        for instruction in self.instructions.get():
+            instruction_text = instruction.to_text()
+            if instruction_text:
+                lines.append(f"    {instruction_text}")
+
+        lines.append("}")
+        return "\n\n".join(lines)
+
     def create_instruction(
            self,
            instruction_class: type,
