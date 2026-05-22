@@ -1,25 +1,29 @@
 from dataclasses import dataclass, field
 
+
 @dataclass
 class PTXArgument:
-    name: str = ''
+    name: str = ""
     size: int = 32
-    type_name: str = 'u32'
+    type_name: str = "u32"
     is_const: bool = False
     is_pointer: bool = False
     address_space: str | None = None
     alignment: int | None = None
+
 
 @dataclass
 class PTXRegister:
     name: str
     reg_type: str
 
+
 @dataclass
 class PTXInstruction:
     text: str
     predicate: str | None = None
     predicate_negated: bool = False
+
 
 @dataclass
 class PTXKernel:

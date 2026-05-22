@@ -38,7 +38,7 @@ COMMON_KERNEL_LOWERING_PIPELINE = PassPipeline.named(
         MaterializeArgumentStoresPass(),
         MaterializeLocalMemoryPass(),
         MaterializePredicatePass(),
-    ]
+    ],
 )
 
 CORE_DECOMPILATION_PIPELINE = PassPipeline.named(

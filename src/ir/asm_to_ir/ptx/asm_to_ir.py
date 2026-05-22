@@ -1,22 +1,16 @@
 import re
-
-from src.ir.kernel import Kernel
-
-from src.ir.instructions.control_flow import Label
-from src.ir.instructions.special.InitReg import InitReg
-from src.ir.registers.reg import PredReg, Val, RegOrVal_ty, Reg64
+from dataclasses import dataclass
 
 from src.ir.asm_to_ir.lowering import InstructionContext
-from src.ir.asm_to_ir.ptx.register_factory import RegFactory
-
 from src.ir.asm_to_ir.ptx.instruction_rules import get_instruction_rule
+from src.ir.asm_to_ir.ptx.ptx_kernel import PTXArgument, PTXKernel
+from src.ir.asm_to_ir.ptx.register_factory import RegFactory
+from src.ir.instructions.control_flow import Label
+from src.ir.instructions.special.init_reg import InitReg
+from src.ir.kernel import Kernel
+from src.ir.registers.reg import PredReg, Reg64, RegOrVal_ty, Val
 
-from src.ir.asm_to_ir.ptx.ptx_kernel import PTXKernel, PTXArgument
-
-
-_MEMORY_ADDRESS_OFFSET_PATTERN = re.compile(
-    r"^\[\s*(%[\w.$]+)\s*[+-]\s*[+-]?(?:0x[0-9a-fA-F]+|\d+)\s*\]$"
-)
+_MEMORY_ADDRESS_OFFSET_PATTERN = re.compile(r"^\[\s*(%[\w.$]+)\s*[+-]\s*[+-]?(?:0x[0-9a-fA-F]+|\d+)\s*\]$")
 
 
 def _strip_array_suffix(name: str) -> str:
@@ -27,11 +21,12 @@ def _extract_array_size(name: str) -> int | None:
     if "[" not in name or not name.endswith("]"):
         return None
 
-    size_text = name[name.index("[") + 1:-1]
+    size_text = name[name.index("[") + 1 : -1]
     if not size_text.isdigit():
         return None
 
     return int(size_text)
+
 
 def _align_to_eight(size: int) -> int:
     return ((size + 7) // 8) * 8
@@ -44,6 +39,7 @@ def _argument_declared_size(arg: PTXArgument) -> int:
     element_count = _extract_array_size(arg.name) or 1
     element_size = max(1, arg.size // 8)
     return element_size * element_count
+
 
 def _split_operands(text: str) -> list[str]:
     operands: list[str] = []
@@ -85,33 +81,37 @@ def _normalize_memory_operand_for_rf(operand: str) -> str:
     return f"[{match.group(1)}]"
 
 
-def _create_instruction_from_opcode(
-    kernel: Kernel,
-    opcode: str,
-    operands: list[RegOrVal_ty],
-    args_offset,
-    operand_tokens: list[str] | None = None,
-    predicate: PredReg | None = None,
-    predicate_negated: bool = False,
-):
-    rule = get_instruction_rule(opcode, args_offset)
+@dataclass(frozen=True)
+class InstructionEmitRequest:
+    kernel: Kernel
+    opcode: str
+    operands: list[RegOrVal_ty]
+    args_offset: dict[str, Val]
+    operand_tokens: list[str] | None = None
+    predicate: PredReg | None = None
+    predicate_negated: bool = False
+
+
+def _create_instruction_from_opcode(request: InstructionEmitRequest) -> None:
+    rule = get_instruction_rule(request.opcode, request.args_offset)
     if rule is None:
-        raise NotImplementedError(opcode)
+        raise NotImplementedError(request.opcode)
 
     rule.emit(
         InstructionContext(
-            kernel=kernel,
-            operands=operands,
-            predicate=predicate,
-            predicate_negated=predicate_negated,
+            kernel=request.kernel,
+            operands=request.operands,
+            predicate=request.predicate,
+            predicate_negated=request.predicate_negated,
             extras={
-                "args_offset": args_offset,
-                "operand_tokens": operand_tokens or [],
+                "args_offset": request.args_offset,
+                "operand_tokens": request.operand_tokens or [],
             },
         )
     )
 
-#TODO(GFV) наду унифицировать типы в двух asm_to_text
+
+# TODO(GFV) наду унифицировать типы в двух asm_to_text
 def _normalize_arg_type(arg: PTXArgument) -> str:
     vector_size = _extract_array_size(arg.name)
     alignment_to_type = {
@@ -155,8 +155,9 @@ def _normalize_arg_type(arg: PTXArgument) -> str:
     if arg.is_pointer:
         address_space = arg.address_space or "global"
         fallback_type = alignment_to_type.get(arg.alignment, "long")
-        return f'__{address_space} {fallback_type}'
+        return f"__{address_space} {fallback_type}"
     return type_to_type.get(arg.type_name, arg.type_name)
+
 
 def _normalize_arg_name(arg: PTXArgument, arg_idx: int) -> str:
     normalized_name = "arg" + str(arg_idx)
@@ -164,8 +165,10 @@ def _normalize_arg_name(arg: PTXArgument, arg_idx: int) -> str:
         return "*" + normalized_name
     return normalized_name
 
+
 def _init_special_registers(kernel: Kernel, rf: RegFactory, special_registers: list[str]):
-    for reg_name in special_registers:
+    for raw_reg_name in special_registers:
+        reg_name = raw_reg_name
         value = None
         if reg_name[0] == "[" and reg_name[-1] == "]":
             reg_name = reg_name[1:-1]
@@ -183,7 +186,7 @@ def _init_special_registers(kernel: Kernel, rf: RegFactory, special_registers: l
 
         elif reg_name == "%envreg9":
             value = "get_work_dim()"
-            
+
         elif reg_name in ("%tid.x", "%tid.y", "%tid.z"):
             dim_map = {"x": 0, "y": 1, "z": 2}
             dim = dim_map[reg_name[-1]]
@@ -209,14 +212,14 @@ def _ensure_predicate(kernel: Kernel, rf: RegFactory, predicate_name: str) -> Pr
     return predicate
 
 
-def textToIR(kernel_info: PTXKernel) -> Kernel:
+def text_to_ir(kernel_info: PTXKernel) -> Kernel:
     rf = RegFactory()
 
     kernel = Kernel(kernel_info.name, kernel_info.work_group_size)
-    
+
     for name, size in kernel_info.locals.items():
         kernel.local_memory.set(name, size)
-        parsed_operand = rf.get_or_create(name, "64")
+        rf.get_or_create(name, "64")
 
     for register in kernel_info.registers:
         if register.reg_type == "pred":
@@ -229,13 +232,13 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
         kernel_argument = kernel.arguments.add(
             _normalize_arg_name(arg, arg_idx),
             _normalize_arg_type(arg),
-            arg.is_const,
+            const=arg.is_const,
             offset=offset,
         )
         kernel_argument.declared_size = declared_size
-        args_offset[_strip_array_suffix(arg.name)] = Val(hex(offset,))
+        args_offset[_strip_array_suffix(arg.name)] = Val(hex(offset))
         offset += _align_to_eight(declared_size)
-    
+
     arg_reg_name = "argptr"
     agr_reg = Reg64(arg_reg_name)
     kernel.arguments.set_arg_ptr(agr_reg)
@@ -248,13 +251,13 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
             continue
 
         if line.endswith(":"):
-            kernel.create_instruction(Label, Val("."+line[:-1]))
+            kernel.create_instruction(Label, Val("." + line[:-1]))
             continue
 
         parts = line.split(None, 1)
         if not parts:
             continue
-        
+
         opcode = parts[0]
         operands = []
 
@@ -271,13 +274,15 @@ def textToIR(kernel_info: PTXKernel) -> Kernel:
             predicate = _ensure_predicate(kernel, rf, instruction_info.predicate)
 
         _create_instruction_from_opcode(
-            kernel,
-            opcode,
-            operands,
-            args_offset,
-            operand_tokens=operand_tokens,
-            predicate=predicate,
-            predicate_negated=predicate_negated,
+            InstructionEmitRequest(
+                kernel=kernel,
+                opcode=opcode,
+                operands=operands,
+                args_offset=args_offset,
+                operand_tokens=operand_tokens,
+                predicate=predicate,
+                predicate_negated=predicate_negated,
+            )
         )
 
     return kernel

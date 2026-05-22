@@ -1,4 +1,4 @@
-from src.ir.instructions.common.Not import Not
+from src.ir.instructions.common.not_instruction import Not
 from src.ir.instructions.generic import GenericInstruction
 from src.ir.instructions.special.mask import ChangeMask, Unmask
 from src.ir.passes.base import PassContext

@@ -6,8 +6,8 @@ from src.decompiler_data import DecompilerData
 from src.flag_type import FlagType
 from src.graph import GraphType
 from src.graph.control_flow_graph import CONTROL_FLOW_GRAPH_ENABLED_CONTEXT_KEY, ControlFlowGraph
-from src.ir.asm_to_ir.amd.asm_to_ir import textToIR as textToIR_amd
-from src.ir.asm_to_ir.ptx.asm_to_ir import textToIR as textToIR_ptx
+from src.ir.asm_to_ir.amd.asm_to_ir import text_to_ir as textToIR_amd
+from src.ir.asm_to_ir.ptx.asm_to_ir import text_to_ir as textToIR_ptx
 from src.ir.passes.base import PassContext
 from src.ir.passes.pipelines import AMD_PIPELINE, AMD_TEXT_IR_PIPELINE, PTX_PIPELINE, PTX_TEXT_IR_PIPELINE
 from src.kernel_parser import parse_kernel as parse_kernel_amd

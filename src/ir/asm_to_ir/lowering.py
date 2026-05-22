@@ -2,10 +2,9 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.ir.TemporaryVariableAllocator import tva
-from src.ir.registers.reg import PredReg, Reg32, Reg64, RegOrVal_ty, Reg_ty, Val
-
 from src.ir.kernel import OP_TYPE_UNSET, Kernel, OperationTypeArg
+from src.ir.registers.reg import PredReg, Reg32, Reg64, Reg_ty, RegOrVal_ty, Val
+from src.ir.temporary_variable_allocator import TemporaryVariableAllocator
 
 
 class LoweringArg:
@@ -35,7 +34,7 @@ class NamedRegRef(LoweringArg):
     name: str
     kind: str
 
-    def resolve(self, ctx: "InstructionContext") -> Reg_ty:
+    def resolve(self, _ctx: "InstructionContext") -> Reg_ty:
         return create_register(self.name, self.kind)
 
 
@@ -43,7 +42,7 @@ class NamedRegRef(LoweringArg):
 class ValueRef(LoweringArg):
     value: str
 
-    def resolve(self, ctx: "InstructionContext") -> Val:
+    def resolve(self, _ctx: "InstructionContext") -> Val:
         return Val(self.value)
 
 
@@ -55,13 +54,13 @@ class ArgOffsetRef(LoweringArg):
     def resolve(self, ctx: "InstructionContext") -> Val:
         offsets = ctx.extras.get(self.extra_name)
         if offsets is None:
-            raise KeyError(f"Lowering extra '{self.extra_name}' is required")
+            raise MissingLoweringExtraError(self.extra_name)
 
         operand = ctx.operand(self.operand_index)
         try:
             return offsets[operand.name]
         except KeyError as exc:
-            raise KeyError(f"No argument offset for operand '{operand.name}'") from exc
+            raise MissingArgumentOffsetError(operand.name) from exc
 
 
 @dataclass
@@ -77,7 +76,7 @@ class InstructionContext:
         try:
             return self.operands[index]
         except IndexError as exc:
-            raise IndexError(f"Lowering operand %{index} is not available") from exc
+            raise MissingLoweringOperandError(index) from exc
 
     def tmp(self, name: str, kind: str | int) -> Reg_ty:
         normalized_kind = normalize_register_kind(kind)
@@ -85,13 +84,10 @@ class InstructionContext:
         if existing is not None:
             expected_class = register_class(normalized_kind)
             if not isinstance(existing, expected_class):
-                raise TypeError(
-                    f"Temporary '#{name}' was already created as "
-                    f"{existing.__class__.__name__}, not {expected_class.__name__}"
-                )
+                raise TemporaryRegisterTypeConflictError(name, existing, expected_class)
             return existing
 
-        tmp_name = tva.generate(f"tmp_{name}")
+        tmp_name = TemporaryVariableAllocator.generate(f"tmp_{name}")
         new_reg = create_register(tmp_name, normalized_kind)
         self._temps[name] = new_reg
         return new_reg
@@ -253,7 +249,7 @@ def create_register(name: str, kind: str | int) -> Reg_ty:
         return Reg64(name)
     if normalized_kind == "pred":
         return PredReg(name)
-    raise ValueError(f"Unknown register kind: {kind}")
+    raise UnknownRegisterKindError(kind)
 
 
 def register_class(kind: str | int) -> type:
@@ -264,7 +260,7 @@ def register_class(kind: str | int) -> type:
         return Reg64
     if normalized_kind == "pred":
         return PredReg
-    raise ValueError(f"Unknown register kind: {kind}")
+    raise UnknownRegisterKindError(kind)
 
 
 def normalize_register_kind(kind: str | int) -> str:
@@ -274,4 +270,31 @@ def normalize_register_kind(kind: str | int) -> str:
         return "64"
     if kind in ("pred", "predicate"):
         return "pred"
-    raise ValueError(f"Unknown register kind: {kind}")
+    raise UnknownRegisterKindError(kind)
+
+
+class MissingLoweringExtraError(KeyError):
+    def __init__(self, name: str) -> None:
+        super().__init__(f"Lowering extra '{name}' is required")
+
+
+class MissingArgumentOffsetError(KeyError):
+    def __init__(self, operand_name: str) -> None:
+        super().__init__(f"No argument offset for operand '{operand_name}'")
+
+
+class MissingLoweringOperandError(IndexError):
+    def __init__(self, index: int) -> None:
+        super().__init__(f"Lowering operand %{index} is not available")
+
+
+class TemporaryRegisterTypeConflictError(TypeError):
+    def __init__(self, name: str, existing: Reg_ty, expected_class: type) -> None:
+        super().__init__(
+            f"Temporary '#{name}' was already created as {existing.__class__.__name__}, not {expected_class.__name__}"
+        )
+
+
+class UnknownRegisterKindError(ValueError):
+    def __init__(self, kind: str | int) -> None:
+        super().__init__(f"Unknown register kind: {kind}")

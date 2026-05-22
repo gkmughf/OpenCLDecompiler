@@ -13,8 +13,7 @@ class PassContext:
 
 
 class PipelinePass(Protocol):
-    def run(self, ir_unit: object, context: PassContext) -> None:
-        ...
+    def run(self, ir_unit: object, context: PassContext) -> None: ...
 
 
 class InvalidPipelinePassError(TypeError):
@@ -23,6 +22,7 @@ class InvalidPipelinePassError(TypeError):
             f"Pipeline '{pipeline_name}' contains invalid pass {pipeline_pass!r}. "
             f"All passes must implement the 'run' method."
         )
+
 
 class PassPipeline:
     def __init__(self, name: str, passes: Iterable[PipelinePass]):

@@ -1,4 +1,4 @@
-from src.ir.instructions.special.initPredicate import InitPredicate
+from src.ir.instructions.special.init_predicate import InitPredicate
 from src.ir.passes.base import PassContext
 
 
@@ -9,10 +9,7 @@ class MaterializePredicatePass:
         if kernel.predicates.is_materialized():
             return
 
-        init_predicates = [
-            InitPredicate(predicate=reg)
-            for reg in kernel.predicates.all()
-        ]
+        init_predicates = [InitPredicate(predicate=reg) for reg in kernel.predicates.all()]
 
         kernel.instructions.prepend_list(init_predicates)
         kernel.predicates.mark_materialized()

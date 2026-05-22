@@ -58,10 +58,7 @@ def _close_open_masks(
     exec_condition: ExecCondition,
     parents: list[Node],
 ) -> None:
-    while (
-        len(open_masks) > 1
-        and _get_exec(open_masks[-1].change_mask).is_strict_superset_of(exec_condition)
-    ):
+    while len(open_masks) > 1 and _get_exec(open_masks[-1].change_mask).is_strict_superset_of(exec_condition):
         open_mask = open_masks.pop()
         _add_closed_mask_parent(parents, open_mask)
 
@@ -69,7 +66,7 @@ def _close_open_masks(
 class BuildDecompilerCfgPass:
     name = "build-decompiler-cfg"
 
-    def run(self, state: DecompilationState, _context: PassContext) -> None:  # noqa: C901, PLR0912
+    def run(self, state: DecompilationState, _context: PassContext) -> None:  # noqa: PLR0912
         decompiler_data = state.decompiler_data
         masked_blocks = state.masked_blocks
 
@@ -123,7 +120,7 @@ class BuildDecompilerCfgPass:
                 elif change_mask_transition == "else" and else_branch_index is not None:
                     if else_parent_index is None:
                         else_parent_index = max(else_branch_index - 1, 0)
-                    del masked_blocks[else_parent_index + 1:]
+                    del masked_blocks[else_parent_index + 1 :]
                     masked_blocks.append(
                         OpenMask(
                             last_node,

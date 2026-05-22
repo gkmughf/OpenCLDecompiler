@@ -16,6 +16,11 @@ class EmitTextIRPass:
     def _get_output_file(context: PassContext) -> TextIO:
         output_file = context.metadata.get("output_file")
         if output_file is None:
-            raise ValueError("Text IR output file is not configured")
+            raise MissingTextIrOutputError
 
         return output_file
+
+
+class MissingTextIrOutputError(ValueError):
+    def __init__(self) -> None:
+        super().__init__("Text IR output file is not configured")
