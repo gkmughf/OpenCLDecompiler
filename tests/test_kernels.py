@@ -34,14 +34,14 @@ TEST_CASES = {
             ("gfx1030", "clrxdisasm", None),
             PTX_VARIANT,
         ],
-        "if_in_if": [("amd_gcn", "clrxdisasm", None), ("gfx1010", "clrxdisasm", None), ("gfx1030", "clrxdisasm", None)],
+        "if_in_if": [("amd_gcn", "clrxdisasm", None), ("gfx1010", "clrxdisasm", None), ("gfx1030", "clrxdisasm", None), PTX_VARIANT],
         "if_else_in_if": [
             ("amd_gcn", "clrxdisasm", None),
             ("gfx1010", "clrxdisasm", None),
             ("gfx1030", "clrxdisasm", None),
             PTX_VARIANT,
         ],
-        "if_else_and_if_else": [("amd_gcn", "clrxdisasm", None)],
+        "if_else_and_if_else": [("amd_gcn", "clrxdisasm", None), PTX_VARIANT],
         "if_else_and_if_else_gfx": [("gfx1010", "clrxdisasm", None), ("gfx1030", "clrxdisasm", None)],
         "if_else_and_if_else_0_labels": [
             ("amd_gcn", "clrxdisasm", None),
