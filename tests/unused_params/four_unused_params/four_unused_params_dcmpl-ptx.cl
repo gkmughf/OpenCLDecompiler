@@ -1,5 +1,4 @@
-__kernel __attribute__((reqd_work_group_size(1, 1, 1)))
-void four_unused_params(uint arg0, __global int *arg1, uint arg2, uint arg3, __global uint *arg4, uint arg5, __global uint *arg6, uint arg7, uint arg8)
+__kernel void four_unused_params(uint arg0, __global int *arg1, uint arg2, uint arg3, __global uint *arg4, uint arg5, __global uint *arg6, uint arg7, uint arg8)
 {
     uint var0;
     if (get_global_id(0) >= arg0) {
