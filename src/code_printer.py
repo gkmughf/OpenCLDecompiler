@@ -192,8 +192,7 @@ def make_output_from_loop_region(region, indent):
     make_output_from_region(region.start.children[0], indent + "    ")
     decompiler_data.write(indent + "} while (")
     statement = to_opencl(region.end.start, OperationStatus.TO_PRINT)
-    if region.end.start.instruction == "s_nbr":
-        statement = "!(" + statement + ")"
+    statement = "!(" + statement + ")"
     decompiler_data.write(statement)
     decompiler_data.write(");\n")
 
@@ -203,8 +202,7 @@ def make_output_from_break_region(region, indent):
     break_node = region.start
     decompiler_data.write(indent + "if (")
     statement = to_opencl(break_node, OperationStatus.TO_PRINT)
-    if break_node.instruction == "s_nbr":
-        statement = "!(" + statement + ")"
+    statement = "!(" + statement + ")"
     decompiler_data.write(statement)
     decompiler_data.write(") {\n")
     decompiler_data.write(indent + "    break;\n")

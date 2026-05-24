@@ -70,12 +70,13 @@ def _branch() -> Rule:
         if predicate is None:
             ctx.kernel.create_instruction(Jump, target)
         elif ctx.predicate_negated:
-            ctx.kernel.create_instruction(Branch, predicate, target)
+            ctx.kernel.create_instruction(BranchNot, predicate, target)
         else:
-            tmo_predicate = PredReg(f"{predicate.name}Not")
-            ctx.kernel.predicates.add(tmo_predicate)
-            ctx.kernel.create_instruction(Not, tmo_predicate, predicate, op_type=IRType.PRED)
-            ctx.kernel.create_instruction(BranchNot, tmo_predicate, target)
+            ctx.kernel.create_instruction(Branch, predicate, target)
+            # tmo_predicate = PredReg(f"{predicate.name}Not")
+            # ctx.kernel.predicates.add(tmo_predicate)
+            # ctx.kernel.create_instruction(Not, tmo_predicate, predicate, op_type=IRType.PRED)
+            # ctx.kernel.create_instruction(BranchNot, tmo_predicate, target)
 
     return Rule.dynamic(emit_branch)
 
