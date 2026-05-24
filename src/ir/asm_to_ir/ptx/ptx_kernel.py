@@ -29,7 +29,7 @@ class PTXInstruction:
 class PTXKernel:
     name: str
     locals: dict[str, int] = field(default_factory=dict)
-    work_group_size: list[int] = field(default_factory=lambda: [1, 1, 1])
+    work_group_size: list[int] | None = None
     arguments: list[PTXArgument] = field(default_factory=list)
     registers: list[PTXRegister] = field(default_factory=list)
     special_registers: list[str] = field(default_factory=list)

@@ -184,25 +184,26 @@ class Register:
             )
         elif isinstance(other, int):
             from src.decompiler_data import DecompilerData  # noqa: PLC0415
-
-            _mul_simplify_combinations = [
-                *[
-                    (
-                        frozenset(
-                            {
-                                RegisterType[f"WORK_GROUP_ID_{dim}"],
-                                DecompilerData().config_data.size_of_work_groups[i],
-                            }
-                        ),
+            _mul_simplify_combinations = []
+            if DecompilerData().config_data.size_of_work_groups:
+                _mul_simplify_combinations = [
+                    *[
                         (
-                            f"get_group_id({i}) * get_local_size({i})",
-                            RegisterType[f"WORK_GROUP_ID_{dim}_LOCAL_SIZE"],
-                            RegisterSignType.POSITIVE,
-                        ),
-                    )
-                    for i, dim in enumerate("XYZ")
+                            frozenset(
+                                {
+                                    RegisterType[f"WORK_GROUP_ID_{dim}"],
+                                    DecompilerData().config_data.size_of_work_groups[i],
+                                }
+                            ),
+                            (
+                                f"get_group_id({i}) * get_local_size({i})",
+                                RegisterType[f"WORK_GROUP_ID_{dim}_LOCAL_SIZE"],
+                                RegisterSignType.POSITIVE,
+                            ),
+                        )
+                        for i, dim in enumerate("XYZ")
+                    ]
                 ]
-            ]
 
             for simplify_combination in _mul_simplify_combinations:
                 types_to_find, simplification = simplify_combination
