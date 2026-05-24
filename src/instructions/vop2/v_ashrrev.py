@@ -3,7 +3,7 @@ from src.decompiler_data import make_op, set_reg_value
 from src.expression_manager.expression_node import ExpressionOperationType
 from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.integrity import Integrity
-from src.ir.registers.reg import get_reg_rang, Val
+from src.ir.registers.reg import get_reg_rang, Val, is_reg
 
 
 class VAshrrev(BaseInstruction):
@@ -22,30 +22,32 @@ class VAshrrev(BaseInstruction):
     #         return self.node
     #     return super().to_print_unresolved()
 
+## TODO странно
     def to_fill_node(self):
         if self.suffix == "i32":
-            new_value = self.node.get_from_state(self.src1).val
-            reg_type = self.node.get_from_state(self.src1).type
-            expr_node = self.get_expression_node(self.src1)
-            return set_reg_value(
-                self.node,
-                new_value,
-                self.vdst.name,
-                [self.src0.name, self.src1.name],
-                self.suffix,
-                reg_type=reg_type,
-                expression_node=expr_node,
-            )
-            new_value = make_op(self.node, self.ssrc0, str(pow(2, int(self.ssrc1))), "/", "(int)", suffix=self.suffix)
+            # new_value = self.node.get_from_state(self.src1).val
+            # reg_type = self.node.get_from_state(self.src1).type
+            # expr_node = self.get_expression_node(self.src1)
+            # return set_reg_value(
+            #     self.node,
+            #     new_value,
+            #     self.vdst.name,
+            #     [self.src0.name, self.src1.name],
+            #     self.suffix,
+            #     reg_type=reg_type,
+            #     expression_node=expr_node,
+            # )
+            # src1_value = self.node.get_from_state(self.src1).val if is_reg(self.src1) else self.src1.value
+            new_value = make_op(self.node, self.src1, Val(str(pow(2, int(self.src0.value)))), "/", "(int)", suffix=self.suffix)
 
-            src0_node = self.get_expression_node(self.ssrc0)
-            const_node = self.expression_manager.add_const_node(pow(2, int(self.ssrc1)), OpenCLTypes.UINT)
+            src1_node = self.get_expression_node(self.src1)
+            const_node = self.expression_manager.add_const_node(pow(2, int(self.src0.value)), OpenCLTypes.UINT)
             expr_node = self.expression_manager.add_operation(
-                src0_node, const_node, ExpressionOperationType.DIV, OpenCLTypes.INT
+                src1_node, const_node, ExpressionOperationType.DIV, OpenCLTypes.INT
             )
 
             self.node = set_reg_value(
-                self.node, new_value, self.sdst, [self.ssrc0, self.ssrc1], self.suffix, expression_node=expr_node
+                self.node, new_value, self.vdst.name, [self.src0.name, self.src1.name], self.suffix, expression_node=expr_node
             )
             return self.node
         if self.suffix == "i64":

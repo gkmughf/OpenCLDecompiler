@@ -65,9 +65,10 @@ class MacF32(GenericInstruction):
         destination: Reg32,
         operand1: RegOrVal_ty,
         operand2: RegOrVal_ty,
+        operand3: RegOrVal_ty,
         op_type: IRType,
     ):
-        super().__init__("mac_f", destination, operand1, operand2, op_type=op_type)
+        super().__init__("mac_f", destination, operand1, operand2, operand3, op_type=op_type)
 
     def _get_normalize_opcode(self) -> str:
         return "v_mac_f32"
@@ -79,7 +80,7 @@ class MacF32(GenericInstruction):
             self.operands,
             "f32",
         )
-
+    
 
 class MulLo(GenericInstruction):
     allowed_types = (IRType.U16, IRType.I16, IRType.U32, IRType.I32, IRType.U64, IRType.I64)

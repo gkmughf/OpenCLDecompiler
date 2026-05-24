@@ -1,19 +1,23 @@
 from src.base_instruction import BaseInstruction
 from src.combined_register_content import CombinedRegisterContent
-from src.decompiler_data import make_op, set_reg, set_reg_value
+from src.decompiler_data import make_op, set_reg, set_reg_value_save
 from src.expression_manager.expression_node import ExpressionOperationType
 from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.register import Register
 from src.register_type import RegisterType
 
-from src.ir.registers.reg import is_reg, Val, get_reg_rang
+from src.ir.registers.reg import is_reg, Val, is_range
 
 class VLshrrev(BaseInstruction):
     def __init__(self, node, suffix):
         super().__init__(node, suffix)
         self.vdst = self.operand[0]
         self.src0 = self.operand[1]
+        if is_range(self.operand[1]):
+            self.src0 = self.operand[1].get_element(0)
         self.src1 = self.operand[2]
+        if is_range(self.operand[2]):
+            self.src1 = self.operand[2].get_element(0)
 
     # def to_print_unresolved(self):
     #     if self.suffix == "b64":
@@ -22,7 +26,7 @@ class VLshrrev(BaseInstruction):
     #     return super().to_print_unresolved()
 
     def to_fill_node(self):
-        if self.suffix == "b32" and is_reg(self.src1):
+        if self.suffix in {"b32", "b64"} and (is_reg(self.src1) or is_range(self.src1)):
             assert isinstance(self.src0, Val)
             def default_behaviour():
                 new_value = make_op(self.node, self.src1, Val(str(pow(2, int(self.src0.value)))), "//", suffix=self.suffix)
@@ -34,11 +38,11 @@ class VLshrrev(BaseInstruction):
                     src1_node, const_node, ExpressionOperationType.DIV, OpenCLTypes.UINT
                 )
 
-                return set_reg_value(
+                return set_reg_value_save(
                     self.node,
                     new_value,
-                    self.vdst.name,
-                    [self.src0.name, self.src1.name],
+                    self.vdst,
+                    [self.src0, self.src1],
                     self.suffix,
                     reg_type=reg_type,
                     expression_node=expr_node,
@@ -82,11 +86,11 @@ class VLshrrev(BaseInstruction):
             else:
                 return default_behaviour()
 
-            return set_reg_value(
+            return set_reg_value_save(
                 self.node,
                 new_value,
-                self.vdst.name,
-                [self.src0.name, self.src1.name],
+                self.vdst,
+                [self.src0, self.src1],
                 self.suffix,
                 reg_type=reg_type,
                 expression_node=expr_node,

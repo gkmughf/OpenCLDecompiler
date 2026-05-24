@@ -261,7 +261,7 @@ instruction_rules = {
     "s_mul_hi_i32": same(MulHi, IRType.I32),
     "v_mul_i32_i24": same(Mul24, IRType.I32),
     "v_mul_f32": same(MulF, IRType.F32),
-    "v_mac_f32": same(MacF32, IRType.F32),
+    "v_mac_f32": Rule([Emit(MacF32, op(0), op(1), op(2), op(0), op_type=IRType.F32)]),
     "v_mad_u32": same(Mad, IRType.U64_U32),
     "s_mad_u32": same(Mad, IRType.U64_U32),
     "v_lshl_b32": same(LShl, IRType.B32),

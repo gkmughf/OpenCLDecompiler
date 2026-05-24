@@ -11,6 +11,7 @@ class VMac(BaseInstruction):
         self.vdst = self.operand[0]
         self.src0 = self.operand[1]
         self.src1 = self.operand[2]
+        self.src2 = self.operand[3]
 
     # def to_print_unresolved(self):
     #     if self.suffix == "f32":
@@ -23,18 +24,18 @@ class VMac(BaseInstruction):
     def to_fill_node(self):
         if self.suffix == "f32":
             new_value = make_op(self.node, self.src0, self.src1, "*", "(float)", "(float)", suffix=self.suffix)
-            new_value = make_op(self.node, Val(new_value), self.vdst, "+", "", "(float)", suffix=self.suffix)
+            new_value = make_op(self.node, Val(new_value), self.src2, "+", "", "(float)", suffix=self.suffix)
 
             src0_node = self.get_expression_node(self.src0)
             src1_node = self.get_expression_node(self.src1)
-            vdst_node = self.get_expression_node(self.vdst)
+            src2_node = self.get_expression_node(self.src2)
             expr_node = self.expression_manager.add_operation(
                 src0_node, src1_node, ExpressionOperationType.MUL, OpenCLTypes.FLOAT
             )
             expr_node = self.expression_manager.add_operation(
-                expr_node, vdst_node, ExpressionOperationType.PLUS, OpenCLTypes.FLOAT
+                expr_node, src2_node, ExpressionOperationType.PLUS, OpenCLTypes.FLOAT
             )
             return set_reg_value(
-                self.node, new_value, self.vdst.name, [self.src0.name, self.src1.name], self.suffix, expression_node=expr_node
+                self.node, new_value, self.vdst.name, [self.src0.name, self.src1.name, self.src2.name], self.suffix, expression_node=expr_node
             )
         return super().to_fill_node()

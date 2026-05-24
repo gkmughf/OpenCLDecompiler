@@ -9,11 +9,11 @@ from src.ir.instructions.common.cselect import CSelect
 from src.ir.instructions.common.cvt import Cvt16To32, Cvt32To64, Cvt64To32, CvtF32ToI32, CvtU32ToF64
 from src.ir.instructions.common.endpgm import EndPgm
 from src.ir.instructions.common.logical import And, Or
-from src.ir.instructions.common.lshl import AShr, LShl
+from src.ir.instructions.common.lshl import LShr, LShl
 from src.ir.instructions.common.mad import Mad
 from src.ir.instructions.common.min import IRMin
 from src.ir.instructions.common.mov import Mov
-from src.ir.instructions.common.mul import MulF, MulHi, MulLo, MulWide
+from src.ir.instructions.common.mul import MulF, MulHi, MulLo, MulWide, MacF32
 from src.ir.instructions.common.not_instruction import Not
 from src.ir.instructions.common.sub import Sub
 from src.ir.instructions.common.typed_memory import (
@@ -218,6 +218,7 @@ instruction_rules = {
     "sub.s32": same(Sub, IRType.I32),
     "sub.s64": same(Sub, IRType.I64),
     "sub.s16": same(Sub, IRType.I16),
+    "sub.f32": same(Sub, IRType.F32),
     "mul.lo.s16": same(MulLo, IRType.I16),
     "mul.lo.s32": same(MulLo, IRType.I32),
     "mul.hi.s32": same(MulHi, IRType.I32),
@@ -244,7 +245,7 @@ instruction_rules = {
     "shl.b16": same(LShl, IRType.B16),
     "shl.b32": same(LShl, IRType.B32),
     "shl.b64": same(LShl, IRType.B64),
-    "shr.s64": same(AShr, IRType.I64),
+    "shr.s64": same(LShr, IRType.I64),
     "and.b64": same(And, IRType.B64),
     "st.shared.u32": same(LocalStore, IRType.B32),
     "atom.shared.add.u32": Rule(
@@ -265,4 +266,5 @@ instruction_rules = {
     "or.pred": same(Or, IRType.PRED),
     "and.b32": same(And, IRType.B32),
     "neg.s32": same(Not, IRType.I32),
+    "fma.rn.f32": same(MacF32, IRType.F32)
 }

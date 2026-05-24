@@ -1,4 +1,5 @@
 import re
+import struct
 from dataclasses import dataclass
 
 from src.ir.asm_to_ir.lowering import InstructionContext
@@ -11,6 +12,7 @@ from src.ir.kernel import Kernel
 from src.ir.registers.reg import PredReg, Reg64, RegOrVal_ty, Val
 
 _MEMORY_ADDRESS_OFFSET_PATTERN = re.compile(r"^\[\s*(%[\w.$]+)\s*[+-]\s*[+-]?(?:0x[0-9a-fA-F]+|\d+)\s*\]$")
+_PTX_F32_HEX_LITERAL_PATTERN = re.compile(r"^([+-]?)0[fF]([0-9a-fA-F]{8})$")
 
 
 def _strip_array_suffix(name: str) -> str:
@@ -79,6 +81,19 @@ def _normalize_memory_operand_for_rf(operand: str) -> str:
         return operand
 
     return f"[{match.group(1)}]"
+
+
+def _normalize_ptx_f32_hex_literal(operand: str) -> str:
+    match = _PTX_F32_HEX_LITERAL_PATTERN.match(operand)
+    if match is None:
+        return operand
+
+    sign, hex_digits = match.groups()
+    value = struct.unpack(">f", bytes.fromhex(hex_digits))[0]
+    if sign == "-":
+        value = -value
+
+    return str(value)
 
 
 @dataclass(frozen=True)
@@ -261,7 +276,9 @@ def text_to_ir(kernel_info: PTXKernel) -> Kernel:
         opcode = parts[0]
         operands = []
 
-        operand_tokens = _split_operands(parts[1]) if len(parts) > 1 else []
+        operand_tokens = []
+        if len(parts) > 1:
+            operand_tokens = [_normalize_ptx_f32_hex_literal(operand) for operand in _split_operands(parts[1])]
 
         for operand in operand_tokens:
             normalized_operand = _normalize_memory_operand_for_rf(operand)
