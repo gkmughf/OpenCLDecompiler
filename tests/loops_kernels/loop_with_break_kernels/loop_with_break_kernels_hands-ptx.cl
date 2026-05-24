@@ -13,7 +13,7 @@ void loop_break_kernel(__global uint *arg0, uint arg1, uint arg2, uint arg3)
             var0 = arg0[var6];
             var4 = var0 + var5;
             arg0[var6] = var4;
-            if (!((var0 + arg2) != 0)) {
+            if (!(var4 != 0)) {
                 break;
             }
             var5 = var4 * arg1;

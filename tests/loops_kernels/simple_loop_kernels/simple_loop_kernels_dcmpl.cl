@@ -9,7 +9,7 @@ void loop_kernel_0(__global uint *data, uint x, uint y, uint unrollingBreaker)
     uint var14;
     __global uint *var15;
     uint var2;
-    if (unrollingBreaker == 0) {
+    if (unrollingBreaker != 0) {
         var11 = 0x1;
         var14 = y;
         var12 = data;
@@ -39,7 +39,7 @@ void loop_kernel_1(__global uint *data, uint x, uint y, uint unrollingBreaker)
     __global uint *var8;
     __global uint *var9;
     var10 = unrollingBreaker;
-    if (var10 == 0) {
+    if (var10 != 0) {
         var8 = data;
         var9 = data;
         var11 = y;
@@ -66,7 +66,7 @@ void loop_kernel_2(__global uint *data, uint x, uint y, uint unrollingBreaker)
     __global uint *var8;
     __global uint *var9;
     var10 = unrollingBreaker;
-    if (var10 == 0) {
+    if (var10 != 0) {
         var8 = data + var10;
         var9 = data;
         var11 = y;
