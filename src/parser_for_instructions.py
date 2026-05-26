@@ -57,7 +57,7 @@ def main(input_par, output_par, flag_for_decompilation, cfg_path, unrolling_limi
             functions_data, decompiler_data.gpu = parse_kernel_amd(body_of_file.splitlines())
             for function_data in functions_data:
                 function_data[1].kernel_name = function_data[0]
-                kernel = textToIR_amd(function_data[2], function_data[1])
+                kernel = textToIR_amd(function_data[2], function_data[1], function_data[3], function_data[4])
                 if flag_newline:
                     output_file.write("\n")
                 flag_newline = True

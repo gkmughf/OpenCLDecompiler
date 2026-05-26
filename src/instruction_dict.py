@@ -106,6 +106,7 @@ from src.instructions.IRspecial.InitReg import InitReg
 from src.instructions.IRspecial.InitPred import InitPred
 from src.instructions.IRspecial.memory import MemoryAllocation, StoreInMem
 from src.instructions.IRspecial.LocalMem import LocalMemory
+from src.instructions.IRspecial.GlobalMem import GlobalMemory
 from src.instructions.IRspecial.ChangeMask import UseMask, Unmask
 
 instruction_dict = {
@@ -113,6 +114,7 @@ instruction_dict = {
     "s_alloc": MemoryAllocation,
     "s_store": StoreInMem,
     "s_init": InitReg,
+    "s_init_global": GlobalMemory,
     "s_ipred": InitPred, 
     "ds_add": DsAdd,
     "ds_bpermute": DsBpermute,

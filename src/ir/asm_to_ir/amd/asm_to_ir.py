@@ -1,3 +1,6 @@
+import re
+from typing import Any
+
 from src.ir.asm_to_ir.amd.instruction_rules import get_instruction_rule
 from src.ir.asm_to_ir.amd.register_factory import RegFactory
 from src.ir.asm_to_ir.lowering import InstructionContext
@@ -6,6 +9,49 @@ from src.ir.instructions.special.memory import MemoryAllocation, Store
 from src.ir.kernel import Kernel
 from src.ir.registers.reg import Reg_ty, RegOrVal_ty, Val
 from src.model.config_data import ConfigData
+
+
+def get_gdata_offset(instruction: str) -> int:
+    match = re.search(r"\.gdata(?:\+(\d+))?", instruction)
+    if match is None:
+        return 0
+    return int(match.group(1) or 0)
+
+
+def get_gdata_name(offset: int) -> str:
+    return f"gdata{offset}"
+
+
+def _global_data_instruction_text(instruction: Any) -> str:
+    if isinstance(instruction, tuple):
+        return str(instruction[0])
+    return str(instruction)
+
+
+def process_global_data(
+    kernel: Kernel,
+    set_of_global_data_instruction: list[Any],
+    set_of_global_data_bytes: list[str],
+) -> dict[int, str]:
+    offsets = sorted(
+        {
+            get_gdata_offset(_global_data_instruction_text(instruction))
+            for instruction in set_of_global_data_instruction
+            if ".gdata" in _global_data_instruction_text(instruction)
+        }
+    )
+    if not offsets:
+        return {}
+
+    offset_to_name = {offset: get_gdata_name(offset) for offset in offsets}
+    slice_boundaries = [*offsets, len(set_of_global_data_bytes)]
+
+    for index in range(len(slice_boundaries) - 1):
+        offset = slice_boundaries[index]
+        next_offset = slice_boundaries[index + 1]
+        kernel.global_memory.set(offset_to_name[offset], set_of_global_data_bytes[offset:next_offset])
+
+    return offset_to_name
 
 
 def init_dispatch_reg(dispatch_reg: Reg_ty, kernel: Kernel):
@@ -34,7 +80,12 @@ def create_instruction_from_opcode(kernel: Kernel, opcode: str, operands: list[R
     )
 
 
-def text_to_ir(text: list[str], cf: ConfigData) -> Kernel:
+def text_to_ir(
+    text: list[str],
+    cf: ConfigData,
+    set_of_global_data_bytes: list[str],
+    set_of_global_data_instruction: list[str],
+) -> Kernel:
     rf = RegFactory()
 
     kernel = Kernel(cf.kernel_name, cf.size_of_work_groups)
@@ -42,6 +93,7 @@ def text_to_ir(text: list[str], cf: ConfigData) -> Kernel:
     kernel.predicates.add(rf.parse_operand("exec"))
     kernel.predicates.add(rf.parse_operand("vcc"))
     kernel.predicates.add(rf.parse_operand("scc"))
+    global_offset_map = process_global_data(kernel, set_of_global_data_instruction, set_of_global_data_bytes)
 
     for arg in cf.arguments:
         name_to_check = arg.name
@@ -82,12 +134,18 @@ def text_to_ir(text: list[str], cf: ConfigData) -> Kernel:
 
         for raw_operand in parts[1:]:
             operand = raw_operand.rstrip(",")
-            parsed_operand = rf.parse_operand(operand)
-            if "offset" in operand:
+            if ".gdata" in operand:
+                offset = get_gdata_offset(operand)
+                global_memory_name = global_offset_map.get(offset, get_gdata_name(offset))
+                parsed_operand = rf.get_or_create(global_memory_name, "64")
+            elif "offset" in operand:
+                parsed_operand = rf.parse_operand(operand)
                 offset = int(operand[7:])
                 offset_map[offset] = "lc" + str(offset)
                 local_memory_name = offset_map[offset]
                 parsed_operand = rf.get_or_create(local_memory_name, "64")
+            else:
+                parsed_operand = rf.parse_operand(operand)
             operands.append(parsed_operand)
 
         create_instruction_from_opcode(kernel, opcode, operands)

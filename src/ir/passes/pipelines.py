@@ -12,7 +12,7 @@ from src.ir.passes.decompilation import (
 from src.ir.passes.kernel import (
     EmitTextIRPass,
     MaterializeArgumentStoresPass,
-    MaterializeLocalMemoryPass,
+    MaterializeMemoryPass,
     MaterializePredicatePass,
 )
 from src.ir.passes.ptx import (
@@ -36,7 +36,7 @@ COMMON_KERNEL_LOWERING_PIPELINE = PassPipeline.named(
     "common-kernel-lowering",
     [
         MaterializeArgumentStoresPass(),
-        MaterializeLocalMemoryPass(),
+        MaterializeMemoryPass(),
         MaterializePredicatePass(),
     ],
 )

@@ -1,14 +1,7 @@
 from src.base_instruction import BaseInstruction
 from src.decompiler_data import set_reg_value
-from src.expression_manager.expression_node import (
-    ExpressionOperationType,
-    ExpressionValueTypeHint,
-    TypeAddressSpaceQualifiers,
-)
-from src.expression_manager.types.opencl_types import OpenCLTypes
-from src.global_data import get_gdata_offset
 from src.register_type import RegisterType
-from src.ir.registers.reg import is_reg, Val, get_reg_rang, is_predicate
+from src.ir.registers.reg import Val, is_predicate
 from src.integrity import Integrity
 
 class SMov(BaseInstruction):
@@ -48,19 +41,9 @@ class SMov(BaseInstruction):
                 data_type = self.node.get_from_state(self.ssrc0).data_type
             else:
                 assert isinstance(self.ssrc0, Val)
-                if ".gdata" in self.ssrc0.value:
-                    new_value = f"gdata{get_gdata_offset(self.ssrc0.value)}"
-                    reg_type = RegisterType.GLOBAL_DATA_POINTER
-                    expr_node = self.expression_manager.add_variable_node(
-                        new_value,
-                        ExpressionValueTypeHint(
-                            OpenCLTypes.from_string(self.suffix), TypeAddressSpaceQualifiers.CONST, is_pointer=True
-                        ),
-                    )
-                else:
-                    new_value = self.ssrc0.value
-                    reg_type = RegisterType.INT32
-                    expr_node = self.expression_manager.add_register_node(reg_type, new_value)
+                new_value = self.ssrc0.value
+                reg_type = RegisterType.INT32
+                expr_node = self.expression_manager.add_register_node(reg_type, new_value)
                 data_type = self.suffix
 
             if expr_node is None:

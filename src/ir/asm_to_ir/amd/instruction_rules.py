@@ -13,7 +13,7 @@ from src.ir.instructions.common.barrier import Barrier
 from src.ir.instructions.common.bfe import Bfe
 from src.ir.instructions.common.compare import get_compare_class
 from src.ir.instructions.common.cselect import CSelect
-from src.ir.instructions.common.cvt import Cvt32To64, CvtU32ToF64, CvtF32ToI32
+from src.ir.instructions.common.cvt import Cvt32To64, CvtU32ToF64, CvtF32ToI32, CvtI32ToF32, CvtI32ToF64, CvtF64ToI32
 from src.ir.instructions.common.endpgm import EndPgm
 from src.ir.instructions.common.load import FLoad, Load
 from src.ir.instructions.common.logical import And, Or, Xor
@@ -315,6 +315,9 @@ instruction_rules = {
     "v_perm_b32": same(Permute32, IRType.B32),
     "v_cvt_i32_f32": same(CvtF32ToI32, IRType.I32_F32),
     "v_cvt_f64_u32": same(CvtU32ToF64, IRType.F64_U32),
+    "v_cvt_f32_i32": same(CvtI32ToF32, IRType.F32_I32),
+    "v_cvt_f64_i32": same(CvtI32ToF64, IRType.F64_I32),
+    "v_cvt_i32_f64": same(CvtF64ToI32, IRType.I32_F64),
     "s_endpgm": same(EndPgm),
     "s_waitcnt": Rule([Emit(Barrier)]),
     "s_nop": Rule([Emit(Ignore)]),

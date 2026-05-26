@@ -127,27 +127,59 @@ def upload_kernel_param(state, offset, to_registers, base):
             break
 
 
+def _get_global_data_element(address: str) -> str:
+    if " + " not in address:
+        return f"{address}[0]"
+    return make_elem_from_addr(address)
+
+
+def _loaded_global_data_integrity(index: int, count: int) -> Integrity:
+    if count == 1:
+        return Integrity.ENTIRE
+    if index == 0:
+        return Integrity.LOW_PART
+    if index == count - 1:
+        return Integrity.HIGH_PART
+    return Integrity.ENTIRE
+
+
 def upload_global_data_pointer(state, to_registers, from_registers):
     decompiler_data = DecompilerData()
     dest_regs_name = expand_register_names(to_registers)
-    src_regs_name = expand_register_names(from_registers)
-    start_to_register, _ = dest_regs_name[0]
-    start_from_register, _ = src_regs_name[0]
-    data_type = state[start_from_register].data_type
-    new_val = make_elem_from_addr(state[start_from_register].val)
-    decompiler_data.set_reg_make_version(
-        state,
-        start_to_register,
-        Register(
-            integrity=Integrity.ENTIRE,
-            register_content=RegisterContent(
-                value=new_val,
-                type_=RegisterType.GLOBAL_DATA_POINTER,
-                data_type=data_type,
-                expression_node=state[start_from_register].get_expression_node(),
+    start_from_register = expand_register_names(from_registers)[0]
+    src_content = state[start_from_register]
+    data_type = src_content.data_type
+    new_val = _get_global_data_element(src_content.val)
+
+    for index, dest_reg_name in enumerate(dest_regs_name):
+        decompiler_data.set_reg_make_version(
+            state,
+            dest_reg_name,
+            Register(
+                integrity=_loaded_global_data_integrity(index, len(dest_regs_name)),
+                register_content=RegisterContent(
+                    value=new_val,
+                    type_=RegisterType.GLOBAL_DATA_POINTER,
+                    data_type=data_type,
+                    expression_node=src_content.get_expression_node(),
+                ),
             ),
-        ),
-    )
+        )
+
+    if len(dest_regs_name) > 1:
+        decompiler_data.set_reg_make_version(
+            state,
+            to_registers.name,
+            Register(
+                integrity=Integrity.ENTIRE,
+                register_content=RegisterContent(
+                    value=new_val,
+                    type_=RegisterType.GLOBAL_DATA_POINTER,
+                    data_type=data_type,
+                    expression_node=src_content.get_expression_node(),
+                ),
+            ),
+        )
 
 # (GFV) не используется 
 def upload_by_offset(

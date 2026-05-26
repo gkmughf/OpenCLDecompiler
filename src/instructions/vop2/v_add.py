@@ -14,6 +14,23 @@ from src.register_type import RegisterType
 from src.ir.registers.reg import is_reg, Val, get_reg_rang, is_range
 
 
+def _byte_data_size(data_type):
+    if isinstance(data_type, str) and data_type.endswith(" bytes"):
+        return int(data_type.split()[0])
+    return None
+
+
+def _combine_byte_data_type(first, second):
+    first_size = _byte_data_size(first)
+    second_size = _byte_data_size(second)
+    if first_size is None and second_size is None:
+        return first
+    if first_size is None:
+        return second
+    if second_size is None:
+        return first
+    return f"{min(first_size, second_size)} bytes"
+
 
 patterns_get_global_id_x = {
     (RegisterType.WORK_GROUP_ID_X_LOCAL_SIZE_OFFSET, RegisterType.WORK_ITEM_ID_X),
@@ -51,7 +68,6 @@ patterns_work_group_id_z_local_size_offset = {
 }
 
 
-
 class VAdd(BaseInstruction):
     def __init__(self, node, suffix):
         super().__init__(node, suffix)
@@ -78,13 +94,14 @@ class VAdd(BaseInstruction):
             new_value = make_op(self.node, self.src0, self.src1, "+", "(ulong)", "(ulong)", suffix=self.suffix)
             src0_reg = not isinstance(self.src0, Val)
             src1_reg = not isinstance(self.src1, Val)
+            start_from_src0 = get_reg_rang(self.src0)[0]
+            start_from_src1 = get_reg_rang(self.src1)[0]
             data_type = "u32"
 
             left_node = None
             right_node = None
             expr_node = None
             if src0_reg:
-                start_from_src0 = get_reg_rang(self.src0)[0]
                 if self.node.get_from_state(start_from_src0).type == RegisterType.ADDRESS_KERNEL_ARGUMENT:
                     reg_type = RegisterType.ADDRESS_KERNEL_ARGUMENT
                     reg_entire = Integrity.ENTIRE
@@ -123,13 +140,13 @@ class VAdd(BaseInstruction):
                         src0_node, src1_node, data_size, OpenCLTypes.from_string(self.suffix)
                     )
                 elif self.node.get_from_state(start_from_src0).type == RegisterType.GLOBAL_DATA_POINTER:
-                    data_type = self.node.get_from_state(self.src1).data_type
+                    data_type = self.node.get_from_state(start_from_src1).data_type if src1_reg else data_type
+                    # data_type = self.node.get_from_state(start_from_src1).data_type
                     name = self.node.get_from_state(start_from_src0).val
                     reg_entire = Integrity.ENTIRE
-                    if "bytes" in data_type:
-                        position = data_type.find(" ")
-                        value = data_type[:position]
-                        new_value = make_op(self.node, self.src1, Val(value), "/", suffix=self.suffix)
+                    data_size = _byte_data_size(data_type)
+                    if data_size is not None:
+                        new_value = make_op(self.node, self.src1, Val(str(data_size)), "/", suffix=self.suffix)
                         new_value = make_op(self.node, Val(name), Val(new_value), "+", suffix=self.suffix)
                         reg_type = RegisterType.GLOBAL_DATA_POINTER
 
@@ -141,7 +158,7 @@ class VAdd(BaseInstruction):
                         )
                         src1_node = self.get_expression_node(self.src1)
                         expr_node = self.expression_manager.add_offset_div_data_size_node(
-                            src0_node, src1_node, value, OpenCLTypes.from_string(self.suffix)
+                            src0_node, src1_node, data_size, OpenCLTypes.from_string(self.suffix)
                         )
 
             if expr_node:
@@ -158,8 +175,6 @@ class VAdd(BaseInstruction):
 
             reg_type = RegisterType.UNKNOWN
             reg_entire = Integrity.ENTIRE
-            start_from_src0 = get_reg_rang(self.src0)[0]
-            start_from_src1 = get_reg_rang(self.src1)[0]
             if src0_reg and src1_reg:
                 reg_entire = self.node.get_from_state(start_from_src1).integrity
                 if (self._check_type_pattern(start_from_src0, start_from_src1, patterns_get_global_id_x)):
@@ -199,17 +214,20 @@ class VAdd(BaseInstruction):
                     left_node = self.get_expression_node(start_from_src0)
                     right_node = self.get_expression_node(start_from_src1)
                 else:
-                    data_type = self.node.get_from_state(start_from_src0).data_type
+                    data_type = _combine_byte_data_type(
+                        self.node.get_from_state(start_from_src0).data_type,
+                        self.node.get_from_state(start_from_src1).data_type,
+                    )
                     left_node = self.get_expression_node(start_from_src0)
                     right_node = self.get_expression_node(start_from_src1)
             elif src0_reg:
                 assert self.src0.name in self.node.state
-                data_type = self.node.get_from_state(start_from_src0).data_type
+                # data_type = self.node.get_from_state(start_from_src0).data_type
                 left_node = self.get_expression_node(start_from_src0)
                 right_node = self.expression_manager.add_const_node(start_from_src1.value, OpenCLTypes.UINT)
             elif src1_reg:
                 assert start_from_src1.name in self.node.state
-                data_type = self.node.get_from_state(start_from_src1).data_type
+                # data_type = self.node.get_from_state(start_from_src1).data_type
                 left_node = self.expression_manager.add_const_node(start_from_src0.value, OpenCLTypes.UINT)
                 right_node = self.get_expression_node(start_from_src1)
             else:

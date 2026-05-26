@@ -574,6 +574,7 @@ class DecompilerData(metaclass=Singleton):
         self.variables = {}
         self.checked_variables = {}
         self.global_data = {}
+        self.global_data_names: dict[int, str] = {}
         self.var_value = {}  # var -> value
         self.type_conversion = {}  # expression -> type_conversion (get_global_id(0) -> (ulong))
         self.versions: dict[str, int] = {}
@@ -637,6 +638,7 @@ class DecompilerData(metaclass=Singleton):
         self.variables = {}
         self.checked_variables = {}
         self.global_data = {}
+        self.global_data_names = {}
         self.var_value = {}
         self.type_conversion = {}
         self.versions = {}
@@ -673,6 +675,10 @@ class DecompilerData(metaclass=Singleton):
     def set_reg_make_version(self, state, reg, value):
         state[reg] = value
         self.make_version(state, reg)
+
+    def register_global_data(self, name: str, values: list[str], offset: int | None = None) -> None:
+        self.global_data[name] = list(values)
+        self.type_gdata[name] = self.type_gdata.get(name, "undefined_type")
 
     def init_entry_reg(self, state, reg, value, reg_type: RegisterType):
         self.set_reg_make_version(
