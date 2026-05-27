@@ -9,7 +9,7 @@ def gdata_type_processing():
     for key, val in list(decompiler_data.names_of_vars.items()):
         if val.startswith("g"):
             val = val[1:]
-        if "gdata" in key:
+        if "__gdata" in key:
             decompiler_data.type_gdata[key] = make_opencl_type(val)
         elif "var" in key and key in decompiler_data.var_value:
             name = decompiler_data.var_value[key]
@@ -20,7 +20,7 @@ def gdata_type_processing():
         decompiler_data.names_of_vars[key] = val
 
     decompiler_data.names_of_vars = {
-        key: val for key, val in decompiler_data.names_of_vars.items() if "gdata" not in key
+        key: val for key, val in decompiler_data.names_of_vars.items() if "__gdata" not in key
     }
 
 

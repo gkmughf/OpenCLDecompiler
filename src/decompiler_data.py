@@ -328,11 +328,8 @@ def simplify_opencl_statement(opencl_line):
 
 # gdata0[get_local_id(0)] -> gdata0
 def get_name(key):
-    position_gdata = key.find("gdata")
-    previous_position = position_gdata
-    while position_gdata + 5 < len(key) and "0" <= key[position_gdata + 5] <= "9":
-        position_gdata += 1
-    return key[previous_position : position_gdata + 5]
+    match = re.search(r'[\w.]+__gdata', key)
+    return match.group(0) if match else ""
 
 
 def optimize_names_of_vars():
@@ -340,14 +337,14 @@ def optimize_names_of_vars():
     new_names_of_vars = {}
     # remove gdata element access (gdata[...] -> gdata)
     for key, val in decompiler_data.names_of_vars.items():
-        if "gdata" in key:
+        if "__gdata" in key:
             name = get_name(key)
             new_names_of_vars[name] = val
         elif "var" in key:
             new_names_of_vars[key] = val
     decompiler_data.names_of_vars = new_names_of_vars
     for key, val in decompiler_data.var_value.items():
-        if "gdata" in val:
+        if "__gdata" in val:
             new_val = get_name(val)
             decompiler_data.var_value[key] = new_val
 

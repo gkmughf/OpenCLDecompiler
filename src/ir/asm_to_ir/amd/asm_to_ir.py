@@ -19,7 +19,7 @@ def get_gdata_offset(instruction: str) -> int:
 
 
 def get_gdata_name(offset: int) -> str:
-    return f"gdata{offset}"
+    return f"arr{offset}__gdata"
 
 
 def _global_data_instruction_text(instruction: Any) -> str:
