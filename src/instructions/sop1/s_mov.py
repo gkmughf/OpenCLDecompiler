@@ -10,17 +10,10 @@ class SMov(BaseInstruction):
         self.sdst = self.operand[0]
         self.ssrc0 = self.operand[1]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix in {"b32", "b64"}:
-    #         self.decompiler_data.write(f"{self.sdst} = {self.ssrc0} // {self.name}\n")
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix in {"b32", "b64", "i32"}:
             expr_node = None
 
-            #if self.sdst == "exec":
             if is_predicate(self.ssrc0) or is_predicate(self.sdst):
                 self.decompiler_data.exec_registers[self.sdst.name] = self.decompiler_data.exec_registers[self.ssrc0.name]
 
@@ -32,7 +25,6 @@ class SMov(BaseInstruction):
                     self.sdst.name,
                     'b64',
                     None,
-                    #exec_condition=new_exec_condition,
                     expression_node=expr_node,
                 )
             if self.ssrc0.name in self.node.state:

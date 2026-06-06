@@ -22,23 +22,6 @@ class VSub(BaseInstruction):
         self.src0 = self.operand[1]
         self.src1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "u32":
-    #         temp = f"temp{self.decompiler_data.number_of_temp}"
-    #         mask = f"mask{self.decompiler_data.number_of_mask}"
-    #         self.decompiler_data.write(f"ulong {temp} = (ulong){self.src0} - (ulong){self.src1} // {self.name}\n")
-    #         self.decompiler_data.write(f"{self.vdst} = CLAMP ? ({temp}>>32 ? 0 : {temp}) : {temp}\n")
-    #         self.decompiler_data.write(f"{self.vcc} = 0\n")  # vop2, sdst
-    #         self.decompiler_data.write(f"ulong {mask} = (1ULL<<LANEID)\n")
-    #         self.decompiler_data.write(f"{self.vcc} = ({self.vcc}&~{mask}) | (({temp}>>32) ? {mask} : 0)\n")
-    #         self.decompiler_data.number_of_temp += 1
-    #         self.decompiler_data.number_of_mask += 1
-    #         return self.node
-    #     if self.suffix == "f32":
-    #         self.decompiler_data.write(f"{self.vdst} = (float){self.src0} - (float){self.src1} // {self.name}\n")
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         src0_node = self.get_expression_node(self.src0)
         src1_node = self.get_expression_node(self.src1)

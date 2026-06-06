@@ -2,11 +2,6 @@ import copy
 
 from src.base_instruction import BaseInstruction
 
-
-def is_notBr(instruction: str) -> bool:
-    return "s_nbr" == instruction
-
-
 class Label(BaseInstruction):
     def to_fill_node(self):
         label = self.node.instruction
@@ -18,6 +13,3 @@ class Label(BaseInstruction):
                 self.node.state = copy.deepcopy(self.node.parent[-1].state)
         return self.node
 
-    # def to_print_unresolved(self):
-    #     self.decompiler_data.write(self.node.instruction[0])
-    #     return self.node

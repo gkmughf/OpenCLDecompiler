@@ -7,27 +7,8 @@ from src.ir.registers.reg import Val
 class DsWrite(BaseInstruction):
     def __init__(self, node, suffix):
         super().__init__(node, suffix)
-        #self.base_ptr = self.instruction[1]
         self.addr = self.operand[0]
         self.vdata0 = self.operand[1]
-        #self.decompiler_data.check_lds_vars(self.offset, suffix)
-
-    # def to_print_unresolved(self):
-    #     if self.suffix == "b32":
-    #         v = f"V{self.decompiler_data.number_of_v}"
-    #         self.decompiler_data.write(f"uint* {v} // {self.name}\n")
-    #         self.decompiler_data.write(f"{v} = (uint*)(ds + (({self.addr} + {self.offset}) & ~3))\n")
-    #         self.decompiler_data.write(f"*{v} = {self.vdata0}\n")
-    #         self.decompiler_data.number_of_v += 1
-    #         return self.node
-    #     if self.suffix == "b64":
-    #         v = f"V{self.decompiler_data.number_of_v}"
-    #         self.decompiler_data.write(f"ulong* {v} // {self.name}\n")
-    #         self.decompiler_data.write(f"{v} = (ulong*)(ds + (({self.addr} + {self.offset}) & ~7))\n")
-    #         self.decompiler_data.write(f"*{v} = {self.vdata0}\n")
-    #         self.decompiler_data.number_of_v += 1
-    #         return self.node
-    #     return super().to_print_unresolved()
 
     def get_lds_var_name_with_offset(self):
         return self.expression_manager.expression_to_string(

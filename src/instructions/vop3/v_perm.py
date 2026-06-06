@@ -12,34 +12,6 @@ class VPerm(BaseInstruction):
         self.src1 = self.operand[2]
         self.src2 = self.operand[3]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "b32":
-    #         tab = "    "
-    #         qword = f"qword{self.decompiler_data.number_of_qword}"
-    #         choice = f"choice{self.decompiler_data.number_of_choice}"
-    #         result = f"result{self.decompiler_data.number_of_result}"
-    #         self.decompiler_data.write(f"{self.vdst} = 0 // {self.name}\n")
-    #         self.decompiler_data.write(f"ulong {qword} = (((ulong){self.src0})<<32) | {self.src1}\n")
-    #         self.decompiler_data.write("for (int i = 0; i < 4; i++)\n")
-    #         self.decompiler_data.write("{\n")
-    #         self.decompiler_data.write(f"{tab}byte {choice} = ({self.src2} >> (8*i)) & 0xff\n")
-    #         self.decompiler_data.write(f"{tab}byte {result}\n")
-    #         self.decompiler_data.write(f"{tab}if ({choice} >= 13)\n")
-    #         self.decompiler_data.write(f"{tab}{tab}{result} = 0xff\n")
-    #         self.decompiler_data.write(f"{tab}else if ({choice} == 12)\n")
-    #         self.decompiler_data.write(f"{tab}{tab}{result} = 0\n")
-    #         self.decompiler_data.write(f"{tab}else if ({choice} >= 8)\n")
-    #         self.decompiler_data.write(f"{tab}{tab}{result} = 0xff * {qword}>>(({choice}-8)*16 + 15)\n")
-    #         self.decompiler_data.write(f"{tab}else\n")
-    #         self.decompiler_data.write(f"{tab}{tab}{result} = ({qword}>>({choice}*8)) & 0xff\n")
-    #         self.decompiler_data.write(f"{tab}{self.vdst} |= ({result} << (i * 8))\n")
-    #         self.decompiler_data.write("}\n")
-    #         self.decompiler_data.number_of_qword += 1
-    #         self.decompiler_data.number_of_choice += 1
-    #         self.decompiler_data.number_of_result += 1
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix == "b32":
             if self.node.get_from_state(self.src2).val == "0x2010004":

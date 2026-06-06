@@ -14,43 +14,6 @@ class SBfe(BaseInstruction):
         self.ssrc0 = self.operand[1]
         self.ssrc1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     tab = "    "
-    #     shift = f"shift{self.decompiler_data.number_of_shift}"
-    #     length = f"length{self.decompiler_data.number_of_length}"
-
-    #     if self.suffix == "u32":
-    #         self.decompiler_data.write(f"uchar {shift} = {self.ssrc1} & 31 // {self.name}\n")
-    #         self.decompiler_data.write(f"uchar {length} = ({self.ssrc1}>>16) & 07xf\n")
-    #         self.decompiler_data.write(f"if ({length}==0)\n")
-    #         self.decompiler_data.write(f"{tab}{self.sdst} = 0\n")
-    #         self.decompiler_data.write(f"if ({shift} + {length} < 32)\n")
-    #         self.decompiler_data.write(
-    #             f"{tab}{self.sdst} = {self.ssrc0} << (32 - {shift} - {length}) >> (32 - {length})\n"
-    #         )
-    #         self.decompiler_data.write("else\n")
-    #         self.decompiler_data.write(f"{tab}{self.sdst} = {self.ssrc0} >> {shift}\n")
-    #         self.decompiler_data.write(f"scc = {self.sdst} != 0\n")
-    #         self.decompiler_data.number_of_length += 1
-    #         self.decompiler_data.number_of_shift += 1
-    #         return self.node
-    #     if self.suffix == "i32":
-    #         self.decompiler_data.write(f"uchar {shift} = {self.ssrc1} & 31 // {self.name}\n")
-    #         self.decompiler_data.write(f"uchar {length} = ({self.ssrc1}>>16) & 07xf\n")
-    #         self.decompiler_data.write(f"if ({length}==0)\n")
-    #         self.decompiler_data.write(f"{tab}{self.sdst} = 0\n")
-    #         self.decompiler_data.write(f"if ({shift} + {length} < 32)\n")
-    #         self.decompiler_data.write(
-    #             f"{tab}{self.sdst} = (int){self.ssrc0} << (32 - {shift} - {length}) >> (32 - {length})\n"
-    #         )
-    #         self.decompiler_data.write("else\n")
-    #         self.decompiler_data.write(f"{tab}{self.sdst} = (int){self.ssrc0} >> {shift}\n")
-    #         self.decompiler_data.write(f"scc = {self.sdst} != 0\n")
-    #         self.decompiler_data.number_of_length += 1
-    #         self.decompiler_data.number_of_shift += 1
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         assert isinstance(self.ssrc1, Val)
         if self.suffix == "u32":

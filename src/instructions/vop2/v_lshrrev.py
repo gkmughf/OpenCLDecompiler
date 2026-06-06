@@ -19,12 +19,6 @@ class VLshrrev(BaseInstruction):
         if is_range(self.operand[2]):
             self.src1 = self.operand[2].get_element(0)
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "b64":
-    #         self.decompiler_data.write(f"{self.vdst} = {self.src1} >> ({self.src0} & 63) // {self.name}\n")
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix in {"b32", "b64"} and (is_reg(self.src1) or is_range(self.src1)):
             assert isinstance(self.src0, Val)

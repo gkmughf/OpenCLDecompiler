@@ -13,23 +13,6 @@ class VAddc(BaseInstruction):
         self.src0 = self.operand[1]
         self.src1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "u32":
-    #         temp = f"temp{self.decompiler_data.number_of_temp}"
-    #         mask = f"mask{self.decompiler_data.number_of_mask}"
-    #         cc = f"cc{self.decompiler_data.number_of_cc}"
-    #         self.decompiler_data.write(f"ulong {mask} = (1ULL<<LANEID) // {self.name}\n")
-    #         self.decompiler_data.write(f"uchar {cc} = (({self.ssrc2}&{mask} ? 1 : 0)\n")
-    #         self.decompiler_data.write(f"uint {temp} = (ulong){self.src0} + (ulong){self.src1} + {cc}\n")
-    #         self.decompiler_data.write(f"{self.sdst} = 0\n")
-    #         self.decompiler_data.write(f"{self.vdst} = CLAMP ? min({temp}, 0xffffffff) : {temp}\n")
-    #         self.decompiler_data.write(f"{self.sdst} = ({self.sdst}&~{mask}) | (({temp} >> 32) ? {mask} : 0)\n")
-    #         self.decompiler_data.number_of_temp += 1
-    #         self.decompiler_data.number_of_mask += 1
-    #         self.decompiler_data.number_of_cc += 1
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix == "u32":
             new_value = make_op(self.node, self.src0, self.src1, "+", "(ulong)", "(ulong)", suffix=self.suffix)

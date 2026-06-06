@@ -14,13 +14,6 @@ class VLshlrev(BaseInstruction):
         self.src0 = self.operand[1]
         self.src1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix in {"b16", "b32", "b64"}:
-    #         num = int(self.suffix[1:]) - 1
-    #         self.decompiler_data.write(f"{self.vdst} = {self.src1} << ({self.src0}&{num}) // {self.name}\n")
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix in {"b16", "b32"}:
             if is_reg(self.src1) and self.node.state[self.src1.name].val == "0":

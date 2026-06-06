@@ -15,14 +15,6 @@ class VCndmask(BaseInstruction):
         self.src1 = self.operand[2]
         self.ssrc2 = self.operand[3]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "b32":
-    #         self.decompiler_data.write(
-    #             f"{self.vdst} = {self.ssrc2}&(1ULL<<LANEID) ? {self.src1} : {self.src0} // {self.name}\n"
-    #         )
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix == "b32":
             if self.src1.name in self.node.state and self.node.get_from_state(self.src1).type == RegisterType.DIVISION_PT8:
@@ -61,16 +53,6 @@ class VCndmask(BaseInstruction):
                     expression_node=self.get_expression_node(self.src0),
                 )
             
-            # new_value = f"{self.node.get_from_state(self.ssrc2).val} ? {self.src0.name} : {self.src1.name}"
-
-            # cond_node = self.get_expression_node(self.ssrc2)
-            # src0_node = self.get_expression_node(self.src0)
-            # src1_node = self.get_expression_node(self.src1)
-            # expr_node = self.expression_manager.add_if_ternary_node(cond_node, src0_node, src1_node)
-
-            # return set_reg_value(
-            #     self.node, new_value, self.vdst.name, [self.src0.name, self.src1.name], self.suffix, expression_node=expr_node
-            # )
             variable = f"var{self.decompiler_data.num_of_var}"
             if (
                 self.vdst.name in self.node.state

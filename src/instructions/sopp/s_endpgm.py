@@ -6,6 +6,3 @@ class SEndpgm(BaseInstruction):
     def to_fill_node(self):
         self.node.state["$MASK"].exec_condition = ExecCondition.default()
         return self.node
-
-    def to_print_unresolved(self):
-        return ""

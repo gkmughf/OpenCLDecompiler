@@ -12,13 +12,6 @@ class SOr(BaseInstruction):
         self.ssrc0 = self.operand[1]
         self.ssrc1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix in {"b32", "b64"}:
-    #         self.decompiler_data.write(f"{self.sdst} = {self.ssrc0} | {self.ssrc1} // {self.name}\n")
-    #         self.decompiler_data.write(f"scc = {self.sdst} != 0\n")
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix in {"b32", "b64"}:
             src0_node = self.get_expression_node(self.ssrc0)

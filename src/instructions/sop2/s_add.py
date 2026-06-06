@@ -23,16 +23,6 @@ class SAdd(BaseInstruction):
         self.ssrc0 = self.instruction[2]
         self.ssrc1 = self.instruction[3]
 
-    def to_print_unresolved(self):
-        if self.suffix in {"u32", "i32"}:
-            temp = f"temp{self.decompiler_data.number_of_temp}"
-            self.decompiler_data.write(f"ulong {temp} = (ulong){self.ssrc0} + (ulong){self.ssrc1} // {self.name}\n")
-            self.decompiler_data.write(f"{self.sdst} = {temp}\n")
-            self.decompiler_data.write(f"scc = {temp} >> 32\n")
-            self.decompiler_data.number_of_temp += 1
-            return self.node
-        return super().to_print_unresolved()
-
     def to_fill_node(self):  # noqa: C901, PLR0912, PLR0915
         if self.suffix in {"u32", "i32"}:
             if self.decompiler_data.is_rdna3 and self.ssrc0 in self.node.state and self.ssrc1 in self.node.state:

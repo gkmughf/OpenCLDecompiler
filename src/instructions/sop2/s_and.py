@@ -17,13 +17,6 @@ class SAnd(BaseInstruction):
         self.src0 = self.operand[1]
         self.src1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix in {"b32", "b64"}:
-    #         self.decompiler_data.write(f"{self.sdst} = {self.ssrc0} & {self.ssrc1} // {self.name}\n")
-    #         self.decompiler_data.write(f"scc = {self.sdst} != 0\n")
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix in {"b32", "b64"}:
             src0_node = self.get_expression_node(self.src0)
@@ -31,7 +24,6 @@ class SAnd(BaseInstruction):
             expr_node = self.expression_manager.add_operation(
                 src0_node, src1_node, ExpressionOperationType.AND, OpenCLTypes.from_string(self.suffix)
             )
-            # TODO(GFV) тут надо думать над ветвлением 
 
             if any(is_predicate(item) for item in {self.vdst, self.src0, self.src1}):
                 if not is_predicate(self.src0):
@@ -164,7 +156,3 @@ class SAnd(BaseInstruction):
                 )
         return super().to_fill_node()
 
-    # def to_print(self):
-    #     if is_predicate(self.vdst):
-    #         self.output_string = ExpressionManager().expression_to_string(self.get_expression_node(self.vdst))
-    #     return self.output_string

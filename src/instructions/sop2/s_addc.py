@@ -13,18 +13,6 @@ class SAddc(BaseInstruction):
         self.ssrc0 = self.instruction[2]
         self.ssrc1 = self.instruction[3]
 
-    def to_print_unresolved(self):
-        if self.suffix == "u32":
-            temp = f"temp{self.decompiler_data.number_of_temp}"
-            self.decompiler_data.write(
-                f"ulong {temp} = (ulong){self.ssrc0} + (ulong){self.ssrc1} + scc // {self.name}\n"
-            )
-            self.decompiler_data.write(f"{self.sdst} = {temp}\n")
-            self.decompiler_data.write(f"scc = {temp} >> 32\n")
-            self.decompiler_data.number_of_temp += 1
-            return self.node
-        return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.decompiler_data.is_rdna3 and is_reg(self.ssrc0) and is_reg(self.ssrc1):
             new_reg = self.node.state[self.ssrc0] + self.node.state[self.ssrc1]

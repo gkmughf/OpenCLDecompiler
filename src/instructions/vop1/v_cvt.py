@@ -17,38 +17,6 @@ class VCvt(BaseInstruction):
         self.to_registers = get_reg_rang(self.vdst)[0]
         self.from_registers = get_reg_rang(self.src0)[0]
 
-    # def to_print_unresolved(self):  # noqa: PLR0911
-    #     tab = "    "
-    #     if self.suffix == "f32_u32":
-    #         self.decompiler_data.write(f"{self.vdst} = (float){self.src0} // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "f64_i32":
-    #         self.decompiler_data.write(f"{self.vdst} = (double)(int){self.src0} // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "f64_u32":
-    #         self.decompiler_data.write(f"{self.vdst} = (double)(uint){self.src0} // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "i32_f64":
-    #         self.decompiler_data.write(f"{self.vdst} = (int)(double){self.src0} // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "u32_f64":
-    #         self.decompiler_data.write(f"{self.vdst} = (uint)(double){self.src0} // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "u32_f32":
-    #         self.decompiler_data.write(f"{self.instruction[1]} = 0 // {self.name}\n")
-    #         self.decompiler_data.write(f"if (!isnan(as_float({self.src0})))\n")
-    #         self.decompiler_data.write(
-    #             f"{tab}{self.vdst} = (int)min(convert_int_rtz(as_float({self.src0})), 4294967295.0)\n"
-    #         )
-    #         return self.node
-    #     if self.suffix == "i32_f32":
-    #         self.decompiler_data.write(f"{self.vdst} = (int)(float){self.src0} // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "f32_i32":
-    #         self.decompiler_data.write(f"{self.vdst} = (float)(int){self.src0} // {self.name}\n")
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix in {"f32_u32", "f64_i32", "f64_u32", "i32_f64", "u32_f64", "u32_f32", "i32_f32", "f32_i32"}:
             if self.src0.name in self.node.state and self.node.get_from_state(self.src0).type == RegisterType.DIVISION_PT2:

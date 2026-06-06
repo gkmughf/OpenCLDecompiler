@@ -48,26 +48,10 @@ class FlatLoad(BaseInstruction):
         self.start_to_registers = self.dest_regs[0]
         self.from_registers = get_reg_rang(self.vaddr)[0]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix in {"dword", "dwordx2"}:
-    #         self.decompiler_data.write(f"{self.vdst} = *(uint*)({self.vaddr} + {self.inst_offset}) // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "dwordx4":
-    #         vm = f"vm{self.decompiler_data.number_of_vm}"
-    #         self.decompiler_data.write(f"short* {vm} = ({self.vaddr} + {self.inst_offset}) // {self.name}\n")
-    #         self.decompiler_data.write(f"{self.vdst}[0] = *(uint*){vm}\n")
-    #         self.decompiler_data.write(f"{self.vdst}[1] = *(uint*)({vm} + 4)\n")
-    #         self.decompiler_data.write(f"{self.vdst}[2] = *(uint*)({vm} + 8)\n")
-    #         self.decompiler_data.write(f"{self.vdst}[3] = *(uint*)({vm} + 12)\n")
-    #         self.decompiler_data.number_of_vm += 1
-    #         return self.node
-    #     return super().to_print_unresolved()
-
-    def to_fill_node(self):  # нужно ли здесь делать self.node
+    def to_fill_node(self):
         if self.suffix in {"dword", "dwordx2", "dwordx4"}:
             variable = f"var{self.decompiler_data.num_of_var}"
             data_type = make_new_type_without_modifier(self.node, self.from_registers)
-            # probably we should save only const data
             self.decompiler_data.var_value[variable] = self.node.get_from_state(self.from_registers).val
             register_type = (
                 RegisterType.KERNEL_ARGUMENT_PTR

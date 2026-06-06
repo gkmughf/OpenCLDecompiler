@@ -13,12 +13,6 @@ class SMul(BaseInstruction):
         self.ssrc0 = self.instruction[2]
         self.ssrc1 = self.instruction[3]
 
-    def to_print_unresolved(self):
-        if self.suffix == "i32":
-            self.decompiler_data.write(f"{self.sdst} = {self.ssrc0} * {self.ssrc1} // {self.name}\n")
-            return self.node
-        return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix == "i32":
             src0_node = self.get_expression_node(self.ssrc0)

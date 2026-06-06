@@ -13,31 +13,9 @@ class VAshrrev(BaseInstruction):
         self.src0 = self.operand[1]
         self.src1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "i32":
-    #         self.decompiler_data.write(f"{self.vdst} = (int){self.src1} >> ({self.src0}&31) // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "i64":
-    #         self.decompiler_data.write(f"{self.vdst} = (long){self.src1} >> ({self.src0}&63) // {self.name}\n")
-    #         return self.node
-    #     return super().to_print_unresolved()
 
-## TODO странно
     def to_fill_node(self):
         if self.suffix == "i32":
-            # new_value = self.node.get_from_state(self.src1).val
-            # reg_type = self.node.get_from_state(self.src1).type
-            # expr_node = self.get_expression_node(self.src1)
-            # return set_reg_value(
-            #     self.node,
-            #     new_value,
-            #     self.vdst.name,
-            #     [self.src0.name, self.src1.name],
-            #     self.suffix,
-            #     reg_type=reg_type,
-            #     expression_node=expr_node,
-            # )
-            # src1_value = self.node.get_from_state(self.src1).val if is_reg(self.src1) else self.src1.value
             new_value = make_op(self.node, self.src1, Val(str(pow(2, int(self.src0.value)))), "/", "(int)", suffix=self.suffix)
 
             src1_node = self.get_expression_node(self.src1)

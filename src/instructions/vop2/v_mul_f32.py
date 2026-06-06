@@ -10,29 +10,8 @@ class VMulF32(BaseInstruction):
         super().__init__(node, suffix)
         self.vdst = self.operand[0]
         self.src0 = self.operand[1]
-        # if "/*" in self.instruction:
-        #     self.src1 = self.instruction[6]
-        # else:
         self.src1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "f32":
-    #         self.decompiler_data.write(f"{self.vdst} = (float){self.src0} * (float){self.src1} // {self.name}\n")
-    #         return self.node
-    #     if self.suffix in {"i32_i24", "u32_u24"}:
-    #         v0 = f"V0{self.decompiler_data.number_of_v0}"
-    #         v1 = f"V1{self.decompiler_data.number_of_v1}"
-    #         self.decompiler_data.write(
-    #             f"int {v0} (int)(({self.src0}&0x7fffff) | ({self.src0}&0x800000 ? 0xff800000 : 0)) // {self.name}\n"
-    #         )
-    #         self.decompiler_data.write(
-    #             f"int {v1} (int)(({self.src1}&0x7fffff) | ({self.src1}&0x800000 ? 0xff800000 : 0))\n"
-    #         )
-    #         self.decompiler_data.write(f"{self.vdst} = {v0} * {v1}\n")
-    #         self.decompiler_data.number_of_v0 += 1
-    #         self.decompiler_data.number_of_v1 += 1
-    #         return self.node
-    #     return super().to_print_unresolved()
 
     def to_fill_node(self):
         src0_node = self.get_expression_node(self.src0)

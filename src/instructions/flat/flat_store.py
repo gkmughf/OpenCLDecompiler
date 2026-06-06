@@ -57,23 +57,6 @@ class FlatStore(BaseInstruction):
 
         self.to_registers, _ = get_reg_rang(self.vaddr)
         self.from_registers, self.from_registers_1 = get_reg_rang(self.vdata)[0], get_reg_rang(self.vdata)[-1]
-    # def to_print_unresolved(self):
-    #     if self.suffix in {"dword", "byte"}:
-    #         self.decompiler_data.write(f"*(uint32*)({self.vaddr} + {self.inst_offset}) = {self.vdata} // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "dwordx2":
-    #         self.decompiler_data.write(f"*(ulong*)({self.vaddr} + {self.inst_offset} = {self.vdata} // {self.name}\n")
-    #         return self.node
-    #     if self.suffix == "dwordx4":
-    #         vm = f"vm{self.decompiler_data.number_of_vm}"
-    #         self.decompiler_data.write(f"short* {vm} = ({self.vaddr} + {self.inst_offset}) // {self.name}\n")
-    #         self.decompiler_data.write(f"*(uint*)({vm}) = {self.vdata}[0]\n")
-    #         self.decompiler_data.write(f"*(uint*)({vm} + 4) = {self.vdata}[1]\n")
-    #         self.decompiler_data.write(f"*(uint*)({vm} + 8) = {self.vdata}[2]\n")
-    #         self.decompiler_data.write(f"*(uint*)({vm} + 12) = {self.vdata}[3]\n")
-    #         self.decompiler_data.number_of_vm += 1
-    #         return self.node
-    #     return super().to_print_unresolved()
 
     def to_fill_node(self):
         if self.suffix in {"dword", "dwordx2", "dwordx4", "byte", "short", "b32", "b64", "b8", "u8"}:
@@ -89,7 +72,6 @@ class FlatStore(BaseInstruction):
                         .get_expression_node()
                         .cast_to(OpenCLTypes.from_string(self.suffix))
                     )
-                # TODO: Сделать присвоение в пары
                 elif self.node.get_from_state(from_reg).data_type is not None and "bytes" in self.node.get_from_state(from_reg).data_type:
                     self.node.get_from_state(from_reg).cast_to(self.node.get_from_state(self.to_registers).data_type)
                     var_name = self.node.get_from_state(from_reg).val

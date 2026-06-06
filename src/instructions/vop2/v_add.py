@@ -75,20 +75,6 @@ class VAdd(BaseInstruction):
         self.src0 = self.operand[1]
         self.src1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "u32":
-    #         temp = f"temp{self.decompiler_data.number_of_temp}"
-    #         mask = f"mask{self.decompiler_data.number_of_mask}"
-    #         self.decompiler_data.write(f"uint {temp} = (ulong){start_from_src0} + (ulong){start_from_src1} // {self.name}\n")
-    #         self.decompiler_data.write(f"{self.vdst} = CLAMP ? min({temp}, 0xffffffff) : {temp}\n")
-    #         self.decompiler_data.write(f"{self.sdst} = 0\n")
-    #         self.decompiler_data.write(f"ulong {mask} = (1ULL<<LANEID)\n")
-    #         self.decompiler_data.write(f"{self.sdst} = ({self.sdst}&~{mask}) | (({temp} >> 32) ? {mask} : 0)\n")
-    #         self.decompiler_data.number_of_temp += 1
-    #         self.decompiler_data.number_of_mask += 1
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):  # noqa: C901, PLR0912, PLR0915
         if self.suffix in {"u32", "u64"}:
             new_value = make_op(self.node, self.src0, self.src1, "+", "(ulong)", "(ulong)", suffix=self.suffix)
@@ -141,7 +127,6 @@ class VAdd(BaseInstruction):
                     )
                 elif self.node.get_from_state(start_from_src0).type == RegisterType.GLOBAL_DATA_POINTER:
                     data_type = self.node.get_from_state(start_from_src1).data_type if src1_reg else data_type
-                    # data_type = self.node.get_from_state(start_from_src1).data_type
                     name = self.node.get_from_state(start_from_src0).val
                     reg_entire = Integrity.ENTIRE
                     data_size = _byte_data_size(data_type)
@@ -222,12 +207,10 @@ class VAdd(BaseInstruction):
                     right_node = self.get_expression_node(start_from_src1)
             elif src0_reg:
                 assert self.src0.name in self.node.state
-                # data_type = self.node.get_from_state(start_from_src0).data_type
                 left_node = self.get_expression_node(start_from_src0)
                 right_node = self.expression_manager.add_const_node(start_from_src1.value, OpenCLTypes.UINT)
             elif src1_reg:
                 assert start_from_src1.name in self.node.state
-                # data_type = self.node.get_from_state(start_from_src1).data_type
                 left_node = self.expression_manager.add_const_node(start_from_src0.value, OpenCLTypes.UINT)
                 right_node = self.get_expression_node(start_from_src1)
             else:
@@ -251,10 +234,8 @@ class VAdd(BaseInstruction):
                 expression_node=expr_node,
             )
         if self.suffix == "f64":
-            # TODO: Сделать честное присвоение в пару
             start_from_src0, _ = get_reg_rang(self.src0)
             start_from_src1, _ = get_reg_rang(self.src1)
-            start_to_register, _ = get_reg_rang(self.vdst)
             data_type = most_common_type(
                 self.node.get_from_state(start_from_src0).data_type, self.node.get_from_state(start_from_src1).data_type
             )

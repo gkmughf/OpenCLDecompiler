@@ -13,14 +13,6 @@ class VMac(BaseInstruction):
         self.src1 = self.operand[2]
         self.src2 = self.operand[3]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "f32":
-    #         self.decompiler_data.write(
-    #             f"{self.vdst} = (float){self.src0} * (float){self.src1} + (float){self.vdst} // {self.name}\n"
-    #         )
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix == "f32":
             new_value = make_op(self.node, self.src0, self.src1, "*", "(float)", "(float)", suffix=self.suffix)

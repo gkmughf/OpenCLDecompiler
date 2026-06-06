@@ -11,13 +11,6 @@ class SMin(BaseInstruction):
         self.ssrc0 = self.operand[1]
         self.ssrc1 = self.operand[2]
 
-    # def to_print_unresolved(self):
-    #     if self.suffix == "i32":
-    #         self.decompiler_data.write(f"{self.sdst} = min((int){self.ssrc0}, (int){self.ssrc1}) // {self.name}\n")
-    #         self.decompiler_data.write(f"scc = (int){self.ssrc0} < (int){self.ssrc1}\n")
-    #         return self.node
-    #     return super().to_print_unresolved()
-
     def to_fill_node(self):
         if self.suffix == "i32":
             src0_node = self.get_expression_node(self.ssrc0)

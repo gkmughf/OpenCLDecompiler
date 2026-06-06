@@ -10,20 +10,7 @@ class DsRead(BaseInstruction):
         super().__init__(node, suffix)
         self.vdst = self.operand[0]
         self.addr = self.operand[1]
-        self.offset = 0  # noqa: PLR2004
-
-    # def to_print_unresolved(self):
-    #     if self.suffix == "b32":
-    #         self.decompiler_data.write(
-    #             f"{self.vdst} = *(uint*)(DS + (({self.addr} + {self.offset})&~3)) // {self.name}\n"
-    #         )
-    #         return self.node
-    #     if self.suffix == "b64":
-    #         self.decompiler_data.write(
-    #             f"{self.vdst} = *(ulong*)(DS + (({self.addr} + {self.offset})&~7)) // {self.name}\n"
-    #         )
-    #         return self.node
-    #     return super().to_print_unresolved()
+        self.offset = 0
 
     def get_lds_var_node_with_offset(self) -> ExpressionNode:
         return self.expression_manager.add_offset_div_data_size_node(

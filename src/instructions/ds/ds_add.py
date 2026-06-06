@@ -10,17 +10,7 @@ class DsAdd(BaseInstruction):
         super().__init__(node, suffix)
         self.addr = self.operand[0]
         self.vdata0 = self.operand[1]
-        # self.offset = int(self.instruction[3][7:]) if len(self.instruction) == 4 else 0  # noqa: PLR2004
         self.varname = self.expression_manager.expression_to_string(self.get_expression_node(self.addr))
-
-    # def to_print_unresolved(self):
-    #     if self.suffix == "u32":
-    #         v = f"V{self.decompiler_data.number_of_v}"
-    #         self.decompiler_data.write(f"uint* {v} = (uint*)(DS + (({self.addr} + {self.offset})&~3)) // {self.name}\n")
-    #         self.decompiler_data.write(f"*{v} = *{v} + {self.vdata0}  // atomic operation\n")
-    #         self.decompiler_data.number_of_v += 1
-    #         return self.node
-    #     return super().to_print_unresolved()
 
     def get_lds_var_name_with_offset(self):
         return self.expression_manager.expression_to_string(
