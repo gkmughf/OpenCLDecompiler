@@ -80,6 +80,51 @@ def create_instruction_from_opcode(kernel: Kernel, opcode: str, operands: list[R
     )
 
 
+def _parse_amd_operand(
+    raw_operand: str,
+    rf: RegFactory,
+    global_offset_map: dict[int, str],
+    offset_map: dict[int, str],
+) -> RegOrVal_ty:
+    operand = raw_operand.rstrip(",")
+    if ".gdata" in operand:
+        offset = get_gdata_offset(operand)
+        global_memory_name = global_offset_map.get(offset, get_gdata_name(offset))
+        return rf.get_or_create(global_memory_name, "64")
+
+    if "offset" in operand:
+        offset = int(operand[7:])
+        offset_map[offset] = "lc" + str(offset)
+        return rf.get_or_create(offset_map[offset], "64")
+
+    return rf.parse_operand(operand)
+
+
+def _parse_amd_instruction_line(
+    raw_line: str,
+    rf: RegFactory,
+    global_offset_map: dict[int, str],
+    offset_map: dict[int, str],
+) -> tuple[str, list[RegOrVal_ty]] | None:
+    line = raw_line.strip()
+    if not line:
+        return None
+
+    parts = line.split()
+    if not parts:
+        return None
+
+    opcode = parts[0]
+    if "ds" in opcode and "offset" not in parts[-1]:
+        parts.append("offset:0")
+
+    if len(parts) > 1 and parts[1] == "m0,":
+        return None
+
+    operands = [_parse_amd_operand(raw_operand, rf, global_offset_map, offset_map) for raw_operand in parts[1:]]
+    return opcode, operands
+
+
 def text_to_ir(
     text: list[str],
     cf: ConfigData,
@@ -116,38 +161,11 @@ def text_to_ir(
 
     offset_map: dict[int, str] = {}
     for raw_line in text:
-        line = raw_line.strip()
-        if not line:
+        parsed_instruction = _parse_amd_instruction_line(raw_line, rf, global_offset_map, offset_map)
+        if parsed_instruction is None:
             continue
 
-        parts = line.split()
-        if not parts:
-            continue
-
-        opcode = parts[0]
-        operands = []
-        if "ds" in opcode and "offset" not in parts[-1]:
-            parts.append("offset:0")
-
-        if len(parts) > 1 and parts[1] == "m0,":
-            continue
-
-        for raw_operand in parts[1:]:
-            operand = raw_operand.rstrip(",")
-            if ".gdata" in operand:
-                offset = get_gdata_offset(operand)
-                global_memory_name = global_offset_map.get(offset, get_gdata_name(offset))
-                parsed_operand = rf.get_or_create(global_memory_name, "64")
-            elif "offset" in operand:
-                parsed_operand = rf.parse_operand(operand)
-                offset = int(operand[7:])
-                offset_map[offset] = "lc" + str(offset)
-                local_memory_name = offset_map[offset]
-                parsed_operand = rf.get_or_create(local_memory_name, "64")
-            else:
-                parsed_operand = rf.parse_operand(operand)
-            operands.append(parsed_operand)
-
+        opcode, operands = parsed_instruction
         create_instruction_from_opcode(kernel, opcode, operands)
 
     offsets = list(offset_map.keys())

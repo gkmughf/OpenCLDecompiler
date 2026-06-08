@@ -13,7 +13,7 @@ from src.ir.instructions.common.barrier import Barrier
 from src.ir.instructions.common.bfe import Bfe
 from src.ir.instructions.common.compare import get_compare_class
 from src.ir.instructions.common.cselect import CSelect
-from src.ir.instructions.common.cvt import Cvt32To64, CvtU32ToF64, CvtF32ToI32, CvtI32ToF32, CvtI32ToF64, CvtF64ToI32
+from src.ir.instructions.common.cvt import Cvt32To64, CvtF32ToI32, CvtF64ToI32, CvtI32ToF32, CvtI32ToF64, CvtU32ToF64
 from src.ir.instructions.common.endpgm import EndPgm
 from src.ir.instructions.common.load import FLoad, Load
 from src.ir.instructions.common.logical import And, Or, Xor
