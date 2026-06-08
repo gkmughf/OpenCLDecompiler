@@ -97,7 +97,8 @@ class CvtF32ToI32(GenericInstruction):
             self.operands,
             "i32_f32",
         )
-    
+
+
 class CvtF64ToI32(GenericInstruction):
     allowed_types = (IRType.I32_F64,)
 
@@ -117,8 +118,8 @@ class CvtF64ToI32(GenericInstruction):
             self.operands,
             "i32_f64",
         )
-    
-    
+
+
 class CvtI32ToF32(GenericInstruction):
     allowed_types = (IRType.F32_I32,)
 
@@ -159,7 +160,8 @@ class CvtU32ToF64(GenericInstruction):
             self.operands,
             "f64_u32",
         )
-    
+
+
 class CvtI32ToF64(GenericInstruction):
     allowed_types = (IRType.F64_I32,)
 

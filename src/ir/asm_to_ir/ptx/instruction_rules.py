@@ -9,11 +9,11 @@ from src.ir.instructions.common.cselect import CSelect
 from src.ir.instructions.common.cvt import Cvt16To32, Cvt32To64, Cvt64To32, CvtF32ToI32, CvtU32ToF64
 from src.ir.instructions.common.endpgm import EndPgm
 from src.ir.instructions.common.logical import And, Or
-from src.ir.instructions.common.lshl import LShr, LShl
+from src.ir.instructions.common.lshl import LShl, LShr
 from src.ir.instructions.common.mad import Mad
 from src.ir.instructions.common.min import IRMin
 from src.ir.instructions.common.mov import Mov
-from src.ir.instructions.common.mul import MulF, MulHi, MulLo, MulWide, MacF32
+from src.ir.instructions.common.mul import MacF32, MulF, MulHi, MulLo, MulWide
 from src.ir.instructions.common.not_instruction import Not
 from src.ir.instructions.common.sub import Sub
 from src.ir.instructions.common.typed_memory import (
@@ -25,7 +25,7 @@ from src.ir.instructions.common.typed_memory import (
 from src.ir.instructions.control_flow import Branch, BranchNot, Jump
 from src.ir.instructions.special.local_memory import LocalAdd, LocalLoad, LocalStore
 from src.ir.instructions.types import IRType
-from src.ir.registers.reg import PredReg, Val
+from src.ir.registers.reg import Val
 
 _MEMORY_TYPE_PATTERN = re.compile(r"^[busf](8|16|32|64)$")
 _MEMORY_ADDRESS_OFFSET_PATTERN = re.compile(r"^\[\s*(%[\w.$]+)\s*([+-])\s*([+-]?(?:0x[0-9a-fA-F]+|\d+))\s*\]$")
@@ -73,10 +73,6 @@ def _branch() -> Rule:
             ctx.kernel.create_instruction(BranchNot, predicate, target)
         else:
             ctx.kernel.create_instruction(Branch, predicate, target)
-            # tmo_predicate = PredReg(f"{predicate.name}Not")
-            # ctx.kernel.predicates.add(tmo_predicate)
-            # ctx.kernel.create_instruction(Not, tmo_predicate, predicate, op_type=IRType.PRED)
-            # ctx.kernel.create_instruction(BranchNot, tmo_predicate, target)
 
     return Rule.dynamic(emit_branch)
 
@@ -266,5 +262,5 @@ instruction_rules = {
     "or.pred": same(Or, IRType.PRED),
     "and.b32": same(And, IRType.B32),
     "neg.s32": same(Not, IRType.I32),
-    "fma.rn.f32": same(MacF32, IRType.F32)
+    "fma.rn.f32": same(MacF32, IRType.F32),
 }

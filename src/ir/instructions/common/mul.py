@@ -80,7 +80,7 @@ class MacF32(GenericInstruction):
             self.operands,
             "f32",
         )
-    
+
 
 class MulLo(GenericInstruction):
     allowed_types = (IRType.U16, IRType.I16, IRType.U32, IRType.I32, IRType.U64, IRType.I64)
