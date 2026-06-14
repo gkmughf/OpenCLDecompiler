@@ -16,21 +16,20 @@ from src.expression_manager.expression_node import (
 from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.flag_type import FlagType
 from src.integrity import Integrity
+from src.ir.kernel import Kernel
+from src.ir.registers.reg import BaseReg, Val, expand_register_names, get_reg_rang, is_predicate
+from src.ir.registers.reg import is_range as ir_is_range
+from src.ir.registers.reg import is_reg as ir_is_reg
 from src.logical_variable import ExecCondition
 from src.model.config_data import ConfigData
 from src.node import Node
 from src.opencl_types import evaluate_size, make_asm_type, make_opencl_type, vector_type_dict
 from src.operation_register_content import OperationRegisterContent, OperationType
-from src.register import Register, check_and_split_regs, is_range, split_range
+from src.register import Register
 from src.register_content import RegisterContent, RegisterSignType
 from src.register_type import RegisterType
 from src.state import KernelState
 from src.utils import Singleton
-from src.ir.registers.reg import is_reg as ir_is_reg
-from src.ir.registers.reg import is_range as ir_is_range
-from src.ir.registers.reg import expand_register_names, Val, is_predicate, get_reg_rang, BaseReg
-
-from src.ir.kernel import Kernel
 
 
 def set_reg_value_save(  # noqa: PLR0913
@@ -49,8 +48,8 @@ def set_reg_value_save(  # noqa: PLR0913
     expression_node: ExpressionNode = None,
 ):
     assert isinstance(to_reg, BaseReg)
-    assert all((isinstance(item, BaseReg) or isinstance(item, Val)) for item in from_regs)
-    
+    assert all(isinstance(item, BaseReg | Val) for item in from_regs)
+
     from_regs_names = [reg.name for reg in from_regs]
     res = set_reg_value(
         node,
@@ -88,6 +87,7 @@ def set_reg_value_save(  # noqa: PLR0913
 
     return res
 
+
 def set_reg_value(  # noqa: PLR0913
     node,
     new_value,
@@ -105,7 +105,7 @@ def set_reg_value(  # noqa: PLR0913
 ):
     assert isinstance(to_reg, str)
     assert all(isinstance(item, str) for item in from_regs)
-    
+
     decompiler_data = DecompilerData()
     if register_content_type == RegisterContent:
         node.state[to_reg] = Register(
@@ -222,6 +222,7 @@ def set_reg(
         expression_node=reg.register_content._expression_node,  # noqa: SLF001
     )
 
+
 def set_reg_save(
     node,
     to_reg,
@@ -280,7 +281,9 @@ def compare_values(node: Node, to_reg: str, from_reg0: str, from_reg1: str, oper
 
     if ir_is_range(to_reg):
         low, high = get_reg_rang(to_reg)
-        set_reg_value(node, new_value, low.name, from_regs, suffix, integrity=Integrity.LOW_PART, expression_node=expr_node)
+        set_reg_value(
+            node, new_value, low.name, from_regs, suffix, integrity=Integrity.LOW_PART, expression_node=expr_node
+        )
         set_reg_value(
             node, new_value, high.name, from_regs, suffix, integrity=Integrity.HIGH_PART, expression_node=expr_node
         )
@@ -328,7 +331,7 @@ def simplify_opencl_statement(opencl_line):
 
 # gdata0[get_local_id(0)] -> gdata0
 def get_name(key):
-    match = re.search(r'[\w.]+__gdata', key)
+    match = re.search(r"[\w.]+__gdata", key)
     return match.group(0) if match else ""
 
 
@@ -461,7 +464,7 @@ def check_reg_for_val(node, register, suffix=""):
             data_type = node.state[register.name].data_type
         elif ir_is_range(register):
             regs = expand_register_names(register)
-            start_register, end_register = regs[0], regs[-1] 
+            start_register, end_register = regs[0], regs[-1]
             flag_big_value, value = check_big_values(node, start_register, end_register)
             if flag_big_value:
                 new_val = value
@@ -493,7 +496,7 @@ def try_get_reg(node, register):
 
 def change_vals_for_make_op(node, register, reg_type, operation, suffix):
     assert not isinstance(register, str)
-    
+
     decompiler_data = DecompilerData()
     new_val, needs_cast = check_reg_for_val(node, register, suffix)
     if (operation != "+" or reg_type) and ("-" in new_val or "+" in new_val or "*" in new_val or "/" in new_val):
@@ -589,7 +592,7 @@ class DecompilerData(metaclass=Singleton):
         self.address_params = set()
         self.bfe_offsets = {}
         self.exec_registers = {"$MASK": ExecCondition.default()}
-        self.predicates: list[str] = [] 
+        self.predicates: list[str] = []
         self.is_rdna3: bool = False
         self.gpu: str | None = None
         self.unrolling_limit = 16
@@ -652,7 +655,7 @@ class DecompilerData(metaclass=Singleton):
         self.address_params = set()
         self.bfe_offsets = {}
         self.exec_registers = {"$MASK": ExecCondition.default()}
-        self.predicates: list[str] = [] 
+        self.predicates: list[str] = []
         self.is_rdna3 = False
 
     def write(self, output):
@@ -673,7 +676,7 @@ class DecompilerData(metaclass=Singleton):
         state[reg] = value
         self.make_version(state, reg)
 
-    def register_global_data(self, name: str, values: list[str], offset: int | None = None) -> None:
+    def register_global_data(self, name: str, values: list[str], _offset: int | None = None) -> None:
         self.global_data[name] = list(values)
         self.type_gdata[name] = self.type_gdata.get(name, "undefined_type")
 
@@ -751,7 +754,7 @@ class DecompilerData(metaclass=Singleton):
                 integrity=Integrity.ENTIRE,
                 exec_condition=ExecCondition.default(),
                 register_content=RegisterContent(
-                    value='',
+                    value="",
                     type_=RegisterType.UNKNOWN,
                 ),
             ),
@@ -867,18 +870,13 @@ class DecompilerData(metaclass=Singleton):
 
     def set_config_data(self, kernel: Kernel):
         self.config_data = ConfigData(
-            dimensions="XYZ", 
+            dimensions="XYZ",
             usesetup=False,
             size_of_work_groups=kernel.work_group_size,
             local_size=0,
-            arguments=[arg for arg in kernel.arguments.all() if arg.hidden == False],
+            arguments=[arg for arg in kernel.arguments.all() if not arg.hidden],
         )
         self.init_mask()
-
-        #self.init_state()
-        # self.process_initial_state()
-        # for arg in self.config_data.arguments:
-        #     self.type_params[arg.name] = arg.type_name
 
     def get_function_definition(self) -> str:
         definition: str = "__kernel "

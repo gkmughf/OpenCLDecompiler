@@ -4,10 +4,10 @@ from collections import deque
 from src.decompiler_data import DecompilerData
 from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.types.opencl_types import OpenCLTypes
+from src.ir.registers.reg import BaseReg, get_reg_rang
 from src.region_type import RegionType
 from src.regions.region import Region
 from src.register_type import RegisterType
-from src.ir.registers.reg import get_reg_rang, BaseReg
 
 
 def add_parent_and_child(before_r, next_r, region, prev_child, prev_parent):
@@ -214,7 +214,7 @@ def process_if_else_statement_region(curr_region):
 
 def make_var_for_loop(curr_node, register, version, prev_version):
     assert isinstance(register, str)
-    
+
     decompiler_data = DecompilerData()
     if decompiler_data.loops_variables.get(prev_version):
         variable = decompiler_data.loops_variables[prev_version]
@@ -287,7 +287,7 @@ def process_loop(region_start, region_end):  # noqa: PLR0912
                 or num_of_register > 0
             ) and register.name in curr_node.state:
                 if (
-                    register.name == first_reg.name 
+                    register.name == first_reg.name
                     and "cmp" not in curr_node.instruction
                     and not re.match(r"(flat|global)_store", curr_node.instruction)
                 ):
@@ -296,9 +296,7 @@ def process_loop(region_start, region_end):  # noqa: PLR0912
                     register_version = curr_node.get_from_state(register).version
                 used_versions_of_registers.add(register_version)
             if register.name in curr_node.state:
-                if "cmp" not in curr_node.instruction and not re.match(
-                    r"(flat|global)_store", curr_node.instruction
-                ):
+                if "cmp" not in curr_node.instruction and not re.match(r"(flat|global)_store", curr_node.instruction):
                     if num_of_register > 0 and register.name != first_reg.name:
                         reg_versions_in_instruction[first_reg_version].append(register_version)
                         check_changes_in_reg(register, reg_versions_in_instruction, curr_node, reg_version_node)

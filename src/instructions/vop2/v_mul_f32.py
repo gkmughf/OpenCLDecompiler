@@ -12,7 +12,6 @@ class VMulF32(BaseInstruction):
         self.src0 = self.operand[1]
         self.src1 = self.operand[2]
 
-
     def to_fill_node(self):
         src0_node = self.get_expression_node(self.src0)
         src1_node = self.get_expression_node(self.src1)

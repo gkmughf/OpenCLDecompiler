@@ -28,6 +28,11 @@ class VMac(BaseInstruction):
                 expr_node, src2_node, ExpressionOperationType.PLUS, OpenCLTypes.FLOAT
             )
             return set_reg_value(
-                self.node, new_value, self.vdst.name, [self.src0.name, self.src1.name, self.src2.name], self.suffix, expression_node=expr_node
+                self.node,
+                new_value,
+                self.vdst.name,
+                [self.src0.name, self.src1.name, self.src2.name],
+                self.suffix,
+                expression_node=expr_node,
             )
         return super().to_fill_node()

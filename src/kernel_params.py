@@ -17,29 +17,28 @@ def get_bfe_offset(name_of_param: str, offset: int, arg: KernelArgument, base: s
 
 
 def get_reg_type(value: str) -> RegisterType:
-    if value == "get_global_offset(0)":
-        return RegisterType.GLOBAL_OFFSET_X
-    if value == "get_global_offset(1)":
-        return RegisterType.GLOBAL_OFFSET_Y
-    if value == "get_global_offset(2)":
-        return RegisterType.GLOBAL_OFFSET_Z
-    if value.startswith("*"):
-        return RegisterType.ADDRESS_KERNEL_ARGUMENT
-    if value.startswith("general_setup"):
-        return RegisterType.GENERAL_SETUP
-    if value.startswith("get_local_size(0)"):
-        return RegisterType.LOCAL_SIZE_X
-    if value.startswith("get_local_size(2)"):
-        return RegisterType.LOCAL_SIZE_Z
-    if value.startswith("get_global_size(0)"):
-        return RegisterType.GLOBAL_SIZE_X
-    if value.startswith("get_global_size(1)"):
-        return RegisterType.GLOBAL_SIZE_Y
-    if value.startswith("get_global_size(2)"):
-        return RegisterType.GLOBAL_SIZE_Z
-    if value.startswith(""):
-        return RegisterType.UNKNOWN
-    return RegisterType.KERNEL_ARGUMENT_VALUE
+    exact_types = {
+        "get_global_offset(0)": RegisterType.GLOBAL_OFFSET_X,
+        "get_global_offset(1)": RegisterType.GLOBAL_OFFSET_Y,
+        "get_global_offset(2)": RegisterType.GLOBAL_OFFSET_Z,
+        "get_local_size(0)": RegisterType.LOCAL_SIZE_X,
+        "get_local_size(2)": RegisterType.LOCAL_SIZE_Z,
+        "get_global_size(0)": RegisterType.GLOBAL_SIZE_X,
+        "get_global_size(1)": RegisterType.GLOBAL_SIZE_Y,
+        "get_global_size(2)": RegisterType.GLOBAL_SIZE_Z,
+    }
+    if value in exact_types:
+        return exact_types[value]
+
+    prefix_types = (
+        ("*", RegisterType.ADDRESS_KERNEL_ARGUMENT),
+        ("general_setup", RegisterType.GENERAL_SETUP),
+    )
+    for prefix, reg_type in prefix_types:
+        if value.startswith(prefix):
+            return reg_type
+
+    return RegisterType.UNKNOWN
 
 
 def process_arg(offset: int, arg: KernelArgument, base: str):

@@ -2,10 +2,9 @@ from src.base_instruction import BaseInstruction
 from src.decompiler_data import set_reg_value
 from src.expression_manager.expression_node import ExpressionType
 from src.expression_manager.types.opencl_types import OpenCLTypes
-from src.opencl_types import make_opencl_type
-from src.register import check_and_split_regs
-from src.register_type import RegisterType
 from src.ir.registers.reg import get_reg_rang
+from src.opencl_types import make_opencl_type
+from src.register_type import RegisterType
 
 
 class VCvt(BaseInstruction):
@@ -19,7 +18,10 @@ class VCvt(BaseInstruction):
 
     def to_fill_node(self):
         if self.suffix in {"f32_u32", "f64_i32", "f64_u32", "i32_f64", "u32_f64", "u32_f32", "i32_f32", "f32_i32"}:
-            if self.src0.name in self.node.state and self.node.get_from_state(self.src0).type == RegisterType.DIVISION_PT2:
+            if (
+                self.src0.name in self.node.state
+                and self.node.get_from_state(self.src0).type == RegisterType.DIVISION_PT2
+            ):
                 new_value = self.node.get_from_state(self.src0).val
                 return set_reg_value(
                     self.node,

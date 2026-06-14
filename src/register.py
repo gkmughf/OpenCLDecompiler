@@ -184,6 +184,7 @@ class Register:
             )
         elif isinstance(other, int):
             from src.decompiler_data import DecompilerData  # noqa: PLC0415
+
             _mul_simplify_combinations = []
             if DecompilerData().config_data.size_of_work_groups:
                 _mul_simplify_combinations = [

@@ -3,16 +3,12 @@ from src.decompiler_data import make_new_type_without_modifier
 from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.expression_node import (
     ExpressionNode,
-    ExpressionOperationType,
     ExpressionType,
     ExpressionValueTypeHint,
 )
 from src.expression_manager.types.opencl_types import OpenCLTypes
-from src.register import (
-    is_vector_type
-)
-from src.register_type import RegisterType
-from src.ir.registers.reg import expand_register_names, get_reg_rang, is_reg, is_range
+from src.ir.registers.reg import get_reg_rang, is_reg
+from src.register import is_vector_type
 
 
 def get_vector_name(vector_element):
@@ -53,7 +49,7 @@ class FlatStore(BaseInstruction):
         super().__init__(node, suffix)
         self.vaddr = self.operand[0]
         self.vdata = self.operand[1]
-        self.inst_offset = "0"  # noqa: PLR2004
+        self.inst_offset = "0"
 
         self.to_registers, _ = get_reg_rang(self.vaddr)
         self.from_registers, self.from_registers_1 = get_reg_rang(self.vdata)[0], get_reg_rang(self.vdata)[-1]
@@ -65,14 +61,19 @@ class FlatStore(BaseInstruction):
                 suffix_size = int(self.suffix[-1])
             for from_reg in get_reg_rang(self.vdata)[:suffix_size]:
                 if is_reg(self.vaddr):
-                    self.node.get_from_state(self.to_registers).copy_version_from(self.node.parent[0].get_from_state(self.to_registers))
+                    self.node.get_from_state(self.to_registers).copy_version_from(
+                        self.node.parent[0].get_from_state(self.to_registers)
+                    )
                     self.node.get_from_state(self.to_registers).cast_to(self.suffix)
                     self.node.get_from_state(self.to_registers).set_expression_node(
                         self.node.get_from_state(self.to_registers)
                         .get_expression_node()
                         .cast_to(OpenCLTypes.from_string(self.suffix))
                     )
-                elif self.node.get_from_state(from_reg).data_type is not None and "bytes" in self.node.get_from_state(from_reg).data_type:
+                elif (
+                    self.node.get_from_state(from_reg).data_type is not None
+                    and "bytes" in self.node.get_from_state(from_reg).data_type
+                ):
                     self.node.get_from_state(from_reg).cast_to(self.node.get_from_state(self.to_registers).data_type)
                     var_name = self.node.get_from_state(from_reg).val
                     self.decompiler_data.names_of_vars[var_name] = self.node.get_from_state(self.to_registers).data_type
@@ -124,16 +125,15 @@ class FlatStore(BaseInstruction):
             else:
                 var = f"*{var}"
             if self.node.get_from_state(self.from_registers):
-                if self.node.get_from_state(self.from_registers).val == "0" and self.node.get_from_state(self.from_registers_1):
+                if self.node.get_from_state(self.from_registers).val == "0" and self.node.get_from_state(
+                    self.from_registers_1
+                ):
                     self.output_string = ExpressionManager().expression_to_string(
                         self.node.get_from_state(self.from_registers_1).get_expression_node()
                     )
                 elif var_node.value_type_hint.is_vector_type():
                     permute_node = ExpressionManager().add_permute_node_from_list(
-                        [
-                            self.node.get_from_state(reg).get_expression_node()
-                            for reg in get_reg_rang(self.vdata)
-                        ]
+                        [self.node.get_from_state(reg).get_expression_node() for reg in get_reg_rang(self.vdata)]
                     )
                     to_type = self.node.get_from_state(self.to_registers).get_expression_node().value_type_hint
                     self.output_string = ExpressionManager().expression_to_string(permute_node, to_type.opencl_type)

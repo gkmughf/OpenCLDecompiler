@@ -26,6 +26,11 @@ class SMin(BaseInstruction):
                 new_value += "(int)"
             new_value += self.node.get_from_state(self.ssrc1).val + ")"
             return set_reg_value(
-                self.node, new_value, self.sdst.name, [self.ssrc0.name, self.ssrc1.name], self.suffix, expression_node=min_node
+                self.node,
+                new_value,
+                self.sdst.name,
+                [self.ssrc0.name, self.ssrc1.name],
+                self.suffix,
+                expression_node=min_node,
             )
         return super().to_fill_node()

@@ -1,5 +1,5 @@
 from src.base_instruction import BaseInstruction
-from src.decompiler_data import make_op, set_reg_value, set_reg_value_save
+from src.decompiler_data import make_op, set_reg_value_save
 from src.expression_manager.expression_node import (
     ExpressionOperationType,
     ExpressionValueTypeHint,
@@ -7,11 +7,10 @@ from src.expression_manager.expression_node import (
 )
 from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.integrity import Integrity
+from src.ir.registers.reg import Val, get_reg_rang
 from src.opencl_types import evaluate_size, make_asm_type, most_common_type
-from src.operation_register_content import OperationRegisterContent, OperationType
 from src.register_content import CONSTANT_VALUES
 from src.register_type import RegisterType
-from src.ir.registers.reg import is_reg, Val, get_reg_rang, is_range
 
 
 def _byte_data_size(data_type):
@@ -106,7 +105,7 @@ class VAdd(BaseInstruction):
                         src0_node, src1_node, data_size, OpenCLTypes.from_string(self.suffix)
                     )
                 elif self.node.get_from_state(start_from_src0).type == RegisterType.LOCAL_DATA_POINTER:
-                    data_type = 'u32'
+                    data_type = "u32"
                     reg_type = RegisterType.LOCAL_DATA_POINTER
                     name = self.node.get_from_state(start_from_src0).val
                     reg_entire = Integrity.ENTIRE
@@ -116,11 +115,11 @@ class VAdd(BaseInstruction):
                     new_value = make_op(self.node, Val(name), Val(new_value), "+", suffix=self.suffix)
 
                     src0_node = self.expression_manager.add_variable_node(
-                            name,
-                            ExpressionValueTypeHint(
-                                OpenCLTypes.from_string(data_type), TypeAddressSpaceQualifiers.LOCAL, is_pointer=True
-                            ),
-                        )
+                        name,
+                        ExpressionValueTypeHint(
+                            OpenCLTypes.from_string(data_type), TypeAddressSpaceQualifiers.LOCAL, is_pointer=True
+                        ),
+                    )
                     src1_node = self.get_expression_node(self.src1)
                     expr_node = self.expression_manager.add_offset_div_data_size_node(
                         src0_node, src1_node, data_size, OpenCLTypes.from_string(self.suffix)
@@ -162,39 +161,45 @@ class VAdd(BaseInstruction):
             reg_entire = Integrity.ENTIRE
             if src0_reg and src1_reg:
                 reg_entire = self.node.get_from_state(start_from_src1).integrity
-                if (self._check_type_pattern(start_from_src0, start_from_src1, patterns_get_global_id_x)):
+                if self._check_type_pattern(start_from_src0, start_from_src1, patterns_get_global_id_x):
                     new_value = "get_global_id(0)"
                     reg_type = RegisterType.GLOBAL_ID_X
                     expr_node = self.expression_manager.add_register_node(reg_type, new_value)
-                elif (self._check_type_pattern(start_from_src0, start_from_src1, patterns_get_global_id_y)):
+                elif self._check_type_pattern(start_from_src0, start_from_src1, patterns_get_global_id_y):
                     new_value = "get_global_id(1)"
                     reg_type = RegisterType.GLOBAL_ID_Y
                     expr_node = self.expression_manager.add_register_node(reg_type, new_value)
-                elif (self._check_type_pattern(start_from_src0, start_from_src1, patterns_get_global_id_z)):
+                elif self._check_type_pattern(start_from_src0, start_from_src1, patterns_get_global_id_z):
                     new_value = "get_global_id(2)"
                     reg_type = RegisterType.GLOBAL_ID_Z
                     expr_node = self.expression_manager.add_register_node(reg_type, new_value)
-                elif (self._check_type_pattern(start_from_src0, start_from_src1, patterns_work_item_id_x)):
+                elif self._check_type_pattern(start_from_src0, start_from_src1, patterns_work_item_id_x):
                     new_value = "get_global_id(0) - get_global_offset(0)"
                     reg_type = RegisterType.WORK_GROUP_ID_X_WORK_ITEM_ID
                     expr_node = self._add_sub_operation(RegisterType.GLOBAL_ID_X, RegisterType.GLOBAL_OFFSET_X)
-                elif (self._check_type_pattern(start_from_src0, start_from_src1, patterns_work_item_id_y)):
+                elif self._check_type_pattern(start_from_src0, start_from_src1, patterns_work_item_id_y):
                     new_value = "get_global_id(1) - get_global_offset(1)"
                     reg_type = RegisterType.WORK_GROUP_ID_Y_WORK_ITEM_ID
                     expr_node = self._add_sub_operation(RegisterType.GLOBAL_ID_Y, RegisterType.GLOBAL_OFFSET_Y)
-                elif (self._check_type_pattern(start_from_src0, start_from_src1, patterns_work_item_id_z)):
+                elif self._check_type_pattern(start_from_src0, start_from_src1, patterns_work_item_id_z):
                     new_value = "get_global_id(2) - get_global_offset(2)"
                     reg_type = RegisterType.WORK_GROUP_ID_Z_WORK_ITEM_ID
                     expr_node = self._add_sub_operation(RegisterType.GLOBAL_ID_Z, RegisterType.GLOBAL_OFFSET_Z)
-                elif (self._check_type_pattern(start_from_src0, start_from_src1, patterns_work_group_id_x_local_size_offset)):
+                elif self._check_type_pattern(
+                    start_from_src0, start_from_src1, patterns_work_group_id_x_local_size_offset
+                ):
                     reg_type = RegisterType.WORK_GROUP_ID_X_LOCAL_SIZE_OFFSET
                     left_node = self.get_expression_node(start_from_src0)
                     right_node = self.get_expression_node(start_from_src1)
-                elif (self._check_type_pattern(start_from_src0, start_from_src1, patterns_work_group_id_y_local_size_offset)):
+                elif self._check_type_pattern(
+                    start_from_src0, start_from_src1, patterns_work_group_id_y_local_size_offset
+                ):
                     reg_type = RegisterType.WORK_GROUP_ID_Y_LOCAL_SIZE_OFFSET
                     left_node = self.get_expression_node(start_from_src0)
                     right_node = self.get_expression_node(start_from_src1)
-                elif (self._check_type_pattern(start_from_src0, start_from_src1, patterns_work_group_id_z_local_size_offset)):
+                elif self._check_type_pattern(
+                    start_from_src0, start_from_src1, patterns_work_group_id_z_local_size_offset
+                ):
                     reg_type = RegisterType.WORK_GROUP_ID_Z_LOCAL_SIZE_OFFSET
                     left_node = self.get_expression_node(start_from_src0)
                     right_node = self.get_expression_node(start_from_src1)
@@ -265,22 +270,16 @@ class VAdd(BaseInstruction):
                 expression_node=expr_node,
             )
         return super().to_fill_node()
-    
+
     def _check_type_pattern(self, src0, src1, patterns: tuple) -> bool:
         type0 = self.node.get_from_state(src0).type
         type1 = self.node.get_from_state(src1).type
 
         return (type0, type1) in patterns or (type1, type0) in patterns
-    
+
     def _add_sub_operation(self, reg0: RegisterType, reg1: RegisterType):
-        left_node = self.expression_manager.add_register_node(
-            reg0, CONSTANT_VALUES[reg0][0]
-        )
-        right_node = self.expression_manager.add_register_node(
-            reg1, CONSTANT_VALUES[reg1][0]
-        )
-        expr_node = self.expression_manager.add_operation(
+        left_node = self.expression_manager.add_register_node(reg0, CONSTANT_VALUES[reg0][0])
+        right_node = self.expression_manager.add_register_node(reg1, CONSTANT_VALUES[reg1][0])
+        return self.expression_manager.add_operation(
             left_node, right_node, ExpressionOperationType.MINUS, OpenCLTypes.UINT
         )
-
-        return expr_node

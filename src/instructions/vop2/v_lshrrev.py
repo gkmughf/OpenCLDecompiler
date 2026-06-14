@@ -3,10 +3,10 @@ from src.combined_register_content import CombinedRegisterContent
 from src.decompiler_data import make_op, set_reg, set_reg_value_save
 from src.expression_manager.expression_node import ExpressionOperationType
 from src.expression_manager.types.opencl_types import OpenCLTypes
+from src.ir.registers.reg import Val, is_range, is_reg
 from src.register import Register
 from src.register_type import RegisterType
 
-from src.ir.registers.reg import is_reg, Val, is_range
 
 class VLshrrev(BaseInstruction):
     def __init__(self, node, suffix):
@@ -22,8 +22,11 @@ class VLshrrev(BaseInstruction):
     def to_fill_node(self):
         if self.suffix in {"b32", "b64"} and (is_reg(self.src1) or is_range(self.src1)):
             assert isinstance(self.src0, Val)
+
             def default_behaviour():
-                new_value = make_op(self.node, self.src1, Val(str(pow(2, int(self.src0.value)))), "//", suffix=self.suffix)
+                new_value = make_op(
+                    self.node, self.src1, Val(str(pow(2, int(self.src0.value)))), "//", suffix=self.suffix
+                )
                 reg_type = self.node.get_from_state(self.src1).type
 
                 src1_node = self.get_expression_node(self.src1)
@@ -52,7 +55,7 @@ class VLshrrev(BaseInstruction):
                         from_regs=[self.src0.name, self.src1.name],
                         reg=maybe_new_register,
                     )
-            reg_type =  self.node.get_from_state(self.src1).type
+            reg_type = self.node.get_from_state(self.src1).type
             expr_node = None
 
             if self.node.get_from_state(self.src1).val == "0":

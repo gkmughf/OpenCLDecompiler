@@ -2,7 +2,7 @@ from src.base_instruction import BaseInstruction
 from src.decompiler_data import make_op, set_reg_value
 from src.expression_manager.expression_node import ExpressionOperationType
 from src.expression_manager.types.opencl_types import OpenCLTypes
-from src.ir.registers.reg import Val, is_predicate, is_reg, get_reg_rang
+from src.ir.registers.reg import is_predicate
 
 
 class SOr(BaseInstruction):
@@ -41,7 +41,12 @@ class SOr(BaseInstruction):
 
             if self.ssrc1.name not in self.node.state:
                 return set_reg_value(
-                    self.node, new_value, self.sdst.name, [self.ssrc0.name, self.ssrc1.name], self.suffix, expression_node=expr_node
+                    self.node,
+                    new_value,
+                    self.sdst.name,
+                    [self.ssrc0.name, self.ssrc1.name],
+                    self.suffix,
+                    expression_node=expr_node,
                 )
             reg_entire = self.node.get_from_state(self.ssrc1).integrity
             return set_reg_value(

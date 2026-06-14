@@ -1,10 +1,11 @@
 from src.base_instruction import BaseInstruction
-from src.decompiler_data import make_op, set_reg, set_reg_value
+from src.decompiler_data import make_op, set_reg_value
 from src.expression_manager.expression_node import ExpressionOperationType
 from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.integrity import Integrity
-from src.register_type import RegisterType
 from src.ir.registers.reg import is_reg
+from src.register_type import RegisterType
+
 
 class VAddc(BaseInstruction):
     def __init__(self, node, suffix):

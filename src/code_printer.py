@@ -4,12 +4,12 @@ from src.decompiler_data import DecompilerData, evaluate_from_hex
 from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.expression_node import ExpressionNode
 from src.expression_manager.types.opencl_types import OpenCLTypes
+from src.ir.registers.reg import get_reg_rang, is_range, is_reg
 from src.node import Node
 from src.node_processor import to_opencl
 from src.operation_status import OperationStatus
 from src.region_type import RegionType
 from src.regions.region import Region
-from src.ir.registers.reg import is_reg, get_reg_rang, is_range
 
 
 def create_opencl_body():
@@ -97,7 +97,7 @@ def make_output_for_loop_vars(curr_node, indent):
     )
 
 
-def make_output_for_linear_region(region, indent):
+def make_output_for_linear_region(region, indent):  # noqa: PLR0912
     decompiler_data = DecompilerData()
     expression_manager = ExpressionManager()
     if isinstance(region.start, Node):

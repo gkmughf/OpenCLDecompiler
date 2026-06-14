@@ -2,13 +2,13 @@ from src.decompiler_data import DecompilerData
 from src.expression_manager.expression_manager import ExpressionManager
 from src.opencl_types import make_opencl_type
 
+
 def gdata_type_processing():
     decompiler_data = DecompilerData()
     expression_manager = ExpressionManager()
 
-    for key, val in list(decompiler_data.names_of_vars.items()):
-        if val.startswith("g"):
-            val = val[1:]
+    for key, raw_val in list(decompiler_data.names_of_vars.items()):
+        val = raw_val.removeprefix("g")
         if "__gdata" in key:
             decompiler_data.type_gdata[key] = make_opencl_type(val)
         elif "var" in key and key in decompiler_data.var_value:
@@ -22,5 +22,3 @@ def gdata_type_processing():
     decompiler_data.names_of_vars = {
         key: val for key, val in decompiler_data.names_of_vars.items() if "__gdata" not in key
     }
-
-

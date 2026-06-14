@@ -1,16 +1,16 @@
 import re
-from src.ir.asm_to_ir.ptx.ptx_kernel import PTXKernel, PTXRegister, PTXArgument, PTXInstruction
 
+from src.ir.asm_to_ir.ptx.ptx_kernel import PTXArgument, PTXInstruction, PTXKernel, PTXRegister
 
 SPECIAL_REG_PATTERN = re.compile(r"%(?:envreg\d+|(?:ntid|ctaid|tid|nctaid)\.[xyz])")
 PREDICATE_PATTERN = re.compile(r"^@(!?)(%[\w.$]+)\s+(.+)$")
 
 
-def _parse_params(func: PTXKernel, text: str):
+def _parse_params(func: PTXKernel, text: str):  # noqa: PLR0912
     text = text.replace(")", "")
     text = text.split("(")[1]
-    for entry in text.split(".param"):
-        entry = entry.strip()
+    for raw_entry in text.split(".param"):
+        entry = raw_entry.strip()
         if not entry:
             continue
 
@@ -101,18 +101,18 @@ def _parse_instruction(line: str) -> PTXInstruction:
     )
 
 
-def parse_kernel(lines: list[str]):
+def parse_kernel(lines: list[str]):  # noqa: PLR0912
     func = None
     state = "start"
     param_buffer = ""
 
-    for line in lines:
-        line = re.sub(r"//.*$", "", line).strip()
+    for raw_line in lines:
+        line = re.sub(r"//.*$", "", raw_line).strip()
         if not line:
             continue
 
         if state == "start" and line.startswith(".entry"):
-            kernel_name = name = re.search(r"\.entry\s+(\w+)", line).group(1)
+            kernel_name = re.search(r"\.entry\s+(\w+)", line).group(1)
             func = PTXKernel(name=kernel_name)
             state = "params"
             param_buffer = line

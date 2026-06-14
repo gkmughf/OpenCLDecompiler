@@ -1,9 +1,9 @@
 import copy
 
 from src.base_instruction import BaseInstruction
-from src.decompiler_data import set_reg, set_reg_save
+from src.decompiler_data import set_reg_save
 from src.integrity import Integrity
-from src.ir.registers.reg import is_reg, Val, get_reg_rang, is_range
+from src.ir.registers.reg import get_reg_rang, is_range, is_reg
 
 
 class VMad(BaseInstruction):
@@ -37,7 +37,6 @@ class VMad(BaseInstruction):
             new_reg.cast_to("u64")
         else:
             new_reg.cast_to("i64")
-
 
         low_part_reg = copy.deepcopy(new_reg)
         low_part_reg.integrity = Integrity.LOW_PART

@@ -2,6 +2,7 @@ import copy
 
 from src.base_instruction import BaseInstruction
 
+
 class Label(BaseInstruction):
     def to_fill_node(self):
         label = self.node.instruction
@@ -12,4 +13,3 @@ class Label(BaseInstruction):
                 self.node.add_parent(from_node)
                 self.node.state = copy.deepcopy(self.node.parent[-1].state)
         return self.node
-

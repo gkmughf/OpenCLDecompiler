@@ -6,8 +6,10 @@ from src.decompiler_data import DecompilerData
 from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.expression_node import ExpressionNode, ExpressionType, ExpressionValueTypeHint
 from src.expression_manager.types.opencl_types import OpenCLTypes
+from src.ir.registers.reg import BaseReg, PredReg, get_reg_rang, is_predicate
 from src.register_type import RegisterType
-from src.ir.registers.reg import get_reg_rang, BaseReg, PredReg, is_predicate
+
+TWO_PARENT = 2
 
 
 def find_max_and_prev_versions(curr_node):
@@ -64,7 +66,7 @@ def update_reg_version(reg, curr_node, max_version, prev_versions_of_reg):
 
 
 def check_for_use_new_version_in_one_instruction(curr_node):
-    for num_of_reg in range(0, len(curr_node.operands)):
+    for num_of_reg in range(len(curr_node.operands)):
         register = curr_node.operands[num_of_reg]
         if (
             (re.match(r"(flat|global)_store", curr_node.instruction) or num_of_reg > 0)
@@ -101,7 +103,10 @@ def check_for_use_new_version():
 
 def update_value_for_reg(first_reg, curr_node):
     for child in curr_node.children:
-        if len(child.parent) < 2 and curr_node.get_from_state(first_reg).version == child.get_from_state(first_reg).version:  # noqa: PLR2004
+        if (
+            len(child.parent) < TWO_PARENT
+            and curr_node.get_from_state(first_reg).version == child.get_from_state(first_reg).version
+        ):
             child.state[first_reg.name] = copy.deepcopy(curr_node.get_from_state(first_reg))
             update_value_for_reg(first_reg, child)
 
@@ -125,7 +130,7 @@ def update_val_from_changes(  # noqa: PLR0913
             else:
                 node_state = curr_node.state
                 first_reg = register
-        elif "change_mask" == instruction:
+        elif instruction == "change_mask":
             node_state = curr_node.state
             first_reg = PredReg("$MASK")
         else:
@@ -205,22 +210,22 @@ def update_val_from_checked_variables(  # noqa: PLR0912, PLR0913
         copy_expr_node_prev = copy.deepcopy(curr_node.get_from_state(first_reg).get_expression_node())
         if decompiler_data.checked_variables.get(check_version) is not None:
             if curr_node.get_from_state(first_reg).val.find(val_reg) != -1:
-                curr_node.get_from_state(first_reg).register_content._value = curr_node.get_from_state(first_reg).val.replace(  # noqa: SLF001
-                    val_reg, decompiler_data.checked_variables[check_version]
-                )
+                curr_node.get_from_state(first_reg).register_content._value = curr_node.get_from_state(  # noqa: SLF001
+                    first_reg
+                ).val.replace(val_reg, decompiler_data.checked_variables[check_version])
             elif re.match(r"(flat|global)_(store|load)", instruction):
-                curr_node.get_from_state(register).register_content._value = curr_node.get_from_state(register).val.replace(  # noqa: SLF001
-                    val_reg, decompiler_data.checked_variables[check_version]
-                )
+                curr_node.get_from_state(register).register_content._value = curr_node.get_from_state(  # noqa: SLF001
+                    register
+                ).val.replace(val_reg, decompiler_data.checked_variables[check_version])
             node_to_change_reg = register if re.match(r"(flat|global)_(store|load)", instruction) else first_reg
             node_to_change = curr_node.get_from_state(node_to_change_reg).get_expression_node()
             replaced_node = expression_manager.replace_node(node_to_change, expr_node, var_node)
             curr_node.get_from_state(node_to_change_reg).set_expression_node(replaced_node)
         # а тут наоборот, наверное, надо сделать присвоение для первого регистра
         elif curr_node.get_from_state(first_reg).val.find(val_reg) != -1 and is_predicate(first_reg):
-            curr_node.get_from_state(first_reg).register_content._value = curr_node.get_from_state(first_reg).val.replace(  # noqa: SLF001
-                val_reg, decompiler_data.variables[check_version]
-            )
+            curr_node.get_from_state(first_reg).register_content._value = curr_node.get_from_state(  # noqa: SLF001
+                first_reg
+            ).val.replace(val_reg, decompiler_data.variables[check_version])
             replaced_node = expression_manager.replace_node(
                 curr_node.get_from_state(first_reg).get_expression_node(), expr_node, var_node
             )
@@ -239,21 +244,19 @@ def update_val_from_checked_variables(  # noqa: PLR0912, PLR0913
 
         if copy_val_prev != copy_val_last and copy_expr_node_last != copy_expr_node_prev:
             changes[curr_node.get_from_state(first_reg).version] = [copy_val_last, copy_val_prev]
-            changes_expression_nodes[curr_node.get_from_state(first_reg).version] = [copy_expr_node_last, copy_expr_node_prev]
+            changes_expression_nodes[curr_node.get_from_state(first_reg).version] = [
+                copy_expr_node_last,
+                copy_expr_node_prev,
+            ]
             update_value_for_reg(first_reg, curr_node)
 
 
 def change_values_for_one_instruction(curr_node, changes, changes_expression_nodes):
-    for num_of_reg in range(0, len(curr_node.operands)):
+    for num_of_reg in range(len(curr_node.operands)):
         register = curr_node.operands[num_of_reg]
         if (
-            (
-                re.match(r"(flat|global)_store", curr_node.instruction)
-                or num_of_reg > 0
-                or "cmp" in curr_node.instruction
-            )
-            and "cnd" not in curr_node.instruction
-        ):
+            re.match(r"(flat|global)_store", curr_node.instruction) or num_of_reg > 0 or "cmp" in curr_node.instruction
+        ) and "cnd" not in curr_node.instruction:
             if (
                 "s_or" not in curr_node.instruction
                 and "s_and" not in curr_node.instruction
@@ -262,7 +265,7 @@ def change_values_for_one_instruction(curr_node, changes, changes_expression_nod
                 register = get_reg_rang(register)[0]
 
             first_reg = curr_node.operands[0]
-            
+
             if (
                 "s_or" not in curr_node.instruction
                 and "s_and" not in curr_node.instruction
@@ -292,9 +295,11 @@ def change_values_for_one_instruction(curr_node, changes, changes_expression_nod
         first_reg = PredReg("$MASK")
         check_version = curr_node.get_from_state(register).version
         changes, changes_expression_nodes = update_val_from_changes(
-                curr_node, register, changes, changes_expression_nodes, check_version, 1, first_reg
+            curr_node, register, changes, changes_expression_nodes, check_version, 1, first_reg
         )
-        update_val_from_checked_variables(curr_node, register, check_version, first_reg, changes, changes_expression_nodes)
+        update_val_from_checked_variables(
+            curr_node, register, check_version, first_reg, changes, changes_expression_nodes
+        )
     if "select" in curr_node.instruction[0]:
         first_reg = curr_node.instruction[1]
         check_version = curr_node.state["scc"].version

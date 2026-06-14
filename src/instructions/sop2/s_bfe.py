@@ -1,10 +1,7 @@
 from src.base_instruction import BaseInstruction
-from src.combined_register_content import CombinedRegisterContent
-from src.decompiler_data import set_reg, set_reg_value
-from src.expression_manager.types.opencl_types import OpenCLTypes
-from src.register import is_reg
-from src.register_type import RegisterType
+from src.decompiler_data import set_reg_value
 from src.ir.registers.reg import Val
+from src.register_type import RegisterType
 
 
 class SBfe(BaseInstruction):

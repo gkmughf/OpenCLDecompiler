@@ -1,6 +1,6 @@
 from src.base_instruction import BaseInstruction
-from src.decompiler_data import set_reg_value, set_reg_value_save
-from src.ir.registers.reg import BaseReg, is_predicate
+from src.decompiler_data import set_reg_value_save
+from src.ir.registers.reg import is_predicate
 from src.logical_variable import ExecCondition
 
 

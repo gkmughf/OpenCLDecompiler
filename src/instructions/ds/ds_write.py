@@ -1,6 +1,5 @@
 from src.base_instruction import BaseInstruction
 from src.decompiler_data import set_reg_value
-from src.expression_manager.types.opencl_types import OpenCLTypes
 from src.ir.registers.reg import Val
 
 
@@ -11,10 +10,8 @@ class DsWrite(BaseInstruction):
         self.vdata0 = self.operand[1]
 
     def get_lds_var_name_with_offset(self):
-        return self.expression_manager.expression_to_string(
-            self.get_expression_node(self.addr)
-        )
-    
+        return self.expression_manager.expression_to_string(self.get_expression_node(self.addr))
+
     def to_fill_node(self):
         if self.suffix == "b32":
             var_node_with_offset = self.get_expression_node(self.addr)

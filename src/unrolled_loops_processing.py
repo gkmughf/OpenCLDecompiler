@@ -4,10 +4,10 @@ from src.decompiler_data import DecompilerData
 from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.expression_node import ExpressionValueTypeHint
 from src.expression_manager.types.opencl_types import OpenCLTypes
+from src.ir.registers.reg import is_reg
 from src.node import Node
 from src.region_type import RegionType
 from src.regions.region import Region
-from src.ir.registers.reg import is_reg
 
 
 class Vertex:
@@ -65,7 +65,7 @@ def process_unrolled_loops():  # noqa: C901, PLR0912, PLR0915
             cur = cur.children[0]
             vertices.append(Vertex(len(vertices), cur))
             idx = len(vertices) - 1
-            if len(cur.operands) > 1:  # noqa: PLR2004
+            if len(cur.operands) > 1:
                 for arg in cur.operands[1:]:
                     if not is_reg(arg):
                         continue

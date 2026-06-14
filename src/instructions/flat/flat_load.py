@@ -2,10 +2,10 @@ from src.base_instruction import BaseInstruction
 from src.decompiler_data import make_new_type_without_modifier, set_reg_value
 from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.expression_node import ExpressionNode, ExpressionValueTypeHint
+from src.ir.registers.reg import get_reg_rang
 from src.opencl_types import make_asm_type
-from src.register import check_and_split_regs, get_next_reg, is_vector_type
+from src.register import is_vector_type
 from src.register_type import RegisterType
-from src.ir.registers.reg import expand_register_names, get_reg_rang, is_reg, is_range
 
 
 def get_output_for_different_vector_types(
@@ -42,7 +42,7 @@ class FlatLoad(BaseInstruction):
         super().__init__(node, suffix)
         self.vdst = self.operand[0]
         self.vaddr = self.operand[1]
-        self.inst_offset = self.operand[2].value # noqa: PLR2004
+        self.inst_offset = self.operand[2].value
 
         self.dest_regs = get_reg_rang(self.vdst)
         self.start_to_registers = self.dest_regs[0]
@@ -83,9 +83,15 @@ class FlatLoad(BaseInstruction):
                 expr_node = self.expression_manager.add_variable_node(reg_val, node_type_hint)
                 expr_node.value_type_hint = node_type_hint
                 self.node = set_reg_value(
-                    self.node, reg_val, self.dest_regs[to_now].name, [], data_type, reg_type=register_type, expression_node=expr_node
+                    self.node,
+                    reg_val,
+                    self.dest_regs[to_now].name,
+                    [],
+                    data_type,
+                    reg_type=register_type,
+                    expression_node=expr_node,
                 )
-                to_now+=1
+                to_now += 1
                 if to_now == len(self.dest_regs):
                     break
             self.decompiler_data.make_var(
@@ -100,12 +106,16 @@ class FlatLoad(BaseInstruction):
         expression_manager = ExpressionManager()
         if self.suffix in {"dword", "dwordx2", "dwordx4"}:
             if self.start_to_registers.name == self.from_registers.name:
-                output_node: ExpressionNode = self.node.parent[0].get_from_state(self.from_registers).get_expression_node()
+                output_node: ExpressionNode = (
+                    self.node.parent[0].get_from_state(self.from_registers).get_expression_node()
+                )
             else:
                 output_node: ExpressionNode = self.node.get_from_state(self.from_registers).get_expression_node()
             output = expression_manager.expression_to_string(output_node)
             if "[" not in output:
-                start_to_registers_node: ExpressionNode = self.node.get_from_state(self.start_to_registers).get_expression_node()
+                start_to_registers_node: ExpressionNode = self.node.get_from_state(
+                    self.start_to_registers
+                ).get_expression_node()
                 if start_to_registers_node.value_type_hint.opencl_type != output_node.value_type_hint.opencl_type:
                     output = f"*({output_node.value_type_hint!s})({output})"
                 else:

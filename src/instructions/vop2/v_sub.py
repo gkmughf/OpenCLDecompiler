@@ -2,8 +2,8 @@ from src.base_instruction import BaseInstruction
 from src.decompiler_data import make_op, set_reg_value
 from src.expression_manager.expression_node import ExpressionOperationType
 from src.expression_manager.types.opencl_types import OpenCLTypes
-from src.register_type import RegisterType
 from src.ir.registers.reg import is_reg
+from src.register_type import RegisterType
 
 
 def v_sub_fill_node(node, src0, src1, vdst, new_value, suffix, expr_node):  # noqa: PLR0913
@@ -12,7 +12,9 @@ def v_sub_fill_node(node, src0, src1, vdst, new_value, suffix, expr_node):  # no
         reg_type = node.get_from_state(src0).integrity
     elif is_reg(src1):
         reg_type = node.get_from_state(src1).integrity
-    return set_reg_value(node, new_value, vdst.name, [src0.name, src1.name], suffix, reg_type=reg_type, expression_node=expr_node)
+    return set_reg_value(
+        node, new_value, vdst.name, [src0.name, src1.name], suffix, reg_type=reg_type, expression_node=expr_node
+    )
 
 
 class VSub(BaseInstruction):

@@ -1,10 +1,10 @@
 from src.expression_manager.expression_manager import ExpressionManager
 from src.expression_manager.types.opencl_types import OpenCLTypes
+from src.ir.registers.reg import RegOrVal_ty
 
 from .decompiler_data import DecompilerData
 from .node import Node
 from .operation_status import OperationStatus
-from src.ir.registers.reg import RegOrVal_ty
 
 
 class BaseInstruction:

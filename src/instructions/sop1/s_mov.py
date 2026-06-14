@@ -1,8 +1,9 @@
 from src.base_instruction import BaseInstruction
 from src.decompiler_data import set_reg_value
-from src.register_type import RegisterType
-from src.ir.registers.reg import Val, is_predicate
 from src.integrity import Integrity
+from src.ir.registers.reg import Val, is_predicate
+from src.register_type import RegisterType
+
 
 class SMov(BaseInstruction):
     def __init__(self, node, suffix):
@@ -15,7 +16,9 @@ class SMov(BaseInstruction):
             expr_node = None
 
             if is_predicate(self.ssrc0) or is_predicate(self.sdst):
-                self.decompiler_data.exec_registers[self.sdst.name] = self.decompiler_data.exec_registers[self.ssrc0.name]
+                self.decompiler_data.exec_registers[self.sdst.name] = self.decompiler_data.exec_registers[
+                    self.ssrc0.name
+                ]
 
                 expr_node = self.get_expression_node(self.ssrc0)
                 new_value = self.node.get_from_state(self.ssrc0).val
@@ -23,7 +26,7 @@ class SMov(BaseInstruction):
                     self.node,
                     new_value,
                     self.sdst.name,
-                    'b64',
+                    "b64",
                     None,
                     expression_node=expr_node,
                 )
@@ -42,10 +45,24 @@ class SMov(BaseInstruction):
                 expr_node = self.get_expression_node(self.ssrc0)
             if self.suffix == "b64":
                 set_reg_value(
-                    self.node, new_value, self.sdst.get_element(0).name, [], data_type, integrity=Integrity.LOW_PART, reg_type=reg_type, expression_node=expr_node
+                    self.node,
+                    new_value,
+                    self.sdst.get_element(0).name,
+                    [],
+                    data_type,
+                    integrity=Integrity.LOW_PART,
+                    reg_type=reg_type,
+                    expression_node=expr_node,
                 )
                 set_reg_value(
-                    self.node, new_value, self.sdst.get_element(1).name, [], data_type, integrity=Integrity.HIGH_PART, reg_type=reg_type, expression_node=expr_node
+                    self.node,
+                    new_value,
+                    self.sdst.get_element(1).name,
+                    [],
+                    data_type,
+                    integrity=Integrity.HIGH_PART,
+                    reg_type=reg_type,
+                    expression_node=expr_node,
                 )
             return set_reg_value(
                 self.node, new_value, self.sdst.name, [], data_type, reg_type=reg_type, expression_node=expr_node

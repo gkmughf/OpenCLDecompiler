@@ -6,8 +6,8 @@ from src.decompiler_data import DecompilerData
 from src.flag_type import FlagType
 from src.graph import GraphType
 from src.graph.control_flow_graph import CONTROL_FLOW_GRAPH_ENABLED_CONTEXT_KEY, ControlFlowGraph
-from src.ir.asm_to_ir.amd.asm_to_ir import text_to_ir as textToIR_amd
-from src.ir.asm_to_ir.ptx.asm_to_ir import text_to_ir as textToIR_ptx
+from src.ir.asm_to_ir.amd.asm_to_ir import text_to_ir as text_to_ir_amd
+from src.ir.asm_to_ir.ptx.asm_to_ir import text_to_ir as text_to_ir_ptx
 from src.ir.passes.base import PassContext
 from src.ir.passes.pipelines import AMD_PIPELINE, AMD_TEXT_IR_PIPELINE, PTX_PIPELINE, PTX_TEXT_IR_PIPELINE
 from src.kernel_parser import parse_kernel as parse_kernel_amd
@@ -17,7 +17,7 @@ from src.utils import get_context
 CONTEXT = get_context()
 
 
-def main(input_par, output_par, flag_for_decompilation, cfg_path, unrolling_limit=16, emit="opencl"):
+def main(input_par, output_par, flag_for_decompilation, cfg_path, unrolling_limit=16, emit="opencl"):  # noqa: PLR0913
     CONTEXT.update(
         **{
             f"{CONTROL_FLOW_GRAPH_ENABLED_CONTEXT_KEY}": cfg_path is not None,
@@ -47,7 +47,7 @@ def main(input_par, output_par, flag_for_decompilation, cfg_path, unrolling_limi
             pipeline = PTX_TEXT_IR_PIPELINE if emit == "ir" else PTX_PIPELINE
             ptx_kernel = parse_kernel_ptx(body_of_file.splitlines())
             for func in ptx_kernel:
-                kernel = textToIR_ptx(func)
+                kernel = text_to_ir_ptx(func)
                 if flag_newline:
                     output_file.write("\n")
                 flag_newline = True
@@ -57,7 +57,7 @@ def main(input_par, output_par, flag_for_decompilation, cfg_path, unrolling_limi
             functions_data, decompiler_data.gpu = parse_kernel_amd(body_of_file.splitlines())
             for function_data in functions_data:
                 function_data[1].kernel_name = function_data[0]
-                kernel = textToIR_amd(function_data[2], function_data[1], function_data[3], function_data[4])
+                kernel = text_to_ir_amd(function_data[2], function_data[1], function_data[3], function_data[4])
                 if flag_newline:
                     output_file.write("\n")
                 flag_newline = True
@@ -97,7 +97,9 @@ def start_point():
               'python parser_for_instructions.py -i <input_file.asm> -o <output_file.cl>'
             """)  # noqa: T201
     else:
-        main(namespace.input, namespace.output, namespace.flag, namespace.cfg, namespace.unrolling_limit, namespace.emit)
+        main(
+            namespace.input, namespace.output, namespace.flag, namespace.cfg, namespace.unrolling_limit, namespace.emit
+        )
 
 
 if __name__ == "__main__":

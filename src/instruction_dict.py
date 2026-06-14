@@ -3,6 +3,12 @@ from src.instructions.ds.ds_read import DsRead
 from src.instructions.ds.ds_write import DsWrite
 from src.instructions.flat.flat_load import FlatLoad
 from src.instructions.flat.flat_store import FlatStore
+from src.instructions.ir_special.change_mask import Unmask, UseMask
+from src.instructions.ir_special.global_mem import GlobalMemory
+from src.instructions.ir_special.init_pred import InitPred
+from src.instructions.ir_special.init_reg import InitReg
+from src.instructions.ir_special.local_mem import LocalMemory
+from src.instructions.ir_special.memory import MemoryAllocation, StoreInMem
 from src.instructions.smem.s_load import SLoad
 from src.instructions.sop1.s_mov import SMov
 from src.instructions.sop1.s_not import SNot
@@ -42,26 +48,18 @@ from src.instructions.vopc.v_cmp_lg import VCmpLg
 from src.instructions.vopc.v_cmp_lt import VCmpLt
 from src.instructions.vopc.v_cmp_ne import VCmpNe
 
-
-from src.instructions.IRspecial.InitReg import InitReg
-from src.instructions.IRspecial.InitPred import InitPred
-from src.instructions.IRspecial.memory import MemoryAllocation, StoreInMem
-from src.instructions.IRspecial.LocalMem import LocalMemory
-from src.instructions.IRspecial.GlobalMem import GlobalMemory
-from src.instructions.IRspecial.ChangeMask import UseMask, Unmask
-
 instruction_dict = {
     "s_alloc": MemoryAllocation,
     "s_store": StoreInMem,
     "s_init": InitReg,
     "s_init_global": GlobalMemory,
-    "s_ipred": InitPred, 
+    "s_ipred": InitPred,
     "ds_add": DsAdd,
     "ds_read": DsRead,
     "ds_write": DsWrite,
-    's_local': LocalMemory,
-    'change_mask': UseMask,
-    'unmask': Unmask,
+    "s_local": LocalMemory,
+    "change_mask": UseMask,
+    "unmask": Unmask,
     "flat_load": FlatLoad,
     "flat_store": FlatStore,
     "s_add": SAdd,
